@@ -375,7 +375,7 @@ if (localStorage.getItem("buttonlayout")) {
     {name:"Teams",icon:"/images/MicrosoftTeams.png",url:"msteams://open", param:"self",id:14},
     {name:"Gimkit",icon:"/images/Gimkit.png",url:"https://gimkit.com/",id:15},
     {name:"Quizlet",icon:"/images/Tinkercad.png",url:"https://tinkercad.com/",id:16},
-    {name:"Quizlet",icon:"/images/Quizlet.png",url:"https://gimkit.com/",id:17},
+    {name:"Quizlet",icon:"/images/QuizletLive.png",url:"https://quizlet.live/",id:17},
     {name:"Add Printers",icon:"/images/AddPrinters.png",url:"/AddPrinters",id:18},
   ]}))
   bl = JSON.parse(localStorage.getItem("buttonlayout"))
