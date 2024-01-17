@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Customisation Centre (Viewbank College)</title>
+  <link href="/site/customise/style.css" rel="stylesheet" type="text/css" />
+  <link href='https://fonts.googleapis.com/css?family=Varela Round' rel='stylesheet'>
+  <link rel="icon" href="/images/Favicon.png">
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <img src="/images/VBCLogo.png" alt="Header Image" class="header-img">
+        <h1>Viewbank College Intranet</h1>
+        <div class="header-clock">
+          <a class="header-link">
+            <h3 id="clock" class="clock"></h3>
+          </a>
+        </div>
+        <div class="header-classSync" id="header-classSync" style="display: none;">
+          <a class="header-link">
+            <h3 id="classSync" class="classSync"></h3>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="cards">
+    <!--<div class="card" data-href="http://viewbank-vic.compass.education/" data-id="0">
+      <img src="/images/Compass.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Compass</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://outlook.office.com/mail/" data-id="1">
+      <img src="/images/Outlook.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Mail</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://trello.com/login?returnUrl=%2F/" data-id="2">
+      <img src="/images/Trello.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Trello</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://www.viewbank.vic.edu.au/" data-id="3">
+      <img src="/images/VBCLogo.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>VBC Site</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://library.viewbank.vic.edu.au/oliver/home/news/" data-id="4">
+      <img src="/images/LibrarySearch.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Library</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://stileapp.com/login/" data-id="5">
+      <img src="/images/Stile.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Stile</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://www.cambridge.org/go/resources/" data-id="6">
+      <img src="/images/Hotmaths.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Hotmaths</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://www.viewbankcollegecareers.com/" data-id="7">
+      <img src="/images/VBCCareers.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Careers</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://oars.acer.edu.au/viewbank-college/" data-id="8">
+      <img src="/images/ACERLogo.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>ACER Testing</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://viewbank.on.spiceworks.com/portal/" data-id="9">
+      <img src="/images/HelpDesk.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Helpdesk</h3>
+      </div>
+    </div>
+    <div class="card" data-href="mailto:helpdesk@viewbank.vic.edu.au" data-id="10">
+      <img src="/images/HelpDeskMail.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Mail Helpdesk</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://viewbankcollege-my.sharepoint.com/" data-id="11">
+      <img src="/images/OneDrive.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>OneDrive</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://10.166.65.23/" data-id="12">
+      <img src="/images/OnDemand.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>On Demand Testing</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://papercut.viewbank.vic.edu.au:9191/" data-id="13">
+      <img src="/images/PaperCut.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Printer Balance</h3>
+        </h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://teams.microsoft.com/l/launcher/" data-id="14">
+      <img src="/images/MicrosoftTeams.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Teams</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://quizlet.live/" data-id="15">
+      <img src="/images/QuizletLive.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Quizlet Live</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://tinkercad.com/" data-id="16">
+      <img src="/images/Tinkercad.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Tinkercad</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://gimkit.com/" data-id="17">
+      <img src="/images/Gimkit.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>Gimkit</h3>
+      </div>
+    </div>
+    <div class="card" data-href="/AddPrinters" data-id="18">
+      <img src="/images/AddPrinters.png">
+      <div class="remove">-</div>
+      <div class="cardname">
+        <h3>How to add printers</h3>
+      </div>
+    </div>-->
+    <div class="plus" onclick="openAddMenu()">
+      <img src="/images/Plus.png">
+      <div class="overlay">
+        <h3>Add</h3>
+      </div>
+    </div>
+  </div>
+  <button type="submit" id="reset">Reset</button>
+  <div class="backbtn">
+    <img style="width: 100%; height: 100%;" src="/images/backIcon.png">
+  </div>
+  <div class="add-container" style="display: none;">
+    <div class="add-overlay"></div>
+    <div class="add-background">
+      <h3 class="add-close" onclick="closeAddMenu()">X</h3>
+      <h1>Add a Button</h1>
+      <div class="add-group">
+        <h3>Preset</h3>
+        <div class="preset-cards">
+          <div class="preset-card" data-href="http://viewbank-vic.compass.education/" data-id="0">
+            <img src="/images/Compass.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Compass</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://outlook.office.com/mail/" data-id="1">
+            <img src="/images/Outlook.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Mail</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://trello.com/login?returnUrl=%2F/" data-id="2">
+            <img src="/images/Trello.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Trello</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="http://www.viewbank.vic.edu.au/" data-id="3">
+            <img src="/images/VBCLogo.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>VBC Site</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="http://library.viewbank.vic.edu.au/oliver/home/news/" data-id="4">
+            <img src="/images/LibrarySearch.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Library</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://stileapp.com/login/" data-id="5">
+            <img src="/images/Stile.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Stile</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://www.cambridge.org/go/resources/" data-id="6">
+            <img src="/images/Hotmaths.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Hotmaths</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="http://www.viewbankcollegecareers.com/" data-id="7">
+            <img src="/images/VBCCareers.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Careers</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://oars.acer.edu.au/viewbank-college/" data-id="8">
+            <img src="/images/ACERLogo.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>ACER Testing</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://viewbank.on.spiceworks.com/portal/" data-id="9">
+            <img src="/images/HelpDesk.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Helpdesk</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="mailto:helpdesk@viewbank.vic.edu.au" data-id="10">
+            <img src="/images/HelpDeskMail.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Mail Helpdesk</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://viewbankcollege-my.sharepoint.com/" data-id="11">
+            <img src="/images/OneDrive.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>OneDrive</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="http://10.166.65.23/" data-id="12">
+            <img src="/images/OnDemand.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>On Demand Testing</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="http://papercut.viewbank.vic.edu.au:9191/" data-id="13">
+            <img src="/images/PaperCut.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Printer Balance</h3>
+              </h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="msteams://open" data-style="self" data-id="14">
+            <img src="/images/MicrosoftTeams.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Teams</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://quizlet.live/" data-id="15">
+            <img src="/images/QuizletLive.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Quizlet Live</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://tinkercad.com/" data-id="16">
+            <img src="/images/Tinkercad.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Tinkercad</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="https://gimkit.com/" data-id="17">
+            <img src="/images/Gimkit.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>Gimkit</h3>
+            </div>
+          </div>
+          <div class="preset-card" data-href="/AddPrinters" data-id="18">
+            <img src="/images/AddPrinters.png">
+            <div class="insert">+</div>
+            <div class="preset-cardname">
+              <h3>How to add printers</h3>
+            </div>
+          </div>
+        </div>
+        <p id="preset-error"></p>
+      </div>
+      <div class="add-group">
+        <h3>Custom</h3>
+        <h5 class="add-active" id="classSyncActive">there's nothing here right now</h5>
+      </div>
+    </div>
+  </div>
+  
+  <script src="/site/customise/script.js"></script>
+</body>
+
+</html>
