@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Viewbank College</title>
+  <link href="/site/main/style.css" rel="stylesheet" type="text/css" />
+  <link href='https://fonts.googleapis.com/css?family=Varela Round' rel='stylesheet'>
+  <link rel="icon" href="/images/Favicon.png">
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <img src="/images/VBCLogo.png" alt="Header Image" class="header-img">
+        <h1>Viewbank College Intranet</h1>
+        <div class="header-clock">
+          <a class="header-link">
+            <h3 id="clock" class="clock"></h3>
+          </a>
+        </div>
+        <div class="header-classSync" id="header-classSync" style="display: none;">
+          <a class="header-link">
+            <h3 id="classSync" class="classSync"></h3>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="cards">
+    <!--<div class="card" data-href="http://viewbank-vic.compass.education/">
+      <img src="/images/Compass.png">
+      <div class="overlay">
+        <h3>Compass</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://outlook.office.com/mail/">
+      <img src="/images/Outlook.png">
+      <div class="overlay">
+        <h3>Mail</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://trello.com/login?returnUrl=%2F/">
+      <img src="/images/Trello.png">
+      <div class="overlay">
+        <h3>Trello</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://www.viewbank.vic.edu.au/">
+      <img src="/images/VBCLogo.png">
+      <div class="overlay">
+        <h3>VBC Site</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://library.viewbank.vic.edu.au/oliver/home/news/">
+      <img src="/images/LibrarySearch.png">
+      <div class="overlay">
+        <h3>Library</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://stileapp.com/login/">
+      <img src="/images/Stile.png">
+      <div class="overlay">
+        <h3>Stile</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://www.cambridge.org/go/resources/">
+      <img src="/images/Hotmaths.png">
+      <div class="overlay">
+        <h3>Hotmaths</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://www.viewbankcollegecareers.com/">
+      <img src="/images/VBCCareers.png">
+      <div class="overlay">
+        <h3>Careers</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://oars.acer.edu.au/viewbank-college/">
+      <img src="/images/ACERLogo.png">
+      <div class="overlay">
+        <h3>ACER Testing</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://viewbank.on.spiceworks.com/portal/">
+      <img src="/images/HelpDesk.png">
+      <div class="overlay">
+        <h3>Helpdesk</h3>
+      </div>
+    </div>
+    <div class="card" data-href="mailto:helpdesk@viewbank.vic.edu.au">
+      <img src="/images/HelpDeskMail.png">
+      <div class="overlay">
+        <h3>Mail Helpdesk</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://viewbankcollege-my.sharepoint.com/">
+      <img src="/images/OneDrive.png">
+      <div class="overlay">
+        <h3>OneDrive</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://10.166.65.23/">
+      <img src="/images/OnDemand.png">
+      <div class="overlay">
+        <h3>On Demand Testing</h3>
+      </div>
+    </div>
+    <div class="card" data-href="http://papercut.viewbank.vic.edu.au:9191/">
+      <img src="/images/PaperCut.png">
+      <div class="overlay">
+        <h3>Printer Balance</h3>
+        </h3>
+      </div>
+    </div>
+    <div class="card" data-href="msteams://open" data-style="self">
+      <img src="/images/MicrosoftTeams.png">
+      <div class="overlay">
+        <h3>Teams</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://quizlet.live/">
+      <img src="/images/QuizletLive.png">
+      <div class="overlay">
+        <h3>Quizlet Live</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://tinkercad.com/">
+      <img src="/images/Tinkercad.png">
+      <div class="overlay">
+        <h3>Tinkercad</h3>
+      </div>
+    </div>
+    <div class="card" data-href="https://gimkit.com/">
+      <img src="/images/Gimkit.png">
+      <div class="overlay">
+        <h3>Gimkit</h3>
+      </div>
+    </div>
+    <div class="card" data-href="/AddPrinters">
+      <img src="/images/AddPrinters.png">
+      <div class="overlay">
+        <h3>How to add printers</h3>
+      </div>
+    </div>-->
+  </div>
+  <div class="settings-button">
+    <img style="width: 100%; height: 100%;" src="/images/settingsIcon.png">
+  </div>
+  <div class="search-container" style="display: none;">
+    <div class="search-overlay"></div>
+    <div class="search-bar">
+      <input type="text" placeholder="Search..." id="searchInput" autocomplete="off">
+    </div>
+  </div>
+  <div class="settings-container" style="display: none;">
+    <div class="settings-overlay"></div>
+    <div class="settings-background">
+      <h3 class="settings-close" onclick="closeSettingsMenu()">X</h3>
+      <h1>Settings</h1>
+      <div class="settings-group">
+        <h3>ClassSync (beta)</h3>
+        <h5 class="settings-active" id="classSyncActive">✗ Not Active</h5>
+        <p><em>ClassSync</em> is a system to display the next class you have directly on the <em>new</em> Viewbank
+          College
+          Intranet! To get started, enter your calander link. <b><a href="/ClassSync" target="_blank"><br>Guide</a></b></p>
+        <input type="text" autocomplete="off" autocapitalize="off" id="cal-input" placeholder="https://viewbank-vic.compass.education/download/sharedCalendar.aspx?uid=..."></input>
+        <button type="submit" id="cal-submit">Submit</button>
+        <button type="submit" id="cal-deactivate">Deactivate</button>
+        <p id="cal-incorrect"></p>
+      </div>
+      <div class="settings-group">
+        <h3>Customise (beta)</h3>
+        <p>You can now customise what buttons appear, and what order they appear in, on this intranet page.</p>
+        <button type="submit" id="customise-page">Visit Customisation Centre</button>
+      </div>
+    </div>
+  </div>
+  <script src="/site/main/script.js"></script>
+</body>
+
+</html>
