@@ -331,9 +331,9 @@ function closeSettingsMenu() {
     settingsContainer.style.display = 'none';
   }, 300);
 }
-// document.getElementById("customise-page").addEventListener('click', (event) => {
-//   window.open("/customise", '_self');
-// })
+document.getElementById("customise-page").addEventListener('click', (event) => {
+  window.open("/customise", '_self');
+})
 function loadLS() {
   bl.buttons.forEach(v=>{
     document.querySelector(".cards").innerHTML += `<div class="card" data-href="${v.url}" data-id="${v.id}" ${v.param ? `data-style="self"` : ""}><img src="${v.icon}"><div class="overlay"><h3>${v.name}</h3></div></div>`
