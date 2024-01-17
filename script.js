@@ -373,7 +373,10 @@ if (localStorage.getItem("buttonlayout")) {
     {name:"On Demand Testing",icon:"/images/OnDemand.png",url:"http://10.166.65.23/",id:12},
     {name:"Printer Balance",icon:"/images/PaperCut.png",url:"http://papercut.viewbank.vic.edu.au:9191/",id:13},
     {name:"Teams",icon:"/images/MicrosoftTeams.png",url:"msteams://open", param:"self",id:14},
-    {name:"Add Printers",icon:"/images/AddPrinters.png",url:"/AddPrinters",id:15},
+    {name:"Gimkit",icon:"/images/Gimkit.png",url:"https://gimkit.com/",id:15},
+    {name:"Quizlet",icon:"/images/Tinkercad.png",url:"https://tinkercad.com/",id:16},
+    {name:"Quizlet",icon:"/images/Quizlet.png",url:"https://gimkit.com/",id:17},
+    {name:"Add Printers",icon:"/images/AddPrinters.png",url:"/AddPrinters",id:18},
   ]}))
   bl = JSON.parse(localStorage.getItem("buttonlayout"))
   loadLS()
