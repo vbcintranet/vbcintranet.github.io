@@ -361,14 +361,15 @@ if (localStorage.getItem("buttonlayout")) {
     })
     .then(function(defbl) {
       if (bl.v != JSON.parse(defbl).v) {
-        localStorage.setItem("buttonlayout", defbl)
-        bl = JSON.parse(localStorage.getItem("buttonlayout"))
+        delete defbl.all;
+        localStorage.setItem("buttonlayout", defbl);
+        bl = JSON.parse(localStorage.getItem("buttonlayout"));
         loadLS();
       } else {
         bl.buttons.forEach((b)=>{
-          if (b.name != JSON.parse(defbl).buttons[b.pid].name) b.name = JSON.parse(defbl).buttons[b.pid].name
-          if (b.icon != JSON.parse(defbl).buttons[b.pid].icon) b.icon = JSON.parse(defbl).buttons[b.pid].icon
-          if (b.url != JSON.parse(defbl).buttons[b.pid].url) b.url = JSON.parse(defbl).buttons[b.pid].url
+          if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
+          if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
+          if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
         })
         localStorage.setItem("buttonlayout", JSON.stringify(bl));
         loadLS();
@@ -380,6 +381,7 @@ if (localStorage.getItem("buttonlayout")) {
         return res.text()
     })
     .then(function(def) {
+      delete def.all;
       localStorage.setItem("buttonlayout", def)
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
