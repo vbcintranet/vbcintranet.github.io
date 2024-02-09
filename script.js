@@ -361,7 +361,7 @@ if (localStorage.getItem("buttonlayout")) {
     })
     .then(function(defbl) {
       if (bl.v != defbl.v) {
-        localStorage.setItem("buttonlayout", JSON.stringify(defbl))
+        localStorage.setItem("buttonlayout", defbl)
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS();
       } else {
@@ -370,7 +370,7 @@ if (localStorage.getItem("buttonlayout")) {
           if (b.icon != defbl.buttons[b.presetId].icon) b.icon = list[b.presetId].icon
           if (b.url != defbl.buttons[b.presetId].url) b.url = list[b.presetId].url
         })
-        localStorage.setItem("buttonlayout", JSON.stringify(bl));
+        localStorage.setItem("buttonlayout", bl);
         loadLS();
       }
     });
@@ -380,7 +380,7 @@ if (localStorage.getItem("buttonlayout")) {
         return res.text()
     })
     .then(function(def) {
-      localStorage.setItem("buttonlayout", JSON.stringify(def))
+      localStorage.setItem("buttonlayout", def)
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
     });
