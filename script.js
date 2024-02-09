@@ -361,7 +361,7 @@ if (localStorage.getItem("buttonlayout")) {
     })
     .then(function(defbl) {
       if (bl.v != defbl.v) {
-        localStorage.setItem("buttonlayout", defbl)
+        localStorage.setItem("buttonlayout", JSON.stringify(defbl))
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS();
       } else {
@@ -380,7 +380,7 @@ if (localStorage.getItem("buttonlayout")) {
         return res.text()
     })
     .then(function(def) {
-      localStorage.setItem("buttonlayout", def)
+      localStorage.setItem("buttonlayout", JSON.stringify(def))
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
     });
