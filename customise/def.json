@@ -38,5 +38,5 @@
     {"name":"Tinkercad","icon":"/images/Tinkercad.png","url":"https://tinkercad.com/","id":16,"pid":16},
     {"name":"Gimkit","icon":"/images/Gimkit.png","url":"https://gimkit.com/","id":17,"pid":17},
     {"name":"Add Printers","icon":"/images/AddPrinters.png","url":"/AddPrinters","id":18,"pid":18}
-  ],
+  ]
 }
