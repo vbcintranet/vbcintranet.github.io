@@ -166,6 +166,7 @@ if (localStorage.getItem("buttonlayout")) {
       return res.text()
     })
     .then(function(def) {
+      delete def.all;
       localStorage.setItem("buttonlayout", def)
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
@@ -178,6 +179,7 @@ document.getElementById("reset").addEventListener("mouseup",()=>{
       return res.text()
     })
     .then(function(def) {
+      delete def.all;
       localStorage.setItem("buttonlayout", def)
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
