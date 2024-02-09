@@ -354,8 +354,12 @@ function loadLS() {
 }
 
 if (localStorage.getItem("buttonlayout")) {
-  bl = JSON.parse(localStorage.getItem("buttonlayout"))
-  loadLS()
+  bl = JSON.parse(localStorage.getItem("buttonlayout"));
+  bl.buttons.forEach((i)=>{
+    if (i.url == "https://stileapp.com/login/") i.url = "https://stileapp.com/"
+  });
+  localStorage.setItem("buttonlayout", JSON.stringify(bl));
+  loadLS();
 } else {
   localStorage.setItem("buttonlayout", JSON.stringify({buttons:[
     {name:"Compass",icon:"/images/Compass.png",url:"http://viewbank-vic.compass.education/",id:0},
@@ -363,7 +367,7 @@ if (localStorage.getItem("buttonlayout")) {
     {name:"Trello",icon:"/images/Trello.png",url:"https://trello.com/login?returnUrl=%2F/",id:2},
     {name:"VBC Site",icon:"/images/VBCLogo.png",url:"http://www.viewbank.vic.edu.au/",id:3},
     {name:"Library",icon:"/images/LibrarySearch.png",url:"http://library.viewbank.vic.edu.au/oliver/home/news/",id:4},
-    {name:"Stile",icon:"/images/Stile.png",url:"https://stileapp.com/login/",id:5},
+    {name:"Stile",icon:"/images/Stile.png",url:"https://stileapp.com/",id:5},
     {name:"Hotmaths",icon:"/images/Hotmaths.png",url:"https://www.cambridge.org/go/resources/",id:6},
     {name:"Careers",icon:"/images/VBCCareers.png",url:"http://www.viewbankcollegecareers.com/",id:7},
     {name:"ACER Testing",icon:"/images/ACERLogo.png",url:"https://oars.acer.edu.au/viewbank-college/",id:8},
