@@ -361,7 +361,7 @@ if (localStorage.getItem("buttonlayout")) {
     })
     .then(function(defbl) {
       if (bl.v != JSON.parse(defbl).v) {
-        localStorage.setItem("buttonlayout", JSON.parse(defbl))
+        localStorage.setItem("buttonlayout", defbl)
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS();
       } else {
