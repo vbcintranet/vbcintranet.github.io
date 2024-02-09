@@ -366,11 +366,11 @@ if (localStorage.getItem("buttonlayout")) {
         loadLS();
       } else {
         bl.buttons.forEach((b)=>{
-          if (b.name != JSON.parse(defbl).buttons[b.presetId].name) b.name = list[b.presetId].name
-          if (b.icon != JSON.parse(defbl).buttons[b.presetId].icon) b.icon = list[b.presetId].icon
-          if (b.url != JSON.parse(defbl).buttons[b.presetId].url) b.url = list[b.presetId].url
+          if (b.name != JSON.parse(defbl).buttons[b.presetId].name) b.name = JSON.parse(defbl).buttons[b.presetId].name
+          if (b.icon != JSON.parse(defbl).buttons[b.presetId].icon) b.icon = JSON.parse(defbl).buttons[b.presetId].icon
+          if (b.url != JSON.parse(defbl).buttons[b.presetId].url) b.url = JSON.parse(defbl).buttons[b.presetId].url
         })
-        localStorage.setItem("buttonlayout", bl);
+        localStorage.setItem("buttonlayout", JSON.stringify(bl));
         loadLS();
       }
     });
