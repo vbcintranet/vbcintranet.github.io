@@ -51,7 +51,7 @@ cardinserts.forEach(insert => {
         return
       }
       const href = card.getAttribute('data-href');
-      if (card.getAttribute('data-style')) updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href, card.getAttribute('data-style')); else updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href)
+      if (card.getAttribute('data-style')) updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href, card.getAttribute('data-style')); else if (card.getAttribute('data-preset-id')) updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href, '', card.getAttribute('data-preset-id')); else updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href)
       
       loadLS()
       closeAddMenu();
@@ -106,9 +106,12 @@ function closeAddMenu() {
   }, 300);
 }
 
-function updateLS(a, id, name, icon, url, param) {
+function updateLS(a, id, name, icon, url, param, presetId) {
   if (a && name && icon && url && param && bl.buttons.length < 25) {
     bl.buttons.push({name:name,icon:icon,url:url,param:param,id:bl.buttons.length})
+    localStorage.setItem("buttonlayout", JSON.stringify(bl))
+  } else if (a && name && icon && url && presetId && bl.buttons.length < 25) {
+    bl.buttons.push({name:name, icon:icon, url:url,id:bl.buttons.length,pid:presetId})
     localStorage.setItem("buttonlayout", JSON.stringify(bl))
   } else if (a && name && icon && url && bl.buttons.length < 25) {
     bl.buttons.push({name:name, icon:icon, url:url,id:bl.buttons.length})
@@ -158,49 +161,27 @@ if (localStorage.getItem("buttonlayout")) {
   bl = JSON.parse(localStorage.getItem("buttonlayout"))
   loadLS()
 } else {
-  localStorage.setItem("buttonlayout", JSON.stringify({buttons:[
-    {name:"Compass",icon:"/images/Compass.png",url:"http://viewbank-vic.compass.education/",id:0},
-    {name:"Mail",icon:"/images/Outlook.png",url:"https://outlook.office.com/mail/",id:1},
-    {name:"Trello",icon:"/images/Trello.png",url:"https://trello.com/login?returnUrl=%2F/",id:2},
-    {name:"VBC Site",icon:"/images/VBCLogo.png",url:"http://www.viewbank.vic.edu.au/",id:3},
-    {name:"Library",icon:"/images/LibrarySearch.png",url:"http://library.viewbank.vic.edu.au/oliver/home/news/",id:4},
-    {name:"Stile",icon:"/images/Stile.png",url:"https://stileapp.com/",id:5},
-    {name:"Hotmaths",icon:"/images/Hotmaths.png",url:"https://www.cambridge.org/go/resources/",id:6},
-    {name:"Careers",icon:"/images/VBCCareers.png",url:"http://www.viewbankcollegecareers.com/",id:7},
-    {name:"ACER Testing",icon:"/images/ACERLogo.png",url:"https://oars.acer.edu.au/viewbank-college/",id:8},
-    {name:"Helpdesk",icon:"/images/HelpDesk.png",url:"https://viewbank.on.spiceworks.com/portal/",id:9},
-    {name:"Mail Helpdesk",icon:"/images/HelpDeskMail.png",url:"mailto:helpdesk@viewbank.vic.edu.au",id:10},
-    {name:"OneDrive",icon:"/images/OneDrive.png",url:"https://viewbankcollege-my.sharepoint.com/",id:11},
-    {name:"On Demand Testing",icon:"/images/OnDemand.png",url:"http://10.166.65.23/",id:12},
-    {name:"Printer Balance",icon:"/images/PaperCut.png",url:"http://papercut.viewbank.vic.edu.au:9191/",id:13},
-    {name:"Teams",icon:"/images/MicrosoftTeams.png",url:"msteams://open", param:"self",id:14},
-    {name:"Add Printers",icon:"/images/AddPrinters.png",url:"/AddPrinters",id:15},
-  ]}))
-  bl = JSON.parse(localStorage.getItem("buttonlayout"))
-  loadLS()
+  fetch("/customise/def.json")
+    .then(function(res) {
+      return res.text()
+    })
+    .then(function(def) {
+      localStorage.setItem("buttonlayout", def)
+      bl = JSON.parse(localStorage.getItem("buttonlayout"))
+      loadLS()
+    });
 }
 
 document.getElementById("reset").addEventListener("mouseup",()=>{
-  localStorage.setItem("buttonlayout", JSON.stringify({buttons:[
-    {name:"Compass",icon:"/images/Compass.png",url:"http://viewbank-vic.compass.education/",id:0},
-    {name:"Mail",icon:"/images/Outlook.png",url:"https://outlook.office.com/mail/",id:1},
-    {name:"Trello",icon:"/images/Trello.png",url:"https://trello.com/login?returnUrl=%2F/",id:2},
-    {name:"VBC Site",icon:"/images/VBCLogo.png",url:"http://www.viewbank.vic.edu.au/",id:3},
-    {name:"Library",icon:"/images/LibrarySearch.png",url:"http://library.viewbank.vic.edu.au/oliver/home/news/",id:4},
-    {name:"Stile",icon:"/images/Stile.png",url:"https://stileapp.com/",id:5},
-    {name:"Hotmaths",icon:"/images/Hotmaths.png",url:"https://www.cambridge.org/go/resources/",id:6},
-    {name:"Careers",icon:"/images/VBCCareers.png",url:"http://www.viewbankcollegecareers.com/",id:7},
-    {name:"ACER Testing",icon:"/images/ACERLogo.png",url:"https://oars.acer.edu.au/viewbank-college/",id:8},
-    {name:"Helpdesk",icon:"/images/HelpDesk.png",url:"https://viewbank.on.spiceworks.com/portal/",id:9},
-    {name:"Mail Helpdesk",icon:"/images/HelpDeskMail.png",url:"mailto:helpdesk@viewbank.vic.edu.au",id:10},
-    {name:"OneDrive",icon:"/images/OneDrive.png",url:"https://viewbankcollege-my.sharepoint.com/",id:11},
-    {name:"On Demand Testing",icon:"/images/OnDemand.png",url:"http://10.166.65.23/",id:12},
-    {name:"Printer Balance",icon:"/images/PaperCut.png",url:"http://papercut.viewbank.vic.edu.au:9191/",id:13},
-    {name:"Teams",icon:"/images/MicrosoftTeams.png",url:"msteams://open", param:"self",id:14},
-    {name:"Add Printers",icon:"/images/AddPrinters.png",url:"/AddPrinters",id:15},
-  ]}))
-  bl = JSON.parse(localStorage.getItem("buttonlayout"))
-  loadLS()
+  fetch("/customise/def.json")
+    .then(function(res) {
+      return res.text()
+    })
+    .then(function(def) {
+      localStorage.setItem("buttonlayout", def)
+      bl = JSON.parse(localStorage.getItem("buttonlayout"))
+      loadLS()
+    });
 })
 
 console.log("                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   `  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            `----'       `---`     ")
