@@ -355,35 +355,39 @@ function loadLS() {
 
 if (localStorage.getItem("buttonlayout")) {
   bl = JSON.parse(localStorage.getItem("buttonlayout"));
-  bl.buttons.forEach((i)=>{
-    if (i.url == "https://stileapp.com/login/") i.url = "https://stileapp.com/"
-  });
-  localStorage.setItem("buttonlayout", JSON.stringify(bl));
-  loadLS();
+  fetch("/customise/def.json")
+    .then(function(res) {
+      return res.text()
+    })
+    .then(function(defbl) {
+      if (bl.v != defbl.v) {
+        localStorage.setItem("buttonlayout", defbl)
+        bl = JSON.parse(localStorage.getItem("buttonlayout"))
+        loadLS();
+      } else {
+        bl.buttons.forEach((b)=>{
+          if (b.name != defbl.buttons[b.presetId].name) b.name = list[b.presetId].name
+          if (b.icon != defbl.buttons[b.presetId].icon) b.icon = list[b.presetId].icon
+          if (b.url != defbl.buttons[b.presetId].url) b.url = list[b.presetId].url
+        })
+        localStorage.setItem("buttonlayout", JSON.stringify(bl));
+        loadLS();
+      }
+    });
 } else {
-  localStorage.setItem("buttonlayout", JSON.stringify({buttons:[
-    {name:"Compass",icon:"/images/Compass.png",url:"http://viewbank-vic.compass.education/",id:0},
-    {name:"Mail",icon:"/images/Outlook.png",url:"https://outlook.office.com/mail/",id:1},
-    {name:"Trello",icon:"/images/Trello.png",url:"https://trello.com/login?returnUrl=%2F/",id:2},
-    {name:"VBC Site",icon:"/images/VBCLogo.png",url:"http://www.viewbank.vic.edu.au/",id:3},
-    {name:"Library",icon:"/images/LibrarySearch.png",url:"http://library.viewbank.vic.edu.au/oliver/home/news/",id:4},
-    {name:"Stile",icon:"/images/Stile.png",url:"https://stileapp.com/",id:5},
-    {name:"Hotmaths",icon:"/images/Hotmaths.png",url:"https://www.cambridge.org/go/resources/",id:6},
-    {name:"Careers",icon:"/images/VBCCareers.png",url:"http://www.viewbankcollegecareers.com/",id:7},
-    {name:"ACER Testing",icon:"/images/ACERLogo.png",url:"https://oars.acer.edu.au/viewbank-college/",id:8},
-    {name:"Helpdesk",icon:"/images/HelpDesk.png",url:"https://viewbank.on.spiceworks.com/portal/",id:9},
-    {name:"Mail Helpdesk",icon:"/images/HelpDeskMail.png",url:"mailto:helpdesk@viewbank.vic.edu.au",id:10},
-    {name:"OneDrive",icon:"/images/OneDrive.png",url:"https://viewbankcollege-my.sharepoint.com/",id:11},
-    {name:"On Demand Testing",icon:"/images/OnDemand.png",url:"http://10.166.65.23/",id:12},
-    {name:"Printer Balance",icon:"/images/PaperCut.png",url:"http://papercut.viewbank.vic.edu.au:9191/",id:13},
-    {name:"Teams",icon:"/images/MicrosoftTeams.png",url:"msteams://open", param:"self",id:14},
-    {name:"Gimkit",icon:"/images/Gimkit.png",url:"https://gimkit.com/",id:15},
-    {name:"Quizlet",icon:"/images/Tinkercad.png",url:"https://tinkercad.com/",id:16},
-    {name:"Quizlet",icon:"/images/QuizletLive.png",url:"https://quizlet.live/",id:17},
-    {name:"Add Printers",icon:"/images/AddPrinters.png",url:"/AddPrinters",id:18},
-  ]}))
-  bl = JSON.parse(localStorage.getItem("buttonlayout"))
-  loadLS()
+  fetch("/customise/def.json")
+    .then(function(res) {
+        return res.text()
+    })
+    .then(function(def) {
+      localStorage.setItem("buttonlayout", def)
+      bl = JSON.parse(localStorage.getItem("buttonlayout"))
+      loadLS()
+    });
+}
+
+if (bl.v != 2) {
+
 }
 
 console.log("                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   `  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            `----'       `---`     ")
