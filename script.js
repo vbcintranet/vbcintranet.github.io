@@ -360,15 +360,15 @@ if (localStorage.getItem("buttonlayout")) {
       return res.text()
     })
     .then(function(defbl) {
-      if (bl.v != defbl.v) {
-        localStorage.setItem("buttonlayout", defbl)
+      if (bl.v != JSON.parse(defbl).v) {
+        localStorage.setItem("buttonlayout", JSON.parse(defbl))
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS();
       } else {
         bl.buttons.forEach((b)=>{
-          if (b.name != defbl.buttons[b.presetId].name) b.name = list[b.presetId].name
-          if (b.icon != defbl.buttons[b.presetId].icon) b.icon = list[b.presetId].icon
-          if (b.url != defbl.buttons[b.presetId].url) b.url = list[b.presetId].url
+          if (b.name != JSON.parse(defbl).buttons[b.presetId].name) b.name = list[b.presetId].name
+          if (b.icon != JSON.parse(defbl).buttons[b.presetId].icon) b.icon = list[b.presetId].icon
+          if (b.url != JSON.parse(defbl).buttons[b.presetId].url) b.url = list[b.presetId].url
         })
         localStorage.setItem("buttonlayout", bl);
         loadLS();
