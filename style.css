@@ -287,6 +287,9 @@ h1 {
 .settings-active[active] {
   color: #45c947;
 }
+.settings-active[error] {
+  color: #ffd699;
+}
 #cal-deactivate[visible] {
   display: block;
 }
