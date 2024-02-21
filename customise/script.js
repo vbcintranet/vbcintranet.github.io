@@ -103,8 +103,6 @@ function openAddMenu() {
   }
 }
 
-document.getElementById("plus").addEventListener("click",openAddMenu);
-
 function closeAddMenu() {
   addOpen = false
   canSearch = true;
@@ -272,6 +270,8 @@ document.getElementById("reset").addEventListener("mouseup",()=>{
       consol.error("Failed to fetch buttons", "Buttons")
     });
 })
+
+document.getElementById("plus").addEventListener("mouseup",openAddMenu);
 
 console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
 })();
