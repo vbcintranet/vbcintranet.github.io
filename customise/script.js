@@ -1,4 +1,11 @@
-const version = "v1.6.0";
+(() => {
+const version = "v1.6.1";
+
+const consol = {
+  log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
+  warn: (message, title="Core") => { console.warn(`%c(${title}) %c${message}`, `color:#FFD699;font-weight:bold`, "") },
+  error: (message, title="Core") => { console.error(`%c(${title}) %c${message}`, `color:#FFB3B3;font-weight:bold`, "") }
+}
 
 document.addEventListener('mousedown', e => { if (e.button == 1) { e.preventDefault() } });
 
@@ -105,6 +112,7 @@ function closeAddMenu() {
     addContainer.style.display = 'none';
   }, 300);
 }
+document.getElementById("add-close").addEventListener("click",closeAddMenu);
 
 function updateLS(a, id, name, icon, url, param, presetId) {
   if (a && name && icon && url && param && bl.buttons.length < 25) {
@@ -150,26 +158,99 @@ function loadLS() {
     },500)
   })
 }
+
+(()=>{
+  fetch("/customise/def.json")
+    .then(function(res) {
+      return res.text()
+    })
+    .then(function(defbl) {
+      JSON.parse(defbl).all.forEach((b)=>{
+        var a = document.createElement('div');
+        a.classList.add("preset-card");
+        a.setAttribute("data-href", b.url);
+        a.setAttribute("data-preset-id", b.pid);
+        a.innerHTML = `<img src="${b.icon}"><div class="insert">+</div><div class="preset-cardname"><h3>${b.name}</h3></div>`;
+        document.getElementById("preset-cards").append(a);
+      })
+    })
+    .then(function() {
+      const presetInserts = document.querySelectorAll('.insert');
+      presetInserts.forEach(insert => {
+        insert.addEventListener('mouseup', (e) => {
+          var card = insert.parentElement;
+          if (e.button == 1 || e.button == 0) {
+            if (bl.buttons.length >= 25) {
+              document.getElementById("preset-error").innerText = "You have reached the maximum amount of icons (25)"
+              setTimeout(()=>{
+                document.getElementById("preset-error").innerText = ""
+              }, 3000)
+              return
+            }
+            const href = card.getAttribute('data-href');
+            if (card.getAttribute('data-style')) updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href, card.getAttribute('data-style')); else if (card.getAttribute('data-preset-id')) updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href, '', card.getAttribute('data-preset-id')); else updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href)
+            
+            loadLS()
+            closeAddMenu();
+          }
+        });
+      });
+    })
+    .catch(function(e) {
+      consol.error("Failed to fetch pesets", "Presets")
+    });
+})();
 /*Array.from(document.querySelector('.cards').children).forEach(function(child) {
   if (!child.classList.contains('plus')) {
     document.querySelector('.cards').removeChild(child);
   }
 });
 loadLS()*/
+function jsonCheck(json) {
+  try {
+    JSON.parse(json)
+  } catch {
+    return false
+  }
+  return true
+}
 var bl = {}
 if (localStorage.getItem("buttonlayout")) {
-  bl = JSON.parse(localStorage.getItem("buttonlayout"))
-  loadLS()
+  if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
+    consol.log("Failed to parse buttonlayout, resetting", "Buttons")
+    localStorage.removeItem("buttonlayout")
+    fetch("/customise/def.json")
+      .then(function(res) {
+        return res.text()
+      })
+      .then(function(def) {
+        let vdef = JSON.parse(def)
+        delete vdef.all;
+        localStorage.setItem("buttonlayout", JSON.stringify(vdef))
+        bl = JSON.parse(localStorage.getItem("buttonlayout"))
+        loadLS()
+      })
+      .catch(function(e) {
+        consol.error("Failed to fetch buttons", "Buttons")
+      });
+  } else {
+    bl = JSON.parse(localStorage.getItem("buttonlayout"))
+    loadLS()
+  }
 } else {
   fetch("/customise/def.json")
     .then(function(res) {
       return res.text()
     })
     .then(function(def) {
-      delete def.all;
-      localStorage.setItem("buttonlayout", def)
+      let vdef = JSON.parse(def)
+      delete vdef.all;
+      localStorage.setItem("buttonlayout", JSON.stringify(vdef))
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
+    })
+    .catch(function(e) {
+      consol.error("Failed to fetch buttons", "Buttons")
     });
 }
 
@@ -178,13 +259,17 @@ document.getElementById("reset").addEventListener("mouseup",()=>{
     .then(function(res) {
       return res.text()
     })
-    .then(function(def) {
-      delete def.all;
-      localStorage.setItem("buttonlayout", def)
+    .then(function(def) {  
+      let vdef = JSON.parse(def)
+      delete vdef.all;
+      localStorage.setItem("buttonlayout", JSON.stringify(vdef))
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
+    })
+    .catch(function(e) {
+      consol.error("Failed to fetch buttons", "Buttons")
     });
 })
 
-console.log("                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   `  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            `----'       `---`     ")
-console.log(`Intranet ${version}`)
+console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
+})();
