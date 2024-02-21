@@ -103,6 +103,8 @@ function openAddMenu() {
   }
 }
 
+document.getElementById("plus").addEventListener("click",openAddMenu);
+
 function closeAddMenu() {
   addOpen = false
   canSearch = true;
