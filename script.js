@@ -1,4 +1,11 @@
-const version = "v1.6.0";
+(() => {
+const version = "v1.6.1";
+
+const consol = {
+  log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
+  warn: (message, title="Core") => { console.warn(`%c(${title}) %c${message}`, `color:#FFD699;font-weight:bold`, "") },
+  error: (message, title="Core") => { console.error(`%c(${title}) %c${message}`, `color:#FFB3B3;font-weight:bold`, "") }
+}
 
 document.addEventListener('mousedown', e => { if (e.button == 1) { e.preventDefault() } });
 
@@ -119,6 +126,32 @@ searchInput.addEventListener('keydown', (event) => {
   }
 });
 
+let isOnline = true;
+window.addEventListener('online', () => {
+  consol.log("Reconnected", "Network");
+  isOnline = true;
+  document.getElementById("classSync").innerHTML = 'Network reconnected<p style="font-size:0.5em;">Fetching info...</p>';
+  clearTimeout(t);
+  writeNext();
+  if (calActive) {
+    calActiveText.textContent = "✓ Active";
+    calActiveText.setAttribute("active", "");
+    calActiveText.removeAttribute("error");
+  }
+});
+window.addEventListener('offline', () => {
+  consol.warn("Running on offline mode", "Network");
+  isOnline = false;
+  clearTimeout(t);
+  document.getElementById("classSync").innerHTML = 'Network disconnected<p style="font-size:0.5em;">Please reconnect</p>';
+  if (calActive) {
+    calActiveText.textContent = "⚠ Network disconnected";
+    calActiveText.setAttribute("error", "");
+    calActiveText.removeAttribute("active");
+  }
+});
+let calActive = false;
+
 const subButton = document.getElementById("cal-submit");
 const inputText = document.getElementById("cal-input");
 const devButton = document.getElementById("cal-deactivate");
@@ -127,39 +160,56 @@ const calActiveText = document.getElementById("classSyncActive");
 
 subButton.addEventListener('click', (event) => {
   event.preventDefault();
+  if (!isOnline) {
+    incorrectText.innerHTML = "Network disconnected. Please reconnect and try again.";
+    return;
+  }
   if (inputText.value.trim() != "") {
-    fetch(checkLink(inputText.value))
+    if (!formatCalLink(inputText.value, true).startsWith('viewbank-vic.compass.education/download/sharedCalendar.aspx')) {
+      consol.error("Link failed test", "ClassSync-Setup");
+      incorrectText.innerHTML = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
+      return;
+    }
+    fetch(formatCalLink(inputText.value))
       .then(response => {
         if (!response.ok) {
-          incorrectText.textContent = "Did you input the correct link? Check the <b><a href='/ClassSync.pdf' style='color: #c94545;'>guide</a></b> for help.";
+          incorrectText.textContent = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
           throw new Error(`Failed to fetch the file. Status: ${response.status}`);
         } else {
+          calActive = true;
           incorrectText.textContent = "";
           calActiveText.textContent = "✓ Active";
           calActiveText.setAttribute("active", "");
+          calActiveText.removeAttribute("error");
           devButton.setAttribute("visible", "");
           subButton.setAttribute("hidden", "");
           inputText.setAttribute("hidden", "");
-          localStorage.setItem('compass-cal', checkLink(inputText.value));
+          localStorage.setItem('compass-cal', formatCalLink(inputText.value));
           document.getElementById("header-classSync").style.display = 'block';
           writeNext();
         }
         return response.text();
       })
       .catch(error => {
-        console.error('Error:', error);
-        incorrectText.innerHTML = "Did you input the correct link? Click the <b><a href='/ClassSync.pdf' style='color: #c94545;'>guide</a></b> for help.";
+        consol.error("Link error", "ClassSync-Setup");
+        incorrectText.innerHTML = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
       });
   } else {
-    incorrectText.innerHTML = "Please enter a link. Check the <b><a href='/ClassSync.pdf' style='color: #c94545;'>guide</a></b> for help.";
+    incorrectText.innerHTML = "Please enter a link. Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
   }
+});
+
+inputText.addEventListener("keydown", function (e) {
+  if (e.code === "Enter") subButton.click();
 });
 
 devButton.addEventListener('click', (event) => {
   event.preventDefault();
+  calActive = false;
   localStorage.removeItem('compass-cal');
   calActiveText.textContent = "✗ Not Active";
   calActiveText.removeAttribute("active");
+  calActiveText.removeAttribute("error");
   devButton.removeAttribute("visible");
   subButton.removeAttribute("hidden");
   inputText.removeAttribute("hidden");
@@ -170,6 +220,7 @@ function writeNext() {
     document.getElementById("classSync").innerText = "";
     return null;
   }
+  if (!isOnline) return;
   fetch(localStorage.getItem('compass-cal'))
     .then(response => {
       if (!response.ok) {
@@ -241,7 +292,6 @@ function writeNext() {
       getEvents()
       joinEvents()
       if (nextEvent != null && nextEvent.startraw.getTime() < new Date().getTime()) {
-        console.log(nextEvent)
         nextEvent = null;
         getEvents()
       }
@@ -257,18 +307,22 @@ function writeNext() {
       } else {
         document.getElementById("classSync").innerText = 'No more events for today.'
       }
-      let t = setTimeout(function() { writeNext() }, 60000);
+      t = setTimeout(writeNext, 60000);
     })
     .catch(error => {
-      console.error(error)
-      document.getElementById("classSync").innerHTML = 'Network Disconnected<p style="font-size:0.5em;">Retrying...</p>';
-      writeNext()
+      consol.error(error, "ClassSync")
+      document.getElementById("classSync").innerHTML = 'ClassSync Error<p style="font-size:0.5em;">An error occured...</p>';
     })
 }
-
-function checkLink(link) {
+let t = setTimeout(function() {return}, 60000);
+clearTimeout(t);
+function formatCalLink(link, noscheme = false) {
   if (link.startsWith('webcal://')) {
-    return 'https://' + link.slice(9);
+    return (noscheme ? '' : 'https://') + link.slice(9);
+  } else if (link.startsWith('http://')) {
+    return (noscheme ? '' : 'https://') + link.slice(7);
+  } else if (link.startsWith('https://') && noscheme) {
+    return link.slice(8);
   }
   return link;
 }
@@ -284,6 +338,7 @@ function parseICSDateTimeString(dateTimeString) {
   return date;
 }
 if (localStorage.getItem('compass-cal')) {
+  calActive = true;
   calActiveText.textContent = "✓ Active";
   calActiveText.setAttribute("active", "");
   devButton.setAttribute("visible", "");
@@ -331,8 +386,9 @@ function closeSettingsMenu() {
     settingsContainer.style.display = 'none';
   }, 300);
 }
+document.getElementById("settings-close").addEventListener("click",closeSettingsMenu)
 document.getElementById("customise-page").addEventListener('click', (event) => {
-  window.open("/customise", '_self');
+  window.open("./customise", '_self');
 })
 function loadLS() {
   bl.buttons.forEach(v=>{
@@ -355,14 +411,15 @@ function loadLS() {
 
 if (localStorage.getItem("buttonlayout")) {
   bl = JSON.parse(localStorage.getItem("buttonlayout"));
-  fetch("/customise/def.json")
+  fetch("./customise/def.json")
     .then(function(res) {
       return res.text()
     })
     .then(function(defbl) {
       if (bl.v != JSON.parse(defbl).v) {
-        delete defbl.all;
-        localStorage.setItem("buttonlayout", defbl);
+        let vdefbl = JSON.parse(def)
+        delete vdefbl.all;
+        localStorage.setItem("buttonlayout", JSON.stringify(vdefbl));
         bl = JSON.parse(localStorage.getItem("buttonlayout"));
         loadLS();
       } else {
@@ -376,17 +433,18 @@ if (localStorage.getItem("buttonlayout")) {
       }
     });
 } else {
-  fetch("/customise/def.json")
+  fetch("./customise/def.json")
     .then(function(res) {
         return res.text()
     })
     .then(function(def) {
-      delete def.all;
-      localStorage.setItem("buttonlayout", def)
+      let vdef = JSON.parse(def)
+      delete vdef.all;
+      localStorage.setItem("buttonlayout", JSON.stringify(vdef));
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
     });
 }
 
-console.log("                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   `  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            `----'       `---`     ")
-console.log(`Intranet ${version}`)
+console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
+})();
