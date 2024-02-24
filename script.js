@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.1";
+const version = "v1.6.2";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -408,30 +408,63 @@ function loadLS() {
     },500)
   })
 }
-
+function jsonCheck(json) {
+  try {
+    JSON.parse(json)
+  } catch {
+    return false
+  }
+  return true
+}
 if (localStorage.getItem("buttonlayout")) {
-  bl = JSON.parse(localStorage.getItem("buttonlayout"));
-  fetch("./customise/def.json")
-    .then(function(res) {
-      return res.text()
-    })
-    .then(function(defbl) {
-      if (bl.v != JSON.parse(defbl).v) {
-        let vdefbl = JSON.parse(def)
-        delete vdefbl.all;
-        localStorage.setItem("buttonlayout", JSON.stringify(vdefbl));
-        bl = JSON.parse(localStorage.getItem("buttonlayout"));
-        loadLS();
-      } else {
-        bl.buttons.forEach((b)=>{
-          if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
-          if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
-          if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
-        })
-        localStorage.setItem("buttonlayout", JSON.stringify(bl));
-        loadLS();
-      }
-    });
+  if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
+    consol.log("Failed to parse buttonlayout, resetting", "Buttons")
+    showAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
+    localStorage.removeItem("buttonlayout")
+    fetch("/customise/def.json")
+      .then(function(res) {
+        return res.text()
+      })
+      .then(function(def) {
+        let vdef = JSON.parse(def)
+        delete vdef.all;
+        localStorage.setItem("buttonlayout", JSON.stringify(vdef))
+        bl = JSON.parse(localStorage.getItem("buttonlayout"))
+        loadLS()
+      })
+      .catch(function(e) {
+        consol.error("Failed to fetch buttons", "Buttons")
+        showAlert("Failed to load buttons", "The server didn't respond.")
+      });
+  } else {
+    bl = JSON.parse(localStorage.getItem("buttonlayout"));
+    fetch("./customise/def.json")
+      .then(function(res) {
+        return res.text()
+      })
+      .then(function(defbl) {
+        if (bl.v != JSON.parse(defbl).v) {
+          let vdefbl = JSON.parse(def)
+          delete vdefbl.all;
+          localStorage.setItem("buttonlayout", JSON.stringify(vdefbl));
+          bl = JSON.parse(localStorage.getItem("buttonlayout"));
+          loadLS();
+        } else {
+          bl.buttons.forEach((b)=>{
+            if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
+            if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
+            if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
+          })
+          localStorage.setItem("buttonlayout", JSON.stringify(bl));
+          loadLS();
+        }
+      })
+      .catch(function(e) {
+        consol.error("Failed to fetch buttons", "Buttons")
+        showAlert("Failed to load buttons", "The server didn't respond.")
+      });
+  }
+  
 } else {
   fetch("./customise/def.json")
     .then(function(res) {
@@ -443,7 +476,32 @@ if (localStorage.getItem("buttonlayout")) {
       localStorage.setItem("buttonlayout", JSON.stringify(vdef));
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       loadLS()
+    })
+    .catch(function(err) {
+      consol.error(err, "Buttons")
+      showAlert("Failed to load buttons", "The server didn't respond.")
     });
+}
+
+function showAlert(title, message) {
+  document.getElementById('alert-title').innerText = title;
+  document.getElementById('alert-message').innerText = message;
+  document.querySelector('.alert-container').style.display = '';
+  document.querySelector('.alert-overlay').style.opacity = 1;
+  document.querySelector('.alert-background').style.transform = 'translate(-50%, -50%) scale(1)';
+  function closeAlert() {
+    document.querySelector('.alert-overlay').removeEventListener('click', closeAlert);
+    document.getElementById('alert-ok').removeEventListener('click', closeAlert);
+    document.querySelector('.alert-overlay').style.opacity = 0;
+    document.querySelector('.alert-background').style.transform = 'translate(-50%, -50%) scale(0)';
+    setTimeout(() => {
+      document.querySelector('.alert-container').style.display = 'none';
+      document.getElementById('alert-title').innerText = "Alert";
+      document.getElementById('alert-message').innerText = "Message";
+    }, 300);
+  }
+  document.querySelector('.alert-overlay').addEventListener('click', closeAlert);
+  document.getElementById('alert-ok').addEventListener('click', closeAlert);
 }
 
 console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
