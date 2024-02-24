@@ -229,6 +229,7 @@ if (localStorage.getItem("buttonlayout")) {
         let vdef = JSON.parse(def)
         delete vdef.all;
         localStorage.setItem("buttonlayout", JSON.stringify(vdef))
+        localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS()
       })
