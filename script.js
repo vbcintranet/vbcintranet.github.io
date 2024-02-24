@@ -428,8 +428,8 @@ if (localStorage.getItem("buttonlayout")) {
       .then(function(def) {
         let vdef = JSON.parse(def)
         delete vdef.all;
-        localStorage.setItem("buttonlayout", JSON.stringify(vdef))
         localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
+        localStorage.setItem("buttonlayout", JSON.stringify(vdef))
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS()
       })
