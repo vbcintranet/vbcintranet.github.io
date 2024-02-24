@@ -220,6 +220,7 @@ if (localStorage.getItem("buttonlayout")) {
   if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
     consol.log("Failed to parse buttonlayout, resetting", "Buttons")
     showAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
+    localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
     localStorage.removeItem("buttonlayout")
     fetch("/customise/def.json")
       .then(function(res) {
@@ -228,7 +229,6 @@ if (localStorage.getItem("buttonlayout")) {
       .then(function(def) {
         let vdef = JSON.parse(def)
         delete vdef.all;
-        localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
         localStorage.setItem("buttonlayout", JSON.stringify(vdef))
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS()
