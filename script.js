@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.2";
+const version = "v1.6.3";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -215,15 +215,18 @@ devButton.addEventListener('click', (event) => {
   inputText.removeAttribute("hidden");
   document.getElementById("header-classSync").style.display = 'none';
 });
+writeNext()
 function writeNext() {
   if (!localStorage.getItem('compass-cal')) {
     document.getElementById("classSync").innerText = "";
     return null;
   }
   if (!isOnline) return;
+  let sts = '';
   fetch(localStorage.getItem('compass-cal'))
     .then(response => {
       if (!response.ok) {
+        sts = response.status;
         throw new Error(`Failed to fetch the file. Status: ${response.status}`);
       }
       return response.text();
@@ -246,6 +249,7 @@ function writeNext() {
             if (nextEventDate === null || (eventDate < nextEventDate && eventDate > currentTime)) {
               nextEvent = eventData;
               nextEventDate = eventDate;
+              nextEvent.split = false;
             }
           } else if (line.startsWith('SUMMARY:')) {
             const summary = line.substring(8);
@@ -286,6 +290,26 @@ function writeNext() {
             nextEvent.startraw = e.startraw;
             nextEvent.start = e.startraw.toLocaleTimeString();
             nextEvent.endDate = e.startraw.toLocaleString();
+          } else if (nextEvent.endraw.getTime() == e.startraw.getTime()) {
+            if (e.location != nextEvent.location) {
+              nextEvent.summary = `${nextEvent.summary} (in ${nextEvent.location}) and ${e.summary} (in ${e.location})`;
+              nextEvent.location = "";
+            }
+            nextEvent.endraw = e.endraw;
+            nextEvent.end = e.endraw.toLocaleTimeString();
+            nextEvent.endDate = e.endraw.toLocaleString();
+            nextEvent.split = true;
+            nextEvent.splitTime = e.startraw;
+          } else if (nextEvent.startraw.getTime() == e.endraw.getTime()) {
+            if (e.location != nextEvent.location) {
+              nextEvent.summary = `${nextEvent.summary} (in ${nextEvent.location}) and ${e.summary} (in ${e.location})`;
+              nextEvent.location = "";
+            }
+            nextEvent.startraw = e.startraw;
+            nextEvent.start = e.startraw.toLocaleTimeString();
+            nextEvent.startDate = e.startraw.toLocaleString();
+            nextEvent.split = true;
+            nextEvent.splitTime = e.endraw;
           }
         })
       }
@@ -297,13 +321,9 @@ function writeNext() {
       }
       
       var endTime = new Date();
-      endTime.setHours(23, 59, 59, 0);
+      endTime.setHours(43, 59, 59, 0);
       if (nextEvent && nextEvent.start && nextEvent.startraw.getTime() <= endTime.getTime()) {
-        if (nextEvent.location) {
-          document.getElementById("classSync").innerHTML = `Next: ${nextEvent.summary} in ${nextEvent.location}. <p style="font-size:0.5em;">${nextEvent.start}-${nextEvent.end}</p>`
-        } else {
-          document.getElementById("classSync").innerHTML = `Next: ${nextEvent.summary}. <p style="font-size:0.5em;">${nextEvent.start}-${nextEvent.end}</p>`
-        }
+        document.getElementById("classSync").innerHTML = `Next: ${nextEvent.summary}${nextEvent.location ? ` in ${nextEvent.location}` : ''}. <p style="font-size:0.5em;">${nextEvent.start}-${nextEvent.end}${nextEvent.split ? ` (split at ${nextEvent.splitTime.toLocaleTimeString()})` : ``}</p>`
       } else {
         document.getElementById("classSync").innerText = 'No more events for today.'
       }
@@ -311,7 +331,8 @@ function writeNext() {
     })
     .catch(error => {
       consol.error(error, "ClassSync")
-      document.getElementById("classSync").innerHTML = 'ClassSync Error<p style="font-size:0.5em;">An error occured...</p>';
+      consol.log(sts)
+      document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:0.5em;">${sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`}</p>`;
     })
 }
 let t = setTimeout(function() {return}, 60000);
