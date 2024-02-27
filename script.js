@@ -215,7 +215,7 @@ devButton.addEventListener('click', (event) => {
   inputText.removeAttribute("hidden");
   document.getElementById("header-classSync").style.display = 'none';
 });
-writeNext()
+
 function writeNext() {
   if (!localStorage.getItem('compass-cal')) {
     document.getElementById("classSync").innerText = "";
@@ -258,13 +258,13 @@ function writeNext() {
             const startDateString = line.substring(8);
             const startDate = parseICSDateTimeString(startDateString);
             eventDate = startDate;
-            eventData.start = startDate.toLocaleTimeString();
+            eventData.start = startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
             eventData.startraw = startDate;
             eventData.startDate = startDate.toLocaleString();
           } else if (line.startsWith('DTEND:')) {
             const endDateString = line.substring(6);
             const endDate = parseICSDateTimeString(endDateString);
-            eventData.end = endDate.toLocaleTimeString();
+            eventData.end = endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
             eventData.endraw = endDate;
             eventData.endDate = endDate.toLocaleString();
           } else if (line.startsWith('LOCATION:')) {
@@ -281,35 +281,50 @@ function writeNext() {
               nextEvent.location += ` (B: ${e.location})`
             }
             nextEvent.endraw = e.endraw;
-            nextEvent.end = e.endraw.toLocaleTimeString();
+            nextEvent.end = e.endraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
             nextEvent.endDate = e.endraw.toLocaleString();
+            return;
           } else if (nextEvent.startraw.getTime() == e.endraw.getTime() && nextEvent.summary == e.summary) {
             if (e.location != nextEvent.location) {
               nextEvent.location += ` (B: ${e.location})`
             }
             nextEvent.startraw = e.startraw;
-            nextEvent.start = e.startraw.toLocaleTimeString();
+            nextEvent.start = e.startraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
             nextEvent.endDate = e.startraw.toLocaleString();
+            return;
           } else if (nextEvent.endraw.getTime() == e.startraw.getTime()) {
+            if (nextEvent.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime()) {
+              console.log("overrided")
+              nextEvent = e;
+              return;
+            }
             if (e.location != nextEvent.location) {
               nextEvent.summary = `${nextEvent.summary} (in ${nextEvent.location}) and ${e.summary} (in ${e.location})`;
               nextEvent.location = "";
+            } else {
+              nextEvent.summary = `${nextEvent.summary} and ${e.summary}`;
             }
             nextEvent.endraw = e.endraw;
-            nextEvent.end = e.endraw.toLocaleTimeString();
+            nextEvent.end = e.endraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
             nextEvent.endDate = e.endraw.toLocaleString();
             nextEvent.split = true;
             nextEvent.splitTime = e.startraw;
+            console.log("split next")
+            return;
           } else if (nextEvent.startraw.getTime() == e.endraw.getTime()) {
             if (e.location != nextEvent.location) {
               nextEvent.summary = `${nextEvent.summary} (in ${nextEvent.location}) and ${e.summary} (in ${e.location})`;
               nextEvent.location = "";
+            } else {
+              nextEvent.summary = `${nextEvent.summary} and ${e.summary}`;
             }
             nextEvent.startraw = e.startraw;
-            nextEvent.start = e.startraw.toLocaleTimeString();
+            nextEvent.start = e.startraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
             nextEvent.startDate = e.startraw.toLocaleString();
             nextEvent.split = true;
             nextEvent.splitTime = e.endraw;
+            console.log("split back")
+            return;
           }
         })
       }
@@ -321,7 +336,7 @@ function writeNext() {
       }
       
       var endTime = new Date();
-      endTime.setHours(43, 59, 59, 0);
+      endTime.setHours(23, 59, 59, 0);
       if (nextEvent && nextEvent.start && nextEvent.startraw.getTime() <= endTime.getTime()) {
         document.getElementById("classSync").innerHTML = `Next: ${nextEvent.summary}${nextEvent.location ? ` in ${nextEvent.location}` : ''}. <p style="font-size:0.5em;">${nextEvent.start}-${nextEvent.end}${nextEvent.split ? ` (split at ${nextEvent.splitTime.toLocaleTimeString()})` : ``}</p>`
       } else {
@@ -331,7 +346,6 @@ function writeNext() {
     })
     .catch(error => {
       consol.error(error, "ClassSync")
-      consol.log(sts)
       document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:0.5em;">${sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`}</p>`;
     })
 }
