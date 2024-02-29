@@ -294,7 +294,6 @@ function writeNext() {
             return;
           } else if (nextEvent.endraw.getTime() == e.startraw.getTime()) {
             if (nextEvent.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime()) {
-              console.log("overrided")
               nextEvent = e;
               return;
             }
@@ -309,7 +308,6 @@ function writeNext() {
             nextEvent.endDate = e.endraw.toLocaleString();
             nextEvent.split = true;
             nextEvent.splitTime = e.startraw;
-            console.log("split next")
             return;
           } else if (nextEvent.startraw.getTime() == e.endraw.getTime()) {
             if (e.location != nextEvent.location) {
@@ -323,7 +321,6 @@ function writeNext() {
             nextEvent.startDate = e.startraw.toLocaleString();
             nextEvent.split = true;
             nextEvent.splitTime = e.endraw;
-            console.log("split back")
             return;
           }
         })
