@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.3";
+const version = "v1.6.4";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -401,6 +401,7 @@ settingsBackground.addEventListener('click', (event) => {
 });
 
 function openSettingsMenu() {
+  document.addEventListener('keydown', keyCloseSM);
   if (!settingsOpen) {
     canSearch = false;
     settingsContainer.style = ''
@@ -412,7 +413,8 @@ function openSettingsMenu() {
   }
 }
 
-function closeSettingsMenu() {
+function closeSettingsMenu(e) {
+  document.removeEventListener('keydown', keyCloseSM);
   settingsOpen = false
   canSearch = true;
   settingsBackground.classList.remove('active');
@@ -421,6 +423,13 @@ function closeSettingsMenu() {
     settingsContainer.style.display = 'none';
   }, 300);
 }
+
+function keyCloseSM(e) {
+  if (e.key == "Escape") {
+    closeSettingsMenu()
+  }
+}
+
 document.getElementById("settings-close").addEventListener("click",closeSettingsMenu)
 document.getElementById("customise-page").addEventListener('click', (event) => {
   window.open("./customise", '_self');
@@ -525,7 +534,8 @@ function showAlert(title, message) {
   document.querySelector('.alert-container').style.display = '';
   document.querySelector('.alert-overlay').style.opacity = 1;
   document.querySelector('.alert-background').style.transform = 'translate(-50%, -50%) scale(1)';
-  function closeAlert() {
+  function closeAlert(e) {
+    document.removeEventListener('keydown', keyCloseA);
     document.querySelector('.alert-overlay').removeEventListener('click', closeAlert);
     document.getElementById('alert-ok').removeEventListener('click', closeAlert);
     document.querySelector('.alert-overlay').style.opacity = 0;
@@ -536,8 +546,14 @@ function showAlert(title, message) {
       document.getElementById('alert-message').innerText = "Message";
     }, 300);
   }
+  function keyCloseA(e) {
+    if (e.key == "Escape" || e.key == "Enter") {
+      closeAlert()
+    }
+  } 
   document.querySelector('.alert-overlay').addEventListener('click', closeAlert);
   document.getElementById('alert-ok').addEventListener('click', closeAlert);
+  document.addEventListener('keydown', keyCloseA);
 }
 
 console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
