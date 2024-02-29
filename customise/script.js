@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.3";
+const version = "v1.6.4";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -93,6 +93,7 @@ addBackground.addEventListener('click', (event) => {
 
 function openAddMenu() {
   if (!addOpen) {
+    document.addEventListener('keydown', keyCloseAM);
     canSearch = false;
     addContainer.style = ''
     setTimeout(() => {
@@ -104,6 +105,7 @@ function openAddMenu() {
 }
 
 function closeAddMenu() {
+  document.removeEventListener('keydown', keyCloseAM);
   addOpen = false
   canSearch = true;
   addBackground.classList.remove('active');
@@ -113,6 +115,12 @@ function closeAddMenu() {
   }, 300);
 }
 document.getElementById("add-close").addEventListener("click",closeAddMenu);
+
+function keyCloseAM(e) {
+  if (e.key == "Escape") {
+    closeAddMenu()
+  }
+}
 
 function updateLS(a, id, name, icon, url, param, presetId) {
   if (a && name && icon && url && param && bl.buttons.length < 25) {
