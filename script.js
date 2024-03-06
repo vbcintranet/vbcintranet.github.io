@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.5";
+const version = "v1.6.6";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -328,8 +328,14 @@ function writeNext() {
       getEvents()
       joinEvents()
       if (nextEvent != null && nextEvent.startraw.getTime() < new Date().getTime()) {
+        let oldEvent = nextEvent;
         nextEvent = null;
-        getEvents()
+        allEvents.forEach(e=>{
+          if (nextEvent == null || ((nextEvent.startraw.getTime() < new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < nextEvent.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
+            nextEvent = e;
+          }
+        })
+        joinEvents()
       }
       
       var endTime = new Date();
