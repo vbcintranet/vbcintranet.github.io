@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.6";
+const version = "v1.6.7";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -333,6 +333,8 @@ function writeNext() {
         allEvents.forEach(e=>{
           if (nextEvent == null || ((nextEvent.startraw.getTime() < new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < nextEvent.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
             nextEvent = e;
+          } else if (oldEvent.split && oldEvent.splitTime.getTime() == e.startraw.getTime()) {
+            nextEvent = e;
           }
         })
         joinEvents()
@@ -553,7 +555,7 @@ function showAlert(title, message) {
     if (e.key == "Escape" || e.key == "Enter") {
       closeAlert()
     }
-  } 
+  }
   document.querySelector('.alert-overlay').addEventListener('click', closeAlert);
   document.getElementById('alert-ok').addEventListener('click', closeAlert);
   document.addEventListener('keydown', keyCloseA);
