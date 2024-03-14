@@ -174,8 +174,11 @@ a {
   justify-content: center;
   align-items: center;
 }
-#preset-error {
+#preset-error, #cards-error {
   color: #c94545;
+}
+#cards-error {
+  text-align: center;
 }
 .cardname h3 {
   font-size: 15px;
