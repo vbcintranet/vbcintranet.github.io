@@ -277,8 +277,11 @@ h1 {
 #cal-submit[hidden], #cal-input[hidden], #cal-deactivate {
   display: none;
 }
-#cal-incorrect, .settings-active {
+#cal-incorrect, .settings-active, #cards-error {
   color: #c94545;
+}
+#cards-error {
+  text-align: center;
 }
 .settings-active {
   transition: color 1s ease;
