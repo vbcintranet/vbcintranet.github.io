@@ -258,13 +258,13 @@ function writeNext() {
             const startDateString = line.substring(8);
             const startDate = parseICSDateTimeString(startDateString);
             eventDate = startDate;
-            eventData.start = startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/^0+/, '');
+            eventData.start = parseDate(startDate);
             eventData.startraw = startDate;
             eventData.startDate = startDate.toLocaleString();
           } else if (line.startsWith('DTEND:')) {
             const endDateString = line.substring(6);
             const endDate = parseICSDateTimeString(endDateString);
-            eventData.end = endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/^0+/, '');
+            eventData.end = parseDate(endDate);
             eventData.endraw = endDate;
             eventData.endDate = endDate.toLocaleString();
           } else if (line.startsWith('LOCATION:')) {
@@ -281,7 +281,7 @@ function writeNext() {
               nextEvent.location += ` (B: ${e.location})`
             }
             nextEvent.endraw = e.endraw;
-            nextEvent.end = e.endraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/^0+/, '');
+            nextEvent.end = parseDate(e.endraw);
             nextEvent.endDate = e.endraw.toLocaleString();
             return;
           } else if (nextEvent.startraw.getTime() == e.endraw.getTime() && nextEvent.summary == e.summary) {
@@ -289,7 +289,7 @@ function writeNext() {
               nextEvent.location += ` (B: ${e.location})`
             }
             nextEvent.startraw = e.startraw;
-            nextEvent.start = e.startraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/^0+/, '');
+            nextEvent.start = parseDate(e.startraw);
             nextEvent.endDate = e.startraw.toLocaleString();
             return;
           } else if (nextEvent.endraw.getTime() == e.startraw.getTime()) {
@@ -304,7 +304,7 @@ function writeNext() {
               nextEvent.summary = `${nextEvent.summary} and ${e.summary}`;
             }
             nextEvent.endraw = e.endraw;
-            nextEvent.end = e.endraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}).replace(/^0+/, '');
+            nextEvent.end = parseDate(e.endraw);
             nextEvent.endDate = e.endraw.toLocaleString();
             nextEvent.split = true;
             nextEvent.splitTime = e.startraw;
@@ -317,7 +317,7 @@ function writeNext() {
               nextEvent.summary = `${nextEvent.summary} and ${e.summary}`;
             }
             nextEvent.startraw = e.startraw;
-            nextEvent.start = e.startraw.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}).replace(/^0+/, '');
+            nextEvent.start = parseDate(e.startraw);
             nextEvent.startDate = e.startraw.toLocaleString();
             nextEvent.split = true;
             nextEvent.splitTime = e.endraw;
@@ -343,7 +343,7 @@ function writeNext() {
       var endTime = new Date();
       endTime.setHours(23, 59, 59, 0);
       if (nextEvent && nextEvent.start && nextEvent.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = `Next: ${nextEvent.summary}${nextEvent.location ? ` in ${nextEvent.location}` : ''}. <p style="font-size:0.5em;">${nextEvent.start.slice(-2) == nextEvent.end.slice(-2) ? nextEvent.start.slice(0, -3) : nextEvent.start}-${nextEvent.end}${nextEvent.split ? ` (split at ${nextEvent.splitTime.toLocaleTimeString().replace(/^0+/, '')})` : ``}</p>`
+        document.getElementById("classSync").innerHTML = `Next: ${nextEvent.summary}${nextEvent.location ? ` in ${nextEvent.location}` : ''}. <p style="font-size:0.5em;">${nextEvent.start.slice(-2) == nextEvent.end.slice(-2) ? nextEvent.start.slice(0, -3) : nextEvent.start}-${nextEvent.end}${nextEvent.split ? ` (split at ${parseDate(nextEvent.splitTime)})` : ``}</p>`
       } else {
         document.getElementById("classSync").innerText = 'No more classes for today.'
       }
@@ -365,6 +365,10 @@ function formatCalLink(link, noscheme = false) {
     return link.slice(8);
   }
   return link;
+}
+
+function parseDate(date) {
+  return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).startsWith('00') ? "12" + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).substring(2) : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/^0+/, '');
 }
 
 function parseICSDateTimeString(dateTimeString) {
