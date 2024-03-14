@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.8";
+const version = "v1.6.9";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -440,6 +440,10 @@ document.getElementById("customise-page").addEventListener('click', (event) => {
   window.open("./customise", '_self');
 })
 function loadLS() {
+  if (bl.buttons.length == 0) {
+    document.getElementById("cards-error").innerHTML = "<h2>You don't have any buttons</h2><h3>Visit the <a href='/customise' style='cursor:pointer;font-weight:bold;color:#b53e3e;'>customisation centre</a> to add some.</h3>";
+    return;
+  }
   bl.buttons.forEach(v=>{
     document.querySelector(".cards").innerHTML += `<div class="card" data-href="${v.url}" data-id="${v.id}" ${v.param ? `data-style="self"` : ""}><img src="${v.icon}"><div class="overlay"><h3>${v.name}</h3></div></div>`
     setTimeout(()=>{
@@ -485,6 +489,7 @@ if (localStorage.getItem("buttonlayout")) {
       .catch(function(e) {
         consol.error("Failed to fetch buttons", "Buttons")
         showAlert("Failed to load buttons", "The server didn't respond.")
+        document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
       });
   } else {
     bl = JSON.parse(localStorage.getItem("buttonlayout"));
@@ -512,6 +517,7 @@ if (localStorage.getItem("buttonlayout")) {
       .catch(function(e) {
         consol.error("Failed to fetch buttons", "Buttons")
         showAlert("Failed to load buttons", "The server didn't respond.")
+        document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
       });
   }
   
