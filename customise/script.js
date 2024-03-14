@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.6.8";
+const version = "v1.6.9";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -79,9 +79,7 @@ const addBackground = document.querySelector('.add-background');
 const addButton = document.querySelector('.plus');
 let addOpen = false
 
-addButton.addEventListener('click', () => {
-  openAddMenu();
-});
+addButton.addEventListener('click', openAddMenu);
 
 addOverlay.addEventListener('click', () => {
   closeAddMenu();
@@ -95,23 +93,25 @@ function openAddMenu() {
   if (!addOpen) {
     document.addEventListener('keydown', keyCloseAM);
     canSearch = false;
+    addOpen = true;
     addContainer.style = ''
     setTimeout(() => {
       addBackground.classList.add('active');
       addOverlay.classList.add('active');
-      addOpen = true
     }, 1);
   }
 }
 
 function closeAddMenu() {
   document.removeEventListener('keydown', keyCloseAM);
-  addOpen = false
   canSearch = true;
   addBackground.classList.remove('active');
   addOverlay.classList.remove('active');
   setTimeout(() => {
+    addBackground.classList.remove('active');
+    addOverlay.classList.remove('active');
     addContainer.style.display = 'none';
+    addOpen = false;
   }, 300);
 }
 document.getElementById("add-close").addEventListener("click",closeAddMenu);
@@ -154,17 +154,20 @@ function loadLS() {
     }
   });
   bl.buttons.forEach(v=>{
-      buttonContainer.innerHTML += `<div class="card" data-href="${v.url}" data-id="${v.id}"><img src="${v.icon}"><div class="remove">-</div><div class="cardname"><h3>${v.name}</h3></div></div>`
-    setTimeout(()=>{
-      document.querySelector(`[data-id="${v.id}"]`).children[1].addEventListener('mouseup', (e) => {
-        if (e.button == 1 || e.button == 0) {
-          const id = v.id;
-          updateLS(false, id)
-          loadLS()
-        }
-      });
-    },500)
-  })
+    var button = document.createElement('div')
+    button.classList.add("card")
+    button.setAttribute("data-href", v.url)
+    button.setAttribute("data-id", v.id)
+    button.innerHTML = `<img src="${v.icon}"><div class="remove">-</div><div class="cardname"><h3>${v.name}</h3></div>`
+    button.children[1].addEventListener('mouseup', (e) => {
+      if (e.button == 1 || e.button == 0) {
+        const id = v.id;
+        updateLS(false, id)
+        loadLS()
+      }
+    });
+    document.querySelector('.cards').appendChild(button)
+  });
 }
 
 (()=>{
@@ -207,6 +210,7 @@ function loadLS() {
     .catch(function(e) {
       consol.error("Failed to fetch pesets", "Presets")
       showAlert("Failed to load presets", "The server didn't respond.")
+      document.getElementById("preset-error").innerHTML = "Presets failed to load. Please <a onclick='window.window.reloadPage()' style='color: #c94545;font-weight:bold;cursor:pointer;'>refresh</a> the page or try again later."
     });
 })();
 /*Array.from(document.querySelector('.cards').children).forEach(function(child) {
@@ -243,6 +247,8 @@ if (localStorage.getItem("buttonlayout")) {
       })
       .catch(function(e) {
         consol.error("Failed to fetch buttons", "Buttons")
+        showAlert("Failed to load buttons", "The server didn't respond.")
+        document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
       });
   } else {
     bl = JSON.parse(localStorage.getItem("buttonlayout"))
@@ -263,6 +269,7 @@ if (localStorage.getItem("buttonlayout")) {
     .catch(function(e) {
       consol.error("Failed to fetch buttons", "Buttons")
       showAlert("Failed to load buttons", "The server didn't respond.")
+      document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
     });
 }
 
@@ -281,6 +288,7 @@ document.getElementById("reset").addEventListener("mouseup",()=>{
     .catch(function(e) {
       consol.error("Failed to fetch buttons", "Buttons")
       showAlert("Failed to load buttons", "The server didn't respond.")
+      document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
     });
 })
 
