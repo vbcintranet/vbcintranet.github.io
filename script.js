@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.0";
+  const version = "v1.7.1";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -222,6 +222,9 @@
       return null;
     }
     if (!isOnline) return;
+    calActiveText.textContent = "✓ Active";
+    calActiveText.setAttribute("active", "");
+    calActiveText.removeAttribute("error");
     let sts = '';
     fetch(localStorage.getItem('compass-cal'))
       .then(response => {
@@ -235,6 +238,8 @@
         const lines = fileContents.split('\n');
         var endTime = new Date();
         endTime.setHours(23, 59, 59, 0);
+        var startTime = new Date();
+        startTime.setHours(0, 0, 0, 0);
         const allEvents = [];
         const todayEvents = [];
         const joinedEvents = [];
@@ -248,7 +253,7 @@
               eventData = {};
             } else if (line.startsWith('END:VEVENT')) {
               allEvents.push(eventData)
-              if (eventData.startraw.getTime() >= new Date().getTime() && eventData.startraw.getTime() <= endTime.getTime()) todayEvents.push(eventData);
+              if (eventData.startraw.getTime() >= startTime.getTime() && eventData.startraw.getTime() <= endTime.getTime()) todayEvents.push(eventData);
             } else if (line.startsWith('SUMMARY:')) {
               const summary = line.substring(8);
               eventData.summary = summary.trim();
@@ -331,6 +336,18 @@
               lastEvent = e;
             }
           })
+
+          let toBeRemoved = [];
+          joinedEvents.forEach(e=>{
+            if (e.endraw.getTime() < new Date().getTime()) {
+              toBeRemoved.push(e);
+            } else if (e.startraw.getTime() < new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
+              e.summary = `Now: ${e.summary}`;
+            }
+          })
+          toBeRemoved.forEach(e=>{
+            joinedEvents.splice(joinedEvents.indexOf(e), 1);
+          })
         }
 
         getEvents()
@@ -343,6 +360,9 @@
               nextEvent = e;
             }
           })
+          if (nextEvent.startraw.getTime() < new Date().getTime()) {
+            nextEvent = null;
+          }
         }
         
         if (nextEvent && nextEvent.start && nextEvent.startraw.getTime() <= endTime.getTime()) {
@@ -376,6 +396,9 @@
         document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:0.5em;">${sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`}</p>`;
         document.getElementById('sp-nc').style.display = 'block';
         document.getElementById('sp-nc').innerText = sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`;
+        calActiveText.textContent = "⚠ Error";
+        calActiveText.setAttribute("error", "");
+        calActiveText.removeAttribute("active");
       })
   }
   let t = setTimeout(function() {return}, 60000);
@@ -417,19 +440,29 @@
   }
   function setupSP() {
     let spOpen = false;
-    function openSP() {
+    let last = {x:0,y:0};
+    function openSP(e) {
+      last.x = e.clientX;
+      last.y = e.clientY;
+      document.querySelector('.sneakpeak-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
+      document.querySelector('.sneakpeak-background').style.left = e.clientX+"px";
+      document.querySelector('.sneakpeak-background').style.top = e.clientY+"px";
       document.querySelector('.sneakpeak-container').style.display = '';
       document.addEventListener('keydown', keyCloseSP);
       setTimeout(() => {
         document.querySelector('.sneakpeak-overlay').style.opacity = 1;
-        document.querySelector('.sneakpeak-background').classList.add('active');
+        document.querySelector('.sneakpeak-background').style.transform = 'scale(1)';
+        document.querySelector('.sneakpeak-background').style.left = `64vw`;
+        document.querySelector('.sneakpeak-background').style.top = `5vh`;
       }, 100);
       spOpen = true;
     }
     function closeSP() {
       document.querySelector('.sneakpeak-container').style.display = 'block';
       document.querySelector('.sneakpeak-overlay').style.opacity = 0;
-      document.querySelector('.sneakpeak-background').classList.remove('active');
+      document.querySelector('.sneakpeak-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
+      document.querySelector('.sneakpeak-background').style.left = last.x+"px";
+      document.querySelector('.sneakpeak-background').style.top = last.y+"px";
       document.removeEventListener('keydown', keyCloseSP);
       setTimeout(() => {
         document.querySelector('.sneakpeak-container').style.display = 'none';
@@ -441,11 +474,11 @@
         closeSP()
       }
     }
-    document.getElementById("classSync").addEventListener('click', (event) => {
+    document.getElementById("header-classSync").addEventListener('click', (event) => {
       if (spOpen) {
         closeSP();
       } else {
-        openSP();
+        openSP(event);
       }
     });
     document.getElementById('sneakpeak-close').addEventListener('click', closeSP);
