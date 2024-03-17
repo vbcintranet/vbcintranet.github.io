@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.7.0";
+const version = "v1.7.1";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -72,7 +72,6 @@ backBtn.addEventListener('click', (event) => {
   window.open('/', '_self');
 });
 
-const buttonContainer = document.querySelector('.cards');
 const addContainer = document.querySelector('.add-container');
 const addOverlay = document.querySelector('.add-overlay');
 const addBackground = document.querySelector('.add-background');
@@ -213,12 +212,6 @@ function loadLS() {
       document.getElementById("preset-error").innerHTML = "Presets failed to load. Please <a onclick='window.window.reloadPage()' style='color: #c94545;font-weight:bold;cursor:pointer;'>refresh</a> the page or try again later."
     });
 })();
-/*Array.from(document.querySelector('.cards').children).forEach(function(child) {
-  if (!child.classList.contains('plus')) {
-    document.querySelector('.cards').removeChild(child);
-  }
-});
-loadLS()*/
 function jsonCheck(json) {
   try {
     JSON.parse(json)
