@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.7.1";
+const version = "v1.7.2";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
