@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.1";
+  const version = "v1.7.2";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -130,10 +130,38 @@
   window.addEventListener('online', () => {
     consol.log("Reconnected", "Network");
     isOnline = true;
-    document.getElementById("classSync").innerHTML = 'Network reconnected<p style="font-size:0.5em;">Fetching info...</p>';
-    clearTimeout(t);
-    writeNext();
+
+    function internetAnim() {
+      document.getElementById('no-internet').children[1].style.display = "block";
+      document.getElementById('no-internet').children[0].style.animation = "none";
+      document.getElementById('no-internet').children[0].style.opacity = "1";
+      setTimeout(() => {
+        document.getElementById('no-internet').children[0].style.transition = "opacity 1s ease";
+        document.getElementById('no-internet').children[0].style.opacity = "0";
+        document.getElementById('no-internet').children[1].style.opacity = "1";
+        document.getElementById('no-internet').children[1].style.transform = "scale(1)";
+        setTimeout(() => {
+          document.getElementById('no-internet').children[1].style.opacity = "0";
+          setTimeout(() => {
+            document.getElementById('no-internet').children[1].style.display = "";
+            document.getElementById('no-internet').children[1].style.opacity = "";
+            document.getElementById('no-internet').children[0].style.animation = "";
+            document.getElementById('no-internet').children[0].style.opacity = "";
+            document.getElementById('no-internet').children[1].style.transform = "";
+            document.getElementById('no-internet').children[1].style.display = "";
+            document.getElementById('no-internet').style.display = "";
+          }, 1000);
+        }, 3000);
+      }, 100);
+    }
+    internetAnim();
+
     if (calActive) {
+      document.getElementById("classSync").innerHTML = 'Network reconnected<p style="font-size:0.5em;">Fetching info...</p>';
+      document.getElementById('sp-nc').style.display = 'none';
+      document.getElementById('sp-nc').innerText = 'No more classes for today.';
+      clearTimeout(t);
+      ClassSync();
       calActiveText.textContent = "✓ Active";
       calActiveText.setAttribute("active", "");
       calActiveText.removeAttribute("error");
@@ -142,9 +170,11 @@
   window.addEventListener('offline', () => {
     consol.warn("Running on offline mode", "Network");
     isOnline = false;
-    clearTimeout(t);
-    document.getElementById("classSync").innerHTML = 'Network disconnected<p style="font-size:0.5em;">Please reconnect</p>';
+    document.getElementById('no-internet').style.display = 'block';
     if (calActive) {
+      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:0.5em;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : `No more classes for today.<p style="font-size:0.5em;">Last updated at ${parseDate(events.timeChecked)}</p>`;
+      document.getElementById('sp-nc').style.display = 'block';
+      document.getElementById('sp-nc').innerText = last_events.next ? 'Warning: Network disconnected. Class data last updated at ' + parseDate(last_events.timeChecked) + '.' : 'Warning: Network disconnected. Class data last updated at ' + parseDate(last_events.timeChecked) + '.\nNo more classes for today.';
       calActiveText.textContent = "⚠ Network disconnected";
       calActiveText.setAttribute("error", "");
       calActiveText.removeAttribute("active");
@@ -186,7 +216,7 @@
             inputText.setAttribute("hidden", "");
             localStorage.setItem('compass-cal', formatCalLink(inputText.value));
             document.getElementById("header-classSync").style.display = 'block';
-            writeNext();
+            ClassSync();
           }
           return response.text();
         })
@@ -216,12 +246,71 @@
     document.getElementById("header-classSync").style.display = 'none';
   });
   
-  function writeNext() {
+  let last_events = {};
+
+  function ClassSync() {
     if (!localStorage.getItem('compass-cal')) {
       document.getElementById("classSync").innerText = "";
       return null;
     }
-    if (!isOnline) return;
+    if (!isOnline) {
+      let events = last_events;
+      let endTime = new Date();
+      endTime.setHours(23, 59, 59, 0);
+      let startTime = new Date();
+      startTime.setHours(0, 0, 0, 0);
+      let tagged = [];
+      events.joined.forEach(e=>{
+        if (e.endraw.getTime() < new Date().getTime()) {
+          tagged.push(e);
+        } else if (e.startraw.getTime() < new Date().getTime() && e.endraw.getTime() > new Date().getTime() && !e.summary.startsWith("Now:")) {
+          e.summary = `Now: ${e.summary}`;
+        }
+      })
+      tagged.forEach(e=>{
+        events.joined.splice(events.joined.indexOf(e), 1);
+      })
+
+      if (events.next && events.next.startraw.getTime() < new Date().getTime()) {
+        let oldEvent = events.next;
+        events.next = null;
+        events.joined.forEach(e=>{
+          if (events.next == null || ((events.next.startraw.getTime() < new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
+            events.next = e;
+          }
+        })
+        if (events.next.startraw.getTime() < new Date().getTime()) {
+          events.next = null;
+        }
+      }
+
+      if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
+        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:0.5em;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Network Disconnected. Class Data last updated at ${parseDate(events.timeChecked)})</p>`
+        document.getElementById('sp-nc').style.display = 'block';
+        document.getElementById('sp-nc').innerText = 'Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.';
+        Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
+          if (c.id != 'sp-nc') {
+            c.remove()
+          }
+        })
+        events.joined.forEach(e=>{
+          var sp_class = document.createElement('div')
+          sp_class.innerHTML = `<div class="spt">${e.summary} ${e.location ? ` in ${e.location}` : ''}</div><div class="spti">${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`
+          sp_class.classList.add('sneakpeak-card')
+          document.getElementById('sp-c').appendChild(sp_class)
+        })
+      } else {
+        document.getElementById("classSync").innerText = `No more classes for today.<p style="font-size:0.5em;">Class Data last updated at ${parseDate(events.timeChecked)}</p>`
+        document.getElementById('sp-nc').style.display = 'block';
+        document.getElementById('sp-nc').innerText = 'Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.\nNo more classes for today.';
+        Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
+          if (c.id != 'sp-nc') {
+            c.remove()
+          }
+        })
+      }
+      return;
+    };
     calActiveText.textContent = "✓ Active";
     calActiveText.setAttribute("active", "");
     calActiveText.removeAttribute("error");
@@ -240,11 +329,8 @@
         endTime.setHours(23, 59, 59, 0);
         var startTime = new Date();
         startTime.setHours(0, 0, 0, 0);
-        const allEvents = [];
-        const todayEvents = [];
-        const joinedEvents = [];
-  
-        let nextEvent = null;
+        let events = {next: null, all: [], today: [], joined: [], timeChecked: new Date()};
+
         function getEvents() {
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -252,8 +338,8 @@
             if (line.startsWith('BEGIN:VEVENT')) {
               eventData = {};
             } else if (line.startsWith('END:VEVENT')) {
-              allEvents.push(eventData)
-              if (eventData.startraw.getTime() >= startTime.getTime() && eventData.startraw.getTime() <= endTime.getTime()) todayEvents.push(eventData);
+              events.all.push(eventData)
+              if (eventData.startraw.getTime() >= startTime.getTime() && eventData.startraw.getTime() <= endTime.getTime()) events.today.push(eventData);
             } else if (line.startsWith('SUMMARY:')) {
               const summary = line.substring(8);
               eventData.summary = summary.trim();
@@ -276,18 +362,18 @@
               eventData.location = location.trim();
             }
           }
-          todayEvents.sort((a, b) => a.startraw - b.startraw);
-          todayEvents.forEach(e=>{
-            if (nextEvent == null || (e.startraw.getTime() < nextEvent.startraw.getTime() && e.startraw.getTime() > new Date().getTime())) {
-              nextEvent = e;
+          events.today.sort((a, b) => a.startraw - b.startraw);
+          events.today.forEach(e=>{
+            if (events.next == null || (e.startraw.getTime() < events.next.startraw.getTime() && e.startraw.getTime() > new Date().getTime())) {
+              events.next = e;
             }
           })
         }
 
         function joinEvents() {
           let lastEvent = null;
-          todayEvents.forEach(e=>{
-            if (!lastEvent) {lastEvent = e;} else if (lastEvent.startraw.getTime() == e.startraw.getTime()) {joinedEvents.push(e)} else {
+          events.today.forEach(e=>{
+            if (!lastEvent) {lastEvent = e;} else if (lastEvent.startraw.getTime() == e.startraw.getTime()) {events.joined.push(e)} else {
               if (lastEvent.endraw.getTime() == e.startraw.getTime() && lastEvent.summary == e.summary) {
                 if (e.location != lastEvent.location) {
                   lastEvent.location += ` (B: ${e.location})`
@@ -295,7 +381,7 @@
                 lastEvent.endraw = e.endraw;
                 lastEvent.end = parseDate(e.endraw);
                 lastEvent.endDate = e.endraw.toLocaleString();
-                joinedEvents.push(lastEvent);
+                events.joined.push(lastEvent);
                 lastEvent = e;
               } else if (lastEvent.startraw.getTime() == e.endraw.getTime() && lastEvent.summary == e.summary) {
                 if (e.location != lastEvent.location) {
@@ -304,7 +390,7 @@
                 lastEvent.startraw = e.startraw;
                 lastEvent.start = parseDate(e.startraw);
                 lastEvent.endDate = e.startraw.toLocaleString();
-                joinedEvents.push(lastEvent);
+                events.joined.push(lastEvent);
               } else if (lastEvent.endraw.getTime() == e.startraw.getTime()) {
                 if (lastEvent.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime()) {
                 } else if (e.location != lastEvent.location) {
@@ -318,7 +404,7 @@
                 lastEvent.endDate = e.endraw.toLocaleString();
                 lastEvent.split = true;
                 lastEvent.splitTime = e.startraw;
-                joinedEvents.push(lastEvent);
+                events.joined.push(lastEvent);
               } else if (lastEvent.startraw.getTime() == e.endraw.getTime()) {
                 if (e.location != lastEvent.location) {
                   lastEvent.summary = `${lastEvent.summary} (in ${lastEvent.location}) and ${e.summary} (in ${e.location})`;
@@ -331,49 +417,49 @@
                 lastEvent.startDate = e.startraw.toLocaleString();
                 lastEvent.split = true;
                 lastEvent.splitTime = e.endraw;
-                joinedEvents.push(lastEvent);
+                events.joined.push(lastEvent);
               }
               lastEvent = e;
             }
           })
 
-          let toBeRemoved = [];
-          joinedEvents.forEach(e=>{
+          let tagged = [];
+          events.joined.forEach(e=>{
             if (e.endraw.getTime() < new Date().getTime()) {
-              toBeRemoved.push(e);
+              tagged.push(e);
             } else if (e.startraw.getTime() < new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
               e.summary = `Now: ${e.summary}`;
             }
           })
-          toBeRemoved.forEach(e=>{
-            joinedEvents.splice(joinedEvents.indexOf(e), 1);
+          tagged.forEach(e=>{
+            events.joined.splice(events.joined.indexOf(e), 1);
           })
         }
 
         getEvents()
         joinEvents()
-        if (nextEvent != null && nextEvent.startraw.getTime() < new Date().getTime()) {
-          let oldEvent = nextEvent;
-          nextEvent = null;
-          joinedEvents.forEach(e=>{
-            if (nextEvent == null || ((nextEvent.startraw.getTime() < new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < nextEvent.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
-              nextEvent = e;
+        if (events.next && events.next.startraw.getTime() < new Date().getTime()) {
+          let oldEvent = events.next;
+          events.next = null;
+          events.joined.forEach(e=>{
+            if (events.next == null || ((events.next.startraw.getTime() < new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
+              events.next = e;
             }
           })
-          if (nextEvent.startraw.getTime() < new Date().getTime()) {
-            nextEvent = null;
+          if (events.next.startraw.getTime() < new Date().getTime()) {
+            events.next = null;
           }
         }
         
-        if (nextEvent && nextEvent.start && nextEvent.startraw.getTime() <= endTime.getTime()) {
-          document.getElementById("classSync").innerHTML = `Next: ${nextEvent.summary}${nextEvent.location ? ` in ${nextEvent.location}` : ''}. <p style="font-size:0.5em;">${nextEvent.start.slice(-2) == nextEvent.end.slice(-2) ? nextEvent.start.slice(0, -3) : nextEvent.start}-${nextEvent.end}${nextEvent.split ? ` (split at ${parseDate(nextEvent.splitTime)})` : ``}</p>`
+        if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
+          document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:0.5em;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`
           document.getElementById('sp-nc').style.display = 'none';
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
             if (c.id != 'sp-nc') {
               c.remove()
             }
           })
-          joinedEvents.forEach(e=>{
+          events.joined.forEach(e=>{
             var sp_class = document.createElement('div')
             sp_class.innerHTML = `<div class="spt">${e.summary} ${e.location ? ` in ${e.location}` : ''}</div><div class="spti">${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`
             sp_class.classList.add('sneakpeak-card')
@@ -389,7 +475,8 @@
             }
           })
         }
-        t = setTimeout(writeNext, 60000);
+        last_events = events;
+        t = setTimeout(ClassSync, 60000);
       })
       .catch(error => {
         consol.error(error, "ClassSync")
@@ -436,7 +523,7 @@
     subButton.setAttribute("hidden", "");
     inputText.setAttribute("hidden", "");
     document.getElementById("header-classSync").style.display = 'block';
-    writeNext();
+    ClassSync();
   }
   function setupSP() {
     let spOpen = false;
