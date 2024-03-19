@@ -296,7 +296,7 @@
         events.joined.forEach(e=>{
           var sp_class = document.createElement('div')
           sp_class.innerHTML = `<div class="spt">${e.summary} ${e.location ? ` in ${e.location}` : ''}</div><div class="spti">${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`
-          sp_class.classList.add('sneakpeak-card')
+          sp_class.classList.add('sneakpeek-card')
           document.getElementById('sp-c').appendChild(sp_class)
         })
       } else {
@@ -462,7 +462,7 @@
           events.joined.forEach(e=>{
             var sp_class = document.createElement('div')
             sp_class.innerHTML = `<div class="spt">${e.summary} ${e.location ? ` in ${e.location}` : ''}</div><div class="spti">${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`
-            sp_class.classList.add('sneakpeak-card')
+            sp_class.classList.add('sneakpeek-card')
             document.getElementById('sp-c').appendChild(sp_class)
           })
         } else {
@@ -531,28 +531,28 @@
     function openSP(e) {
       last.x = e.clientX;
       last.y = e.clientY;
-      document.querySelector('.sneakpeak-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
-      document.querySelector('.sneakpeak-background').style.left = e.clientX+"px";
-      document.querySelector('.sneakpeak-background').style.top = e.clientY+"px";
-      document.querySelector('.sneakpeak-container').style.display = '';
+      document.querySelector('.sneakpeek-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
+      document.querySelector('.sneakpeek-background').style.left = e.clientX+"px";
+      document.querySelector('.sneakpeek-background').style.top = e.clientY+"px";
+      document.querySelector('.sneakpeek-container').style.display = '';
       document.addEventListener('keydown', keyCloseSP);
       setTimeout(() => {
-        document.querySelector('.sneakpeak-overlay').style.opacity = 1;
-        document.querySelector('.sneakpeak-background').style.transform = 'scale(1)';
-        document.querySelector('.sneakpeak-background').style.left = `64vw`;
-        document.querySelector('.sneakpeak-background').style.top = `5vh`;
+        document.querySelector('.sneakpeek-overlay').style.opacity = 1;
+        document.querySelector('.sneakpeek-background').style.transform = 'scale(1)';
+        document.querySelector('.sneakpeek-background').style.left = `64vw`;
+        document.querySelector('.sneakpeek-background').style.top = `5vh`;
       }, 100);
       spOpen = true;
     }
     function closeSP() {
-      document.querySelector('.sneakpeak-container').style.display = 'block';
-      document.querySelector('.sneakpeak-overlay').style.opacity = 0;
-      document.querySelector('.sneakpeak-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
-      document.querySelector('.sneakpeak-background').style.left = last.x+"px";
-      document.querySelector('.sneakpeak-background').style.top = last.y+"px";
+      document.querySelector('.sneakpeek-container').style.display = 'block';
+      document.querySelector('.sneakpeek-overlay').style.opacity = 0;
+      document.querySelector('.sneakpeek-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
+      document.querySelector('.sneakpeek-background').style.left = last.x+"px";
+      document.querySelector('.sneakpeek-background').style.top = last.y+"px";
       document.removeEventListener('keydown', keyCloseSP);
       setTimeout(() => {
-        document.querySelector('.sneakpeak-container').style.display = 'none';
+        document.querySelector('.sneakpeek-container').style.display = 'none';
       }, 300);
       spOpen = false;
     }
@@ -568,8 +568,8 @@
         openSP(event);
       }
     });
-    document.getElementById('sneakpeak-close').addEventListener('click', closeSP);
-    document.querySelector('.sneakpeak-overlay').addEventListener('click', closeSP);
+    document.getElementById('sneakpeek-close').addEventListener('click', closeSP);
+    document.querySelector('.sneakpeek-overlay').addEventListener('click', closeSP);
   }
   setupSP();
   
