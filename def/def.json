@@ -1,0 +1,42 @@
+{
+    "v":2,
+    "buttons":[
+      {"name":"Compass","icon":"/images/Compass.webp","url":"http://viewbank-vic.compass.education/","id":0,"pid":0},
+      {"name":"Mail","icon":"/images/Outlook.webp","url":"https://outlook.office.com/mail/","id":1,"pid":1},
+      {"name":"Trello","icon":"/images/Trello.webp","url":"https://trello.com/login?returnUrl=%2F/","id":2,"pid":2},
+      {"name":"VBC Site","icon":"/images/VBCLogo.webp","url":"http://www.viewbank.vic.edu.au/","id":3,"pid":3},
+      {"name":"Library","icon":"/images/LibrarySearch.webp","url":"http://library.viewbank.vic.edu.au/oliver/home/news/","id":4,"pid":4},
+      {"name":"Stile","icon":"/images/Stile.webp","url":"https://stileapp.com/","id":5,"pid":5},
+      {"name":"Hotmaths","icon":"/images/Hotmaths.webp","url":"https://www.cambridge.org/go/resources/","id":6,"pid":6},
+      {"name":"Careers","icon":"/images/VBCCareers.webp","url":"http://www.viewbankcollegecareers.com/","id":7,"pid":7},
+      {"name":"ACER Testing","icon":"/images/ACERLogo.webp","url":"https://oars.acer.edu.au/viewbank-college/","id":8,"pid":8},
+      {"name":"Helpdesk","icon":"/images/HelpDesk.webp","url":"https://viewbank.on.spiceworks.com/portal/","id":9,"pid":9},
+      {"name":"Mail Helpdesk","icon":"/images/HelpDeskMail.webp","url":"mailto:helpdesk@viewbank.vic.edu.au","id":10,"pid":10},
+      {"name":"OneDrive","icon":"/images/OneDrive.webp","url":"https://viewbankcollege-my.sharepoint.com/","id":11,"pid":11},
+      {"name":"On Demand Testing","icon":"/images/OnDemand.webp","url":"http://10.166.65.23/","id":12,"pid":12},
+      {"name":"Printer Balance","icon":"/images/PaperCut.webp","url":"http://papercut.viewbank.vic.edu.au:9191/","id":13,"pid":13},
+      {"name":"Teams","icon":"/images/MicrosoftTeams.webp","url":"msteams://open", "param":"self","id":14,"pid":14},
+      {"name":"Add Printers","icon":"/images/AddPrinters.webp","url":"/AddPrinters","id":15,"pid":15}
+    ],
+    "all":[
+      {"name":"Compass","icon":"/images/Compass.webp","url":"http://viewbank-vic.compass.education/","id":0,"pid":0},
+      {"name":"Mail","icon":"/images/Outlook.webp","url":"https://outlook.office.com/mail/","id":1,"pid":1},
+      {"name":"Trello","icon":"/images/Trello.webp","url":"https://trello.com/login?returnUrl=%2F/","id":2,"pid":2},
+      {"name":"VBC Site","icon":"/images/VBCLogo.webp","url":"http://www.viewbank.vic.edu.au/","id":3,"pid":3},
+      {"name":"Library","icon":"/images/LibrarySearch.webp","url":"http://library.viewbank.vic.edu.au/oliver/home/news/","id":4,"pid":4},
+      {"name":"Stile","icon":"/images/Stile.webp","url":"https://stileapp.com/","id":5,"pid":5},
+      {"name":"Hotmaths","icon":"/images/Hotmaths.webp","url":"https://www.cambridge.org/go/resources/","id":6,"pid":6},
+      {"name":"Careers","icon":"/images/VBCCareers.webp","url":"http://www.viewbankcollegecareers.com/","id":7,"pid":7},
+      {"name":"ACER Testing","icon":"/images/ACERLogo.webp","url":"https://oars.acer.edu.au/viewbank-college/","id":8,"pid":8},
+      {"name":"Helpdesk","icon":"/images/HelpDesk.webp","url":"https://viewbank.on.spiceworks.com/portal/","id":9,"pid":9},
+      {"name":"Mail Helpdesk","icon":"/images/HelpDeskMail.webp","url":"mailto:helpdesk@viewbank.vic.edu.au","id":10,"pid":10},
+      {"name":"OneDrive","icon":"/images/OneDrive.webp","url":"https://viewbankcollege-my.sharepoint.com/","id":11,"pid":11},
+      {"name":"On Demand Testing","icon":"/images/OnDemand.webp","url":"http://10.166.65.23/","id":12,"pid":12},
+      {"name":"Printer Balance","icon":"/images/PaperCut.webp","url":"http://papercut.viewbank.vic.edu.au:9191/","id":13,"pid":13},
+      {"name":"Teams","icon":"/images/MicrosoftTeams.webp","url":"msteams://open", "param":"self","id":14,"pid":14},
+      {"name":"Quizlet Live","icon":"/images/QuizletLive.webp","url":"https://quizlet.live/","id":15,"pid":15},
+      {"name":"Tinkercad","icon":"/images/Tinkercad.webp","url":"https://tinkercad.com/","id":16,"pid":16},
+      {"name":"Gimkit","icon":"/images/Gimkit.webp","url":"https://gimkit.com/","id":17,"pid":17},
+      {"name":"Add Printers","icon":"/images/AddPrinters.webp","url":"/AddPrinters","id":18,"pid":18}
+    ]
+  }
