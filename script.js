@@ -665,7 +665,7 @@
       showAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
       localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
       localStorage.removeItem("buttonlayout")
-      fetch("/customise/def.json")
+      fetch("/def/def.json")
         .then(function(res) {
           return res.text()
         })
@@ -683,7 +683,7 @@
         });
     } else {
       bl = JSON.parse(localStorage.getItem("buttonlayout"));
-      fetch("./customise/def.json")
+      fetch("./def/def.json")
         .then(function(res) {
           return res.text()
         })
@@ -712,7 +712,7 @@
     }
     
   } else {
-    fetch("./customise/def.json")
+    fetch("./def/def.json")
       .then(function(res) {
           return res.text()
       })
