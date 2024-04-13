@@ -170,7 +170,7 @@ function loadLS() {
 }
 
 (()=>{
-  fetch("/customise/def.json")
+  fetch("/def/def.json")
     .then(function(res) {
       return res.text()
     })
@@ -227,7 +227,7 @@ if (localStorage.getItem("buttonlayout")) {
     showAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
     localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
     localStorage.removeItem("buttonlayout")
-    fetch("/customise/def.json")
+    fetch("/def/def.json")
       .then(function(res) {
         return res.text()
       })
@@ -248,7 +248,7 @@ if (localStorage.getItem("buttonlayout")) {
     loadLS()
   }
 } else {
-  fetch("/customise/def.json")
+  fetch("/def/def.json")
     .then(function(res) {
       return res.text()
     })
@@ -267,7 +267,7 @@ if (localStorage.getItem("buttonlayout")) {
 }
 
 document.getElementById("reset").addEventListener("mouseup",()=>{
-  fetch("/customise/def.json")
+  fetch("/def/def.json")
     .then(function(res) {
       return res.text()
     })
