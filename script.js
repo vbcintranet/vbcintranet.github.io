@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.2";
+  const version = "v1.7.3";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -157,7 +157,7 @@
     internetAnim();
 
     if (calActive) {
-      document.getElementById("classSync").innerHTML = 'Network reconnected<p style="font-size:0.5em;">Fetching info...</p>';
+      document.getElementById("classSync").innerHTML = 'Network reconnected<p style="font-size:8px;">Fetching info...</p>';
       document.getElementById('sp-nc').style.display = 'none';
       document.getElementById('sp-nc').innerText = 'No more classes for today.';
       clearTimeout(t);
@@ -172,7 +172,7 @@
     isOnline = false;
     document.getElementById('no-internet').style.display = 'block';
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:0.5em;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : `No more classes for today.<p style="font-size:0.5em;">Last updated at ${parseDate(events.timeChecked)}</p>`;
+      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : `No more classes for today.<p style="font-size:8px;">Last updated at ${parseDate(events.timeChecked)}</p>`;
       document.getElementById('sp-nc').style.display = 'block';
       document.getElementById('sp-nc').innerText = last_events.next ? 'Warning: Network disconnected. Class data last updated at ' + parseDate(last_events.timeChecked) + '.' : 'Warning: Network disconnected. Class data last updated at ' + parseDate(last_events.timeChecked) + '.\nNo more classes for today.';
       calActiveText.textContent = "⚠ Network disconnected";
@@ -285,7 +285,7 @@
       }
 
       if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:0.5em;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Network Disconnected. Class Data last updated at ${parseDate(events.timeChecked)})</p>`
+        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Network Disconnected. Class Data last updated at ${parseDate(events.timeChecked)})</p>`
         document.getElementById('sp-nc').style.display = 'block';
         document.getElementById('sp-nc').innerText = 'Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.';
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
@@ -300,7 +300,7 @@
           document.getElementById('sp-c').appendChild(sp_class)
         })
       } else {
-        document.getElementById("classSync").innerText = `No more classes for today.<p style="font-size:0.5em;">Class Data last updated at ${parseDate(events.timeChecked)}</p>`
+        document.getElementById("classSync").innerText = `No more classes for today.<p style="font-size:8px;">Class Data last updated at ${parseDate(events.timeChecked)}</p>`
         document.getElementById('sp-nc').style.display = 'block';
         document.getElementById('sp-nc').innerText = 'Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.\nNo more classes for today.';
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
@@ -452,7 +452,7 @@
         }
         
         if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-          document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:0.5em;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`
+          document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`
           document.getElementById('sp-nc').style.display = 'none';
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
             if (c.id != 'sp-nc') {
@@ -480,7 +480,7 @@
       })
       .catch(error => {
         consol.error(error, "ClassSync")
-        document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:0.5em;">${sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`}</p>`;
+        document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:8px;">${sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`}</p>`;
         document.getElementById('sp-nc').style.display = 'block';
         document.getElementById('sp-nc').innerText = sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`;
         calActiveText.textContent = "⚠ Error";
@@ -631,20 +631,24 @@
       return;
     }
     bl.buttons.forEach(v=>{
-      document.querySelector(".cards").innerHTML += `<div class="card" data-href="${v.url}" data-id="${v.id}" ${v.param ? `data-style="self"` : ""}><img src="${v.icon}"><div class="overlay"><h3>${v.name}</h3></div></div>`
-      setTimeout(()=>{
-        document.querySelector(`[data-id="${v.id}"]`).addEventListener('mouseup', (e) => {
-          if (e.button == 1 || e.button == 0) {
-            const url = document.querySelector(`[data-id="${v.id}"]`).getAttribute('data-href');
-            const style = document.querySelector(`[data-id="${v.id}"]`).getAttribute('data-style');
-              document.querySelector(`[data-id="${v.id}"]`).classList.add('clicked');
-            setTimeout(() => {
-              window.open(url, style ? `_${style}` : '_blank');
-                document.querySelector(`[data-id="${v.id}"]`).classList.remove('clicked');
-            }, 200);
-          }
-        });
-      },500)
+      var button = document.createElement('div');
+      button.classList.add("card");
+      button.setAttribute("data-href", v.url);
+      button.setAttribute("data-id", v.id);
+      v.param ? button.setAttribute("data-style", "self") : null;
+      button.innerHTML = `<img src="${v.icon}" alt="${v.name} Icon"><div class="overlay"><p>${v.name}</p></div>`;
+      button.addEventListener('click', (e) => {
+        if (e.button == 1 || e.button == 0) {
+          const url = document.querySelector(`[data-id="${v.id}"]`).getAttribute('data-href');
+          const style = document.querySelector(`[data-id="${v.id}"]`).getAttribute('data-style');
+            document.querySelector(`[data-id="${v.id}"]`).classList.add('clicked');
+          setTimeout(() => {
+            window.open(url, style ? `_${style}` : '_blank');
+              document.querySelector(`[data-id="${v.id}"]`).classList.remove('clicked');
+          }, 200);
+        }
+      })
+      document.querySelector('.cards').appendChild(button)
     })
   }
   function jsonCheck(json) {
