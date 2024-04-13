@@ -9,25 +9,18 @@ permalink: /customise
   <meta name="viewport" content="width=device-width">
   <title>Customisation Centre (Viewbank College)</title>
   <link href="/customise/style.css" rel="stylesheet" type="text/css" />
-  <link href='https://fonts.googleapis.com/css?family=Varela Round' rel='stylesheet'>
-  <link rel="icon" href="/images/Favicon.png">
+  <link href='https://fonts.googleapis.com/css?family=Varela Round' as="style" rel="preload" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="icon" href="./images/Favicon.ico">
 </head>
 
 <body>
   <header>
     <div class="container">
       <div class="header-content">
-        <img src="/images/VBCLogo.png" alt="Header Image" class="header-img">
+        <img src="/images/VBCLogo.webp" alt="VBC Logo" class="header-img">
         <h1>Viewbank College Intranet</h1>
-        <div class="header-clock">
-          <a class="header-link">
-            <h3 id="clock" class="clock"></h3>
-          </a>
-        </div>
-        <div class="header-classSync" id="header-classSync" style="display: none;">
-          <a class="header-link">
-            <h3 id="classSync" class="classSync"></h3>
-          </a>
+        <div class="header-item">
+          <p id="clock" class="header-itext"></p>
         </div>
       </div>
     </div>
@@ -35,16 +28,16 @@ permalink: /customise
 
   <div class="cards">
     <div id="plus" class="plus">
-      <img src="/images/Plus.png">
+      <img src="/images/Plus.webp" alt="Add Icon">
       <div class="overlay">
-        <h3>Add</h3>
+        <p>Add</p>
       </div>
     </div>
   </div>
   <div id="cards-error"></div>
   <button type="submit" id="reset">Reset</button>
   <div class="backbtn">
-    <img style="width: 100%; height: 100%;" src="/images/backIcon.png">
+    <img style="width: 100%; height: 100%;" src="/images/backIcon.webp" alt="Back Icon">
   </div>
   <div class="add-container" style="display: none;">
     <div class="add-overlay"></div>
@@ -58,7 +51,7 @@ permalink: /customise
       </div>
       <div class="add-group">
         <h3>Custom</h3>
-        <h5 class="add-active" id="classSyncActive">there's nothing here right now</h5>
+        <h5>there's nothing here right now</h5>
       </div>
     </div>
   </div>
