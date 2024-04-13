@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.7.2";
+const version = "v1.7.3";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -157,7 +157,7 @@ function loadLS() {
     button.classList.add("card")
     button.setAttribute("data-href", v.url)
     button.setAttribute("data-id", v.id)
-    button.innerHTML = `<img src="${v.icon}"><div class="remove">-</div><div class="cardname"><h3>${v.name}</h3></div>`
+    button.innerHTML = `<img src="${v.icon}" alt="${v.name} Icon"><div class="remove">-</div><div class="cardname"><p>${v.name}</p></div>`;
     button.children[1].addEventListener('mouseup', (e) => {
       if (e.button == 1 || e.button == 0) {
         const id = v.id;
