@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="utf-8">
@@ -9,7 +9,7 @@
   <meta content="Viewbank College Intranet" property="og:site_name"/>
   <meta content="Viewbank College Intranet" property="og:description"/>
   <meta content="https://vbcintranet.github.io/" property="og:url"/>
-  <meta content="https://vbcintranet.github.io/images/Favicon.png" property="og:image"/>
+  <meta content="https://vbcintranet.github.io/images/Favicon.webp" property="og:image"/>
   <script type="application/ld+json">
     {
       "@context" : "https://schema.org",
@@ -20,7 +20,7 @@
     }
   </script>
   <link href="./style.css" rel="stylesheet" type="text/css" />
-  <link href='https://fonts.googleapis.com/css?family=Varela Round' rel='stylesheet'>
+  <link href='https://fonts.googleapis.com/css?family=Varela Round' as="style" rel="preload" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="icon" href="./images/Favicon.ico">
 </head>
 
@@ -28,17 +28,15 @@
   <header>
     <div class="container">
       <div class="header-content">
-        <img src="./images/VBCLogo.png" alt="Header Image" class="header-img">
-        <h1>Viewbank College Intranet</h1>
-        <div class="header-clock">
-          <a class="header-link">
-            <h3 id="clock" class="clock"></h3>
-          </a>
+        <div class="header-item no-hover flex">
+          <img src="./images/VBCLogo.webp" alt="VBC Logo" class="header-img">
+          <h1>Viewbank College Intranet</h1>
+        </div>
+        <div class="header-item">
+          <p id="clock" class="header-itext"></p>
         </div> 
-        <div id="header-classSync">
-          <a class="header-link">
-            <h3 id="classSync" class="classSync"></h3>
-          </a>
+        <div id="header-classSync" class="header-item">
+          <p id="classSync" class="header-itext"></p>
         </div>
       </div>
     </div>
@@ -47,11 +45,11 @@
   <div class="cards"></div>
   <div id="cards-error"></div>
   <div class="settings-button">
-    <img style="width: 100%; height: 100%;" src="./images/settingsIcon.png">
+    <img style="width: 100%; height: 100%;" src="./images/settingsIcon.webp" alt="Settings Icon">
   </div>
   <div id="no-internet">
-    <img class="no-internet" src="./images/no-internet.png">
-    <img class="internet-tick" src="./images/tick.png">
+    <img class="no-internet" src="./images/no-internet.webp" alt="no-internet">
+    <img class="internet-tick" src="./images/tick.webp" alt="tick">
   </div>
   <div class="search-container" style="display: none;">
     <div class="search-overlay"></div>
@@ -71,7 +69,7 @@
     <div class="sneakpeek-overlay"></div>
     <div class="sneakpeek-background">
       <h3 id="sneakpeek-close" class="sneakpeek-close">X</h3>
-      <h1>SneakPeek</h1>
+      <h1>SneakPeak</h1>
       <div class="sneakpeek-cards" id="sp-c">
         <h4 id="sp-nc"></h4>
       </div>
