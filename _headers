@@ -1,2 +1,2 @@
 /def/*
-Cache-Control: must-revalidate
+Cache-Control: no-cache
