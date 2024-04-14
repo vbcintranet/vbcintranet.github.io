@@ -172,9 +172,9 @@
     isOnline = false;
     document.getElementById('no-internet').style.display = 'block';
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : `No more classes for today.<p style="font-size:8px;">Last updated at ${parseDate(events.timeChecked)}</p>`;
+      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : `No more classes for today.<p style="font-size:8px;">Last updated at ${parseDate(last_events.timeChecked)}</p>`;
       document.getElementById('sp-nc').style.display = 'block';
-      document.getElementById('sp-nc').innerText = last_events.next ? 'Warning: Network disconnected. Class data last updated at ' + parseDate(last_events.timeChecked) + '.' : 'Warning: Network disconnected. Class data last updated at ' + parseDate(last_events.timeChecked) + '.\nNo more classes for today.';
+      document.getElementById('sp-nc').innerText = last_events.next ? `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.` : `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.\nNo more classes for today.`;
       calActiveText.textContent = "⚠ Network disconnected";
       calActiveText.setAttribute("error", "");
       calActiveText.removeAttribute("active");
