@@ -509,7 +509,7 @@
     const y = parseInt(dateTimeString.substring(0, 4), 10);
     const mo = parseInt(dateTimeString.substring(4, 6), 10) - 1;
     const d = parseInt(dateTimeString.substring(6, 8), 10);
-    const h = parseInt(dateTimeString.substring(9, 11), 10) + 11;
+    const h = parseInt(dateTimeString.substring(9, 11), 10) + (new Date().getTimezoneOffset()*-1)/60;
     const mi = parseInt(dateTimeString.substring(11, 13), 10);
   
     const date = new Date(y, mo, d, h, mi);
@@ -758,4 +758,4 @@
   }
   
   console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
-  })();
+})();
