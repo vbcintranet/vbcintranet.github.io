@@ -261,6 +261,12 @@ h1 {
   padding: 10px;
   margin: 10px;
 }
+.settings-group h3:first-of-type {
+  margin-bottom: 7.5px;
+}
+.settings-group p:first-of-type {
+  margin-top: 5px;
+}
 .settings-background input {
   outline: none;
   border: none;
@@ -334,6 +340,7 @@ h1 {
   text-align: center;
 }
 .settings-active {
+  font-size: 0.83em;
   transition: color 1s ease;
 }
 .settings-active[active] {
