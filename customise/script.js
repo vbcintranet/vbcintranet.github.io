@@ -1,5 +1,5 @@
 (() => {
-const version = "v1.7.3";
+const version = "v1.7.4";
 
 const consol = {
   log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -10,38 +10,9 @@ const consol = {
 document.addEventListener('mousedown', e => { if (e.button == 1) { e.preventDefault() } });
 
 function updateClock() {
-  var dayarray = new Array("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-  var montharray = new Array("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-  let now = new Date();
-  let date = now.getDate();
-  let year = now.getFullYear();
-  let month = now.getMonth();
-  let day = now.getDay();
-  let datesuffix = "th"
-  let hours = now.getHours();
-  let minutes = now.getMinutes();
-  let seconds = now.getSeconds();
-  let period = "AM";
-
-  hours == 0 ? ()=>{hours=12; period="AM"} : hours == 12 ? period="PM" : hours > 11 ? hours-=12 : period="PM"
-
-  if (!(String(date)[0] == "1" && String(date).length == 2)) {
-    switch (date % 10) {
-      case 1:
-        datesuffix = "st"
-        break;
-      case 2:
-        datesuffix = "nd"
-        break;
-      case 3:
-        datesuffix = "rd"
-        break;
-    }
-  }
-  minutes = (minutes < 10) ? "0" + minutes : minutes;
-  seconds = (seconds < 10) ? "0" + seconds : seconds;
-  document.getElementById("clock").innerText = dayarray[day] + ', ' + date + datesuffix + ' ' + montharray[month] + ' ' + year + ', ' + hours + ':' + minutes + ':' + seconds + ' ' + period;
-  let t = setTimeout(function() { updateClock() }, 1000);
+  let now = new Date()
+  document.getElementById("clock").innerText = `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()]}, ${now.getDate()}${(!(String(now.getDate())[0] == "1" && String(now.getDate()).length == 2)&&[1,2,3].includes(now.getDate() % 10))?['st','nd','rd'][(now.getDate() % 10)-1]:'th'} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][now.getMonth()]} ${now.getFullYear()}, ${[0,12].includes(now.getHours()) ? '12' : now.getHours() > 11 ? now.getHours()-12 : now.getHours()}:${now.getMinutes() < 10 ? "0"+now.getMinutes() : now.getMinutes()}:${now.getSeconds() < 10 ? "0"+now.getSeconds() : now.getSeconds()} ${now.getHours() > 11 ? 'PM' : 'AM'}`
+  setTimeout(updateClock, 1000);
 }
 updateClock();
 
@@ -51,9 +22,11 @@ cardinserts.forEach(insert => {
     var card = insert.parentElement;
     if (e.button == 1 || e.button == 0) {
       if (bl.buttons.length >= 25) {
-        document.getElementById("preset-error").innerText = "You have reached the maximum amount of icons (25)"
+        document.getElementById("preset-msg").innerText = "You have reached the maximum amount of icons (25)";
+        document.getElementById("preset-msg").classList.add("error");
         setTimeout(()=>{
-          document.getElementById("preset-error").innerText = ""
+          document.getElementById("preset-msg").innerText = "";
+          document.getElementById("preset-msg").classList.remove("error");
         }, 3000)
         return
       }
@@ -91,7 +64,6 @@ addBackground.addEventListener('click', (event) => {
 function openAddMenu() {
   if (!addOpen) {
     document.addEventListener('keydown', keyCloseAM);
-    canSearch = false;
     addOpen = true;
     addContainer.style = ''
     setTimeout(() => {
@@ -103,9 +75,9 @@ function openAddMenu() {
 
 function closeAddMenu() {
   document.removeEventListener('keydown', keyCloseAM);
-  canSearch = true;
   addBackground.classList.remove('active');
   addOverlay.classList.remove('active');
+  document.getElementById("preset-msg").innerText = "";
   setTimeout(() => {
     addBackground.classList.remove('active');
     addOverlay.classList.remove('active');
@@ -191,17 +163,18 @@ function loadLS() {
           var card = insert.parentElement;
           if (e.button == 1 || e.button == 0) {
             if (bl.buttons.length >= 25) {
-              document.getElementById("preset-error").innerText = "You have reached the maximum amount of icons (25)"
+              document.getElementById("preset-msg").innerText = "You have reached the maximum amount of icons (25)";
+              document.getElementById("preset-msg").classList.add("error");
               setTimeout(()=>{
-                document.getElementById("preset-error").innerText = ""
+                document.getElementById("preset-msg").innerText = ""
+                document.getElementById("preset-msg").classList.remove("error");
               }, 3000)
               return
             }
             const href = card.getAttribute('data-href');
             if (card.getAttribute('data-style')) updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href, card.getAttribute('data-style')); else if (card.getAttribute('data-preset-id')) updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href, '', card.getAttribute('data-preset-id')); else updateLS(true, 0, card.children[2].children[0].innerText, card.children[0].src, href)
-            
-            loadLS()
-            closeAddMenu();
+            document.getElementById("preset-msg").innerText = `Added '${card.children[2].children[0].innerText}' preset to your layout`;
+            loadLS();
           }
         });
       });
@@ -209,7 +182,8 @@ function loadLS() {
     .catch(function(e) {
       consol.error("Failed to fetch pesets", "Presets")
       showAlert("Failed to load presets", "The server didn't respond.")
-      document.getElementById("preset-error").innerHTML = "Presets failed to load. Please <a onclick='window.window.reloadPage()' style='color: #c94545;font-weight:bold;cursor:pointer;'>refresh</a> the page or try again later."
+      document.getElementById("preset-msg").innerHTML = "Presets failed to load. Please <a onclick='window.window.reloadPage()' style='color: #c94545;font-weight:bold;cursor:pointer;'>refresh</a> the page or try again later."
+      document.getElementById("preset-msg").classList.add("error");
     });
 })();
 function jsonCheck(json) {
