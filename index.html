@@ -35,7 +35,7 @@
         <div class="header-item">
           <p id="clock" class="header-itext"></p>
         </div> 
-        <div id="header-classSync" class="header-item">
+        <div id="header-classSync" class="header-item" title="View SneakPeek">
           <p id="classSync" class="header-itext"></p>
         </div>
       </div>
@@ -69,7 +69,7 @@
     <div class="sneakpeek-overlay"></div>
     <div class="sneakpeek-background">
       <h3 id="sneakpeek-close" class="sneakpeek-close">X</h3>
-      <h1>SneakPeak</h1>
+      <h1>SneakPeek</h1>
       <div class="sneakpeek-cards" id="sp-c">
         <h4 id="sp-nc"></h4>
       </div>
@@ -82,8 +82,8 @@
       <h1>Settings</h1>
       <div class="settings-group">
         <h3>ClassSync (beta)</h3>
-        <h5 class="settings-active" id="classSyncActive">✗ Not Active</h5>
-        <p>Introducing <em>ClassSync</em>. The system that displays your next class seamlessly on the <em>redesigned</em> Viewbank College Intranet. Please input your calander link below to get started. For detailed instructions please visit the <b><a href="/tutorials/ClassSync.pdf" target="_blank"><br>Guide</a></b>.</p>
+        <div class="settings-active" id="classSyncActive">✗ Not Active</div>
+        <p>Introducing <em>ClassSync</em>, the system that seamlessly integrates your class schedule into the <em>redesigned</em> Viewbank College Intranet.<br><br>When enabled, your next class will be displayed at the top of the page. Clicking on it brings up <em>SneekPeek</em>, where you can see all current and upcoming classes throughout the day.<br>All done without having to leave the intranet page.<br><br>For detailed instructions, please visit the <b><a href="/tutorials/ClassSync.pdf" target="_blank">ClassSync guide</a></b>.</p>
         <input type="text" autocomplete="off" autocapitalize="off" id="cal-input" placeholder="https://viewbank-vic.compass.education/download/sharedCalendar.aspx?uid=..."></input>
         <button type="submit" id="cal-submit">Submit</button>
         <button type="submit" id="cal-deactivate">Deactivate</button>
