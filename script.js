@@ -130,7 +130,7 @@
     if (calActive) {
       document.getElementById("classSync").innerHTML = 'Network reconnected<p style="font-size:8px;">Fetching info...</p>';
       document.getElementById('sp-nc').style.display = 'none';
-      document.getElementById('sp-nc').innerText = 'No more classes for today.';
+      document.getElementById('sp-nc').innerText = last_events.today.length ? 'No more classes for today' : 'No classes today';
       clearTimeout(t);
       ClassSync();
       calActiveText.textContent = "✓ Active";
@@ -143,9 +143,9 @@
     isOnline = false;
     document.getElementById('no-internet').style.display = 'block';
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : `No more classes for today.<p style="font-size:8px;">Last updated at ${parseDate(last_events.timeChecked)}</p>`;
+      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : last_events.today.length ? `No more classes for today.<p style="font-size:8px;">Last updated at ${parseDate(last_events.timeChecked)}</p>` : `No classes today.<p style="font-size:8px;">Last updated at ${parseDate(last_events.timeChecked)}</p>`;
       document.getElementById('sp-nc').style.display = 'block';
-      document.getElementById('sp-nc').innerText = last_events.next ? `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.` : `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.\nNo more classes for today.`;
+      document.getElementById('sp-nc').innerText = last_events.next ? `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.` : `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.\n${last_events.today.length ? `No more classes for today` : `No classes today`}`;
       calActiveText.textContent = "⚠ Network disconnected";
       calActiveText.setAttribute("error", "");
       calActiveText.removeAttribute("active");
@@ -271,9 +271,9 @@
           document.getElementById('sp-c').appendChild(sp_class)
         })
       } else {
-        document.getElementById("classSync").innerText = `No more classes for today.<p style="font-size:8px;">Class Data last updated at ${parseDate(events.timeChecked)}</p>`
+        document.getElementById("classSync").innerText = `${events.today.length ? `No more classes for today` : `No classes today`}<p style="font-size:8px;">Class Data last updated at ${parseDate(events.timeChecked)}</p>`
         document.getElementById('sp-nc').style.display = 'block';
-        document.getElementById('sp-nc').innerText = 'Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.\nNo more classes for today.';
+        document.getElementById('sp-nc').innerText = `Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.\n${events.today.length ? `No more classes for today` : `No classes today`}`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
           if (c.id != 'sp-nc') {
             c.remove()
@@ -442,9 +442,9 @@
             document.getElementById('sp-c').appendChild(sp_class)
           })
         } else {
-          document.getElementById("classSync").innerText = 'No more classes for today.'
+          document.getElementById("classSync").innerText = events.today.length ? 'No more classes for today' : 'No classes today';
           document.getElementById('sp-nc').style.display = 'block';
-          document.getElementById('sp-nc').innerText = 'No more classes for today.'
+          document.getElementById('sp-nc').innerText = events.today.length ? 'No more classes for today' : 'No classes today';
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
             if (c.id != 'sp-nc') {
               c.remove()
