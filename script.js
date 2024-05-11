@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.3";
+  const version = "v1.7.4";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -10,38 +10,9 @@
   document.addEventListener('mousedown', e => { if (e.button == 1) { e.preventDefault() } });
   
   function updateClock() {
-    var dayarray = new Array("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-    var montharray = new Array("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-    let now = new Date();
-    let date = now.getDate();
-    let year = now.getFullYear();
-    let month = now.getMonth();
-    let day = now.getDay();
-    let datesuffix = "th"
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
-    let seconds = now.getSeconds();
-    let period = "AM";
-  
-    hours == 0 ? ()=>{hours=12; period="AM"} : hours == 12 ? period="PM" : hours > 11 ? hours-=12 : period="PM"
-  
-    if (!(String(date)[0] == "1" && String(date).length == 2)) {
-      switch (date % 10) {
-        case 1:
-          datesuffix = "st"
-          break;
-        case 2:
-          datesuffix = "nd"
-          break;
-        case 3:
-          datesuffix = "rd"
-          break;
-      }
-    }
-    minutes = (minutes < 10) ? "0" + minutes : minutes;
-    seconds = (seconds < 10) ? "0" + seconds : seconds;
-    document.getElementById("clock").innerText = dayarray[day] + ', ' + date + datesuffix + ' ' + montharray[month] + ' ' + year + ', ' + hours + ':' + minutes + ':' + seconds + ' ' + period;
-    let t = setTimeout(function() { updateClock() }, 1000);
+    let now = new Date()
+    document.getElementById("clock").innerText = `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()]}, ${now.getDate()}${(!(String(now.getDate())[0] == "1" && String(now.getDate()).length == 2)&&[1,2,3].includes(now.getDate() % 10))?['st','nd','rd'][(now.getDate() % 10)-1]:'th'} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][now.getMonth()]} ${now.getFullYear()}, ${[0,12].includes(now.getHours()) ? '12' : now.getHours() > 11 ? now.getHours()-12 : now.getHours()}:${now.getMinutes() < 10 ? "0"+now.getMinutes() : now.getMinutes()}:${now.getSeconds() < 10 ? "0"+now.getSeconds() : now.getSeconds()} ${now.getHours() > 11 ? 'PM' : 'AM'}`
+    setTimeout(updateClock, 1000);
   }
   updateClock();
   
@@ -263,7 +234,7 @@
       events.joined.forEach(e=>{
         if (e.endraw.getTime() < new Date().getTime()) {
           tagged.push(e);
-        } else if (e.startraw.getTime() < new Date().getTime() && e.endraw.getTime() > new Date().getTime() && !e.summary.startsWith("Now:")) {
+        } else if (e.startraw.getTime() <= new Date().getTime() && e.endraw.getTime() > new Date().getTime() && !e.summary.startsWith("Now:")) {
           e.summary = `Now: ${e.summary}`;
         }
       })
@@ -271,23 +242,23 @@
         events.joined.splice(events.joined.indexOf(e), 1);
       })
 
-      if (events.next && events.next.startraw.getTime() < new Date().getTime()) {
+      if (events.next && events.next.startraw.getTime() <= new Date().getTime()) {
         let oldEvent = events.next;
         events.next = null;
         events.joined.forEach(e=>{
-          if (events.next == null || ((events.next.startraw.getTime() < new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
+          if (events.next == null || ((events.next.startraw.getTime() <= new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
             events.next = e;
           }
         })
-        if (events.next.startraw.getTime() < new Date().getTime()) {
+        if (events.next.startraw.getTime() <= new Date().getTime()) {
           events.next = null;
         }
       }
 
       if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Network Disconnected. Class Data last updated at ${parseDate(events.timeChecked)})</p>`
+        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(events.timeChecked)})</p>`
         document.getElementById('sp-nc').style.display = 'block';
-        document.getElementById('sp-nc').innerText = 'Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.';
+        document.getElementById('sp-nc').innerText = `Warning: Network disconnected. Class data last updated at ${parseDate(events.timeChecked)}.`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
           if (c.id != 'sp-nc') {
             c.remove()
@@ -309,6 +280,7 @@
           }
         })
       }
+      t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
       return;
     };
     calActiveText.textContent = "✓ Active";
@@ -381,8 +353,8 @@
                 lastEvent.endraw = e.endraw;
                 lastEvent.end = parseDate(e.endraw);
                 lastEvent.endDate = e.endraw.toLocaleString();
+                e.tagged = true;
                 events.joined.push(lastEvent);
-                lastEvent = e;
               } else if (lastEvent.startraw.getTime() == e.endraw.getTime() && lastEvent.summary == e.summary) {
                 if (e.location != lastEvent.location) {
                   lastEvent.location += ` (B: ${e.location})`
@@ -390,6 +362,7 @@
                 lastEvent.startraw = e.startraw;
                 lastEvent.start = parseDate(e.startraw);
                 lastEvent.endDate = e.startraw.toLocaleString();
+                e.tagged = true;
                 events.joined.push(lastEvent);
               } else if (lastEvent.endraw.getTime() == e.startraw.getTime()) {
                 if (lastEvent.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime()) {
@@ -404,6 +377,7 @@
                 lastEvent.endDate = e.endraw.toLocaleString();
                 lastEvent.split = true;
                 lastEvent.splitTime = e.startraw;
+                e.tagged = true;
                 events.joined.push(lastEvent);
               } else if (lastEvent.startraw.getTime() == e.endraw.getTime()) {
                 if (e.location != lastEvent.location) {
@@ -417,8 +391,10 @@
                 lastEvent.startDate = e.startraw.toLocaleString();
                 lastEvent.split = true;
                 lastEvent.splitTime = e.endraw;
+                e.tagged = true;
                 events.joined.push(lastEvent);
               }
+              !lastEvent.tagged && !e.tagged ? events.joined.push(lastEvent) : null;
               lastEvent = e;
             }
           })
@@ -427,7 +403,7 @@
           events.joined.forEach(e=>{
             if (e.endraw.getTime() < new Date().getTime()) {
               tagged.push(e);
-            } else if (e.startraw.getTime() < new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
+            } else if (e.startraw.getTime() <= new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
               e.summary = `Now: ${e.summary}`;
             }
           })
@@ -442,11 +418,11 @@
           let oldEvent = events.next;
           events.next = null;
           events.joined.forEach(e=>{
-            if (events.next == null || ((events.next.startraw.getTime() < new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
+            if (events.next == null || ((events.next.startraw.getTime() <= new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
               events.next = e;
             }
           })
-          if (events.next.startraw.getTime() < new Date().getTime()) {
+          if (events.next && events.next.startraw.getTime() < new Date().getTime()) {
             events.next = null;
           }
         }
@@ -476,7 +452,7 @@
           })
         }
         last_events = events;
-        t = setTimeout(ClassSync, 60000);
+        t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
       })
       .catch(error => {
         consol.error(error, "ClassSync")
@@ -502,16 +478,18 @@
   }
   
   function parseDate(date) {
+    if (!(date instanceof Date)) throw new Error('Invalid date, received ' + typeof date);
     return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).startsWith('00') ? "12" + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).substring(2) : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/^0+/, '');
   }
   
   function parseICSDateTimeString(dateTimeString) {
+    if (typeof dateTimeString != 'string') throw new Error('Invalid date string, received ' + dateTimeString);
     const y = parseInt(dateTimeString.substring(0, 4), 10);
     const mo = parseInt(dateTimeString.substring(4, 6), 10) - 1;
     const d = parseInt(dateTimeString.substring(6, 8), 10);
-    const h = parseInt(dateTimeString.substring(9, 11), 10) + (new Date().getTimezoneOffset()*-1)/60;
+    const h = parseInt(dateTimeString.substring(9, 11), 10) + ((new Date().getTimezoneOffset()*-1)/60);
     const mi = parseInt(dateTimeString.substring(11, 13), 10);
-  
+    
     const date = new Date(y, mo, d, h, mi);
     return date;
   }
@@ -696,16 +674,25 @@
             loadLS();
           } else {
             bl.buttons.forEach((b)=>{
-              if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
-              if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
-              if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
+              if (!b.name || !b.icon || !b.url || (!b.id&&b.id!==0) ) {b.tagged = true;return;};
+              if (b.pid && !JSON.parse(defbl).all[b.pid]) {b.tagged = true;return;} else {
+                if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
+                if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
+                if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
+              };
             })
+            let rm = 0;
+            bl.buttons.filter(b=>b.tagged).forEach((b)=>{
+              rm++;
+              bl.buttons.splice(bl.buttons.indexOf(b), 1);
+            })
+            if (rm) {showAlert(`Button Error`, `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`)}
             localStorage.setItem("buttonlayout", JSON.stringify(bl));
             loadLS();
           }
         })
         .catch(function(e) {
-          consol.error("Failed to fetch buttons", "Buttons")
+          consol.error(`Failed to fetch buttons, ${e}`, "Buttons")
           showAlert("Failed to load buttons", "The server didn't respond.")
           document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
         });
