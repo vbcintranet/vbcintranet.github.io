@@ -16,7 +16,7 @@
       {"name":"On Demand Testing","icon":"/images/OnDemand.webp","url":"http://10.166.65.23/","id":12,"pid":12},
       {"name":"Printer Balance","icon":"/images/PaperCut.webp","url":"http://papercut.viewbank.vic.edu.au:9191/","id":13,"pid":13},
       {"name":"Teams","icon":"/images/MicrosoftTeams.webp","url":"msteams://open", "param":"self","id":14,"pid":14},
-      {"name":"Add Printers","icon":"/images/AddPrinters.webp","url":"/AddPrinters","id":15,"pid":15}
+      {"name":"Add Printers","icon":"/images/AddPrinters.webp","url":"/tutorials/AddingPrinters.pdf","id":15,"pid":15}
     ],
     "all":[
       {"name":"Compass","icon":"/images/Compass.webp","url":"http://viewbank-vic.compass.education/","id":0,"pid":0},
@@ -37,6 +37,6 @@
       {"name":"Quizlet Live","icon":"/images/QuizletLive.webp","url":"https://quizlet.live/","id":15,"pid":15},
       {"name":"Tinkercad","icon":"/images/Tinkercad.webp","url":"https://tinkercad.com/","id":16,"pid":16},
       {"name":"Gimkit","icon":"/images/Gimkit.webp","url":"https://gimkit.com/","id":17,"pid":17},
-      {"name":"Add Printers","icon":"/images/AddPrinters.webp","url":"/AddPrinters","id":18,"pid":18}
+      {"name":"Add Printers","icon":"/images/AddPrinters.webp","url":"/tutorials/AddingPrinters.pdf","id":18,"pid":18}
     ]
   }
