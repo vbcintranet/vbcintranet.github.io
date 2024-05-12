@@ -676,7 +676,6 @@
             let len = structuredClone(bl.buttons.length);
             bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
             bl.buttons.forEach((b)=>{
-              console.log(b)
               if (!b.name || !b.icon || !b.url || !(typeof b.id == 'number') ) {b.tagged = true;return;};
               if (b.pid && !JSON.parse(defbl).all[b.pid]) {b.tagged = true;return;} else if (b.pid) {
                 if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
