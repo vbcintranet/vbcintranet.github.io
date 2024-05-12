@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.4";
+  const version = "v1.7.5";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -143,7 +143,7 @@
     isOnline = false;
     document.getElementById('no-internet').style.display = 'block';
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : last_events.today.length ? `No more classes for today.<p style="font-size:8px;">Last updated at ${parseDate(last_events.timeChecked)}</p>` : `No classes today.<p style="font-size:8px;">Last updated at ${parseDate(last_events.timeChecked)}</p>`;
+      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : last_events.today.length ? `No more classes for today<p style="font-size:8px;">Class data last updated at ${parseDate(last_events.timeChecked)}</p>` : `No classes today<p style="font-size:8px;">Class data last updated at ${parseDate(last_events.timeChecked)}</p>`;
       document.getElementById('sp-nc').style.display = 'block';
       document.getElementById('sp-nc').innerText = last_events.next ? `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.` : `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.\n${last_events.today.length ? `No more classes for today` : `No classes today`}`;
       calActiveText.textContent = "⚠ Network disconnected";
@@ -256,7 +256,7 @@
       }
 
       if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(events.timeChecked)})</p>`
+        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Class data last updated at ${parseDate(events.timeChecked)})</p>`
         document.getElementById('sp-nc').style.display = 'block';
         document.getElementById('sp-nc').innerText = `Warning: Network disconnected. Class data last updated at ${parseDate(events.timeChecked)}.`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
@@ -271,7 +271,7 @@
           document.getElementById('sp-c').appendChild(sp_class)
         })
       } else {
-        document.getElementById("classSync").innerText = `${events.today.length ? `No more classes for today` : `No classes today`}<p style="font-size:8px;">Class Data last updated at ${parseDate(events.timeChecked)}</p>`
+        document.getElementById("classSync").innerHTML = `${events.today.length ? `No more classes for today` : `No classes today`}<p style="font-size:8px;">Class data last updated at ${parseDate(events.timeChecked)}</p>`
         document.getElementById('sp-nc').style.display = 'block';
         document.getElementById('sp-nc').innerText = `Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.\n${events.today.length ? `No more classes for today` : `No classes today`}`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
@@ -442,7 +442,7 @@
             document.getElementById('sp-c').appendChild(sp_class)
           })
         } else {
-          document.getElementById("classSync").innerText = events.today.length ? 'No more classes for today' : 'No classes today';
+          document.getElementById("classSync").innerHTML = events.today.length ? 'No more classes for today' : 'No classes today';
           document.getElementById('sp-nc').style.display = 'block';
           document.getElementById('sp-nc').innerText = events.today.length ? 'No more classes for today' : 'No classes today';
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
@@ -605,7 +605,7 @@
   })
   function loadLS() {
     if (bl.buttons.length == 0) {
-      document.getElementById("cards-error").innerHTML = "<h2>You don't have any buttons</h2><h3>Visit the <a href='/customise' style='cursor:pointer;font-weight:bold;color:#b53e3e;'>customisation centre</a> to add some.</h3>";
+      document.getElementById("cards-error").innerHTML = "<h2>You don't have any buttons</h2><h3>Visit the <a href='/customise' style='cursor:pointer;color:#b53e3e;font-style:italic;'>customisation centre</a> to add some.</h3>";
       return;
     }
     bl.buttons.forEach(v=>{
@@ -673,9 +673,12 @@
             bl = JSON.parse(localStorage.getItem("buttonlayout"));
             loadLS();
           } else {
+            let len = structuredClone(bl.buttons.length);
+            bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
             bl.buttons.forEach((b)=>{
-              if (!b.name || !b.icon || !b.url || (!b.id&&b.id!==0) ) {b.tagged = true;return;};
-              if (b.pid && !JSON.parse(defbl).all[b.pid]) {b.tagged = true;return;} else {
+              console.log(b)
+              if (!b.name || !b.icon || !b.url || !(typeof b.id == 'number') ) {b.tagged = true;return;};
+              if (b.pid && !JSON.parse(defbl).all[b.pid]) {b.tagged = true;return;} else if (b.pid) {
                 if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
                 if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
                 if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
@@ -686,7 +689,10 @@
               rm++;
               bl.buttons.splice(bl.buttons.indexOf(b), 1);
             })
-            if (rm) {showAlert(`Button Error`, `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`)}
+            let errmsg = "";
+            if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`};
+            if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
+            if (errmsg) showAlert("Button Layout Updated", errmsg);
             localStorage.setItem("buttonlayout", JSON.stringify(bl));
             loadLS();
           }
@@ -716,32 +722,45 @@
       });
   }
   
-  function showAlert(title, message) {
-    document.getElementById('alert-title').innerText = title;
-    document.getElementById('alert-message').innerText = message;
-    document.querySelector('.alert-container').style.display = '';
-    document.querySelector('.alert-overlay').style.opacity = 1;
-    document.querySelector('.alert-background').classList.add('active');
-    function closeAlert(e) {
-      document.removeEventListener('keydown', keyCloseA);
-      document.querySelector('.alert-overlay').removeEventListener('click', closeAlert);
-      document.getElementById('alert-ok').removeEventListener('click', closeAlert);
-      document.querySelector('.alert-overlay').style.opacity = 0;
-      document.querySelector('.alert-background').classList.remove('active');
+  function showAlert(title, message, {okBtn="OK", cancelBtn="Cancel" }, showCancel=false) {
+    return new Promise((resolve) => {
+      document.getElementById('alert-title').innerText = title;
+      document.getElementById('alert-message').innerText = message;
+      document.getElementById('alert-ok').innerText = okBtn;
+      showCancel ? document.getElementById('alert-cancel').innerText = cancelBtn : null;
+      document.querySelector('.alert-container').style.display = '';
       setTimeout(() => {
-        document.querySelector('.alert-container').style.display = 'none';
-        document.getElementById('alert-title').innerText = "Alert";
-        document.getElementById('alert-message').innerText = "Message";
-      }, 300);
-    }
-    function keyCloseA(e) {
-      if (e.key == "Escape" || e.key == "Enter") {
-        closeAlert()
+        document.querySelector('.alert-overlay').style.opacity = 1;
+        document.querySelector('.alert-background').classList.add('active');
+      }, 100);
+      
+      function closeAlert() {
+        document.removeEventListener('keydown', keyCloseA);
+        document.querySelector('.alert-overlay').removeEventListener('click', resFalse);
+        document.getElementById('alert-ok').removeEventListener('click', resTrue);
+        showCancel ? document.getElementById('alert-cancel').removeEventListener('click', resFalse) : null;
+        document.querySelector('.alert-overlay').style.opacity = 0;
+        document.querySelector('.alert-background').classList.remove('active');
+        setTimeout(() => {
+          document.querySelector('.alert-container').style.display = 'none';
+          document.getElementById('alert-title').innerText = "Alert";
+          document.getElementById('alert-message').innerText = "Message";
+          document.getElementById('alert-ok').innerText = "OK";
+          document.getElementById('alert-cancel').style.display = 'none'
+          document.getElementById('alert-cancel').innerText = "Cancel";
+        }, 300);
       }
-    }
-    document.querySelector('.alert-overlay').addEventListener('click', closeAlert);
-    document.getElementById('alert-ok').addEventListener('click', closeAlert);
-    document.addEventListener('keydown', keyCloseA);
+      
+      function keyCloseA(e) {if (e.key == "Escape") {closeAlert();resolve(false);}}
+      function resTrue() {closeAlert();resolve(true);}
+      function resFalse() {closeAlert();resolve(false);}
+      
+      document.querySelector('.alert-overlay').addEventListener('click', resFalse);
+      document.getElementById('alert-ok').addEventListener('click', resTrue);
+      showCancel ? document.getElementById('alert-cancel').addEventListener('click', resFalse) : null;
+      document.addEventListener('keydown', keyCloseA);
+      showCancel ? document.getElementById('alert-cancel').style.display = '' : document.getElementById('alert-cancel').style.display = 'none';
+    });
   }
   
   console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
