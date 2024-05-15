@@ -77,7 +77,12 @@ a {
   background-color: #080808;
   box-shadow: 0 10px 20px rgba(12, 12, 12, 0.2);
   opacity: 1;
+  cursor: move;
   transition: all 0.2s ease-in-out;
+  border: 3px dashed transparent;
+}
+.card:hover, .card:focus {
+  border: 3px dashed #222;
 }
 .preset-card {
   position: relative;
@@ -139,6 +144,7 @@ a {
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease-in-out;
+  pointer-events: none;
 }
 .preset-card img {
   width: 100%;
