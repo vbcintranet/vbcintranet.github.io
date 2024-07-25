@@ -17,6 +17,7 @@ a {
   align-items: center;
   background-color: #121212;
   overflow: hidden;
+  padding-bottom: 10px;
 }
 .card {
   cursor: pointer;
