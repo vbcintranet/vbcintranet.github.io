@@ -16,6 +16,7 @@ a {
   justify-content: center;
   align-items: center;
   background-color: #121212;
+  padding-bottom: 84px;
 }
 .preset-cards {
   width: 100%;
