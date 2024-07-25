@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.6";
+  const version = "v1.7.7";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -8,7 +8,7 @@
   }
   
   document.addEventListener('mousedown', e => { if (e.button == 1) { e.preventDefault() } });
-  
+
   function updateClock() {
     let now = new Date()
     document.getElementById("clock").innerText = `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()]}, ${now.getDate()}${(!(String(now.getDate())[0] == "1" && String(now.getDate()).length == 2)&&[1,2,3].includes(now.getDate() % 10))?['st','nd','rd'][(now.getDate() % 10)-1]:'th'} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][now.getMonth()]} ${now.getFullYear()}, ${[0,12].includes(now.getHours()) ? '12' : now.getHours() > 11 ? now.getHours()-12 : now.getHours()}:${now.getMinutes() < 10 ? "0"+now.getMinutes() : now.getMinutes()}:${now.getSeconds() < 10 ? "0"+now.getSeconds() : now.getSeconds()} ${now.getHours() > 11 ? 'PM' : 'AM'}`
@@ -84,7 +84,6 @@
         window.open(searchUrl, '_blank');
       } else {
         var pat = /^((https?|ftp|smtp):\/\/)?(www.)?[a-z0-9]+(\.[a-z]{2,}){1,3}(#?\/?[a-zA-Z0-9#]+)*\/?(\?[a-zA-Z0-9-_]+=[a-zA-Z0-9-%]+&?)?$/;
-        // var pat2=/^!((https?|ftp|smtp):\/\/)?(www.)?[a-z0-9]+(\.[a-z]{2,}){1,3}(#?\/?[a-zA-Z0-9#]+)*\/?(\?[a-zA-Z0-9-_]+=[a-zA-Z0-9-%]+&?)?$/;
         if (pat.test(searchTerm)) {
           closeSearchBar();
           window.open(searchTerm, '_blank');
@@ -98,6 +97,7 @@
   });
   
   let isOnline = true;
+  
   window.addEventListener('online', () => {
     consol.log("Reconnected", "Network");
     isOnline = true;
@@ -167,6 +167,7 @@
     }
     if (inputText.value.trim() != "") {
       if (!formatCalLink(inputText.value, true).startsWith('viewbank-vic.compass.education/download/sharedCalendar.aspx')) {
+        errors.new({error: "Link failed test", url: inputText.value.trim()}, "ClassSync-Setup");
         consol.error("Link failed test", "ClassSync-Setup");
         incorrectText.innerHTML = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
         return;
@@ -192,6 +193,7 @@
           return response.text();
         })
         .catch(error => {
+          errors.new({error: JSON.stringify(error, Object.getOwnPropertyNames(error)), url: inputText.value.trim()}, "ClassSync-Setup");
           consol.error("Link error", "ClassSync-Setup");
           incorrectText.innerHTML = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
         });
@@ -218,6 +220,68 @@
   });
   
   let last_events = {};
+  let errors = {
+    _t: 0, _l: [],
+    new(error, type) {
+      if (!error || !type) return new Error('Missing information');
+      this._t += 1;
+      this._l.push({error: error, type: type, date: new Date().toLocaleString(), dateRaw: new Date()});
+    },
+    saveSession() {
+      if (!this._l.length) return;
+      if (jsonCheck(localStorage.getItem("session-error"))) {
+        s_e = JSON.parse(localStorage.getItem("session-error"));
+        s_e.push({type: "SESSION", date: new Date().toLocaleString(), count: this._t, list: this._l, dateRaw: new Date()});
+        localStorage.setItem("session-error", JSON.stringify(s_e));
+      } else {
+        localStorage.setItem("session-error", JSON.stringify([{type: "SESSION", date: new Date().toLocaleString(), count: this._t, list: this._l, dateRaw: new Date()}]));
+      }
+      this._t = 0;
+      this._l = [];
+    },
+    countOfType(type) {
+      if (!type) return new Error('Missing information');
+      let t = 0;
+      this._l.forEach(e=>{
+        if (e.type == type) t++;
+      })
+      return t
+    },
+    saveSessionOfType(type) {
+      if (!type) return new Error('Missing information');
+      let l = [];
+      let tagged = []
+      this._l.forEach(e=>{if (e.type == type) {l.push(e);tagged.push(e)}})
+      tagged.forEach(e=>{this._l.splice(this._l.indexOf(e), 1)})
+      if (!l.length) return;
+      if (jsonCheck(localStorage.getItem("session-error"))) {
+        s_e = JSON.parse(localStorage.getItem("session-error"));
+        s_e.push({type, date: new Date().toLocaleString(), count: l.length, list: l, dateRaw: new Date()});
+        localStorage.setItem("session-error", JSON.stringify(s_e));
+      } else {
+        localStorage.setItem("session-error", JSON.stringify([{type, date: new Date().toLocaleString(), count: l.length, list: l, dateRaw: new Date()}]));
+      }
+    },
+    get count() {return this._t;},
+    get list() {return this._l;},
+  }
+
+  addEventListener('beforeunload', function (event) {
+    errors.saveSession();
+  });
+
+  function jsonCheck(json) {
+    try {
+      JSON.parse(json)
+    } catch {
+      return false
+    }
+    if (Object.is(JSON.parse(json), null)) {
+      return false
+    } else {
+      return true
+    }
+  }
 
   function ClassSync() {
     if (!localStorage.getItem('compass-cal')) {
@@ -283,9 +347,7 @@
       t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
       return;
     };
-    calActiveText.textContent = "✓ Active";
-    calActiveText.setAttribute("active", "");
-    calActiveText.removeAttribute("error");
+
     let sts = '';
     fetch(localStorage.getItem('compass-cal'))
       .then(response => {
@@ -296,6 +358,10 @@
         return response.text();
       })
       .then(fileContents => {
+        calActiveText.textContent = "✓ Active";
+        calActiveText.setAttribute("active", "");
+        calActiveText.removeAttribute("error");
+        errors.saveSessionOfType("ClassSync");
         const lines = fileContents.split('\n');
         var endTime = new Date();
         endTime.setHours(23, 59, 59, 0);
@@ -346,53 +412,55 @@
           let lastEvent = null;
           events.today.forEach(e=>{
             if (!lastEvent) {lastEvent = e;} else if (lastEvent.startraw.getTime() == e.startraw.getTime()) {events.joined.push(e)} else {
-              if (lastEvent.endraw.getTime() == e.startraw.getTime() && lastEvent.summary == e.summary) {
-                if (e.location != lastEvent.location) {
-                  lastEvent.location += ` (B: ${e.location})`
+              if (!lastEvent.tagged) {
+                if (lastEvent.endraw.getTime() == e.startraw.getTime() && lastEvent.summary == e.summary) {
+                  if (e.location != lastEvent.location) {
+                    lastEvent.location += ` (B: ${e.location})`
+                  }
+                  lastEvent.endraw = e.endraw;
+                  lastEvent.end = parseDate(e.endraw);
+                  lastEvent.endDate = e.endraw.toLocaleString();
+                  e.tagged = true;
+                  events.joined.push(lastEvent);
+                } else if (lastEvent.startraw.getTime() == e.endraw.getTime() && lastEvent.summary == e.summary) {
+                  if (e.location != lastEvent.location) {
+                    lastEvent.location += ` (B: ${e.location})`
+                  }
+                  lastEvent.startraw = e.startraw;
+                  lastEvent.start = parseDate(e.startraw);
+                  lastEvent.endDate = e.startraw.toLocaleString();
+                  e.tagged = true;
+                  events.joined.push(lastEvent);
+                } else if (lastEvent.endraw.getTime() == e.startraw.getTime()) {
+                  if (lastEvent.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime()) {
+                  } else if (e.location != lastEvent.location) {
+                    lastEvent.summary = `${lastEvent.summary} (in ${lastEvent.location}) and ${e.summary} (in ${e.location})`;
+                    lastEvent.location = "";
+                  } else {
+                    lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
+                  }
+                  lastEvent.endraw = e.endraw;
+                  lastEvent.end = parseDate(e.endraw);
+                  lastEvent.endDate = e.endraw.toLocaleString();
+                  lastEvent.split = true;
+                  lastEvent.splitTime = e.startraw;
+                  e.tagged = true;
+                  events.joined.push(lastEvent);
+                } else if (lastEvent.startraw.getTime() == e.endraw.getTime()) {
+                  if (e.location != lastEvent.location) {
+                    lastEvent.summary = `${lastEvent.summary} (in ${lastEvent.location}) and ${e.summary} (in ${e.location})`;
+                    lastEvent.location = "";
+                  } else {
+                    lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
+                  }
+                  lastEvent.startraw = e.startraw;
+                  lastEvent.start = parseDate(e.startraw);
+                  lastEvent.startDate = e.startraw.toLocaleString();
+                  lastEvent.split = true;
+                  lastEvent.splitTime = e.endraw;
+                  e.tagged = true;
+                  events.joined.push(lastEvent);
                 }
-                lastEvent.endraw = e.endraw;
-                lastEvent.end = parseDate(e.endraw);
-                lastEvent.endDate = e.endraw.toLocaleString();
-                e.tagged = true;
-                events.joined.push(lastEvent);
-              } else if (lastEvent.startraw.getTime() == e.endraw.getTime() && lastEvent.summary == e.summary) {
-                if (e.location != lastEvent.location) {
-                  lastEvent.location += ` (B: ${e.location})`
-                }
-                lastEvent.startraw = e.startraw;
-                lastEvent.start = parseDate(e.startraw);
-                lastEvent.endDate = e.startraw.toLocaleString();
-                e.tagged = true;
-                events.joined.push(lastEvent);
-              } else if (lastEvent.endraw.getTime() == e.startraw.getTime()) {
-                if (lastEvent.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime()) {
-                } else if (e.location != lastEvent.location) {
-                  lastEvent.summary = `${lastEvent.summary} (in ${lastEvent.location}) and ${e.summary} (in ${e.location})`;
-                  lastEvent.location = "";
-                } else {
-                  lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
-                }
-                lastEvent.endraw = e.endraw;
-                lastEvent.end = parseDate(e.endraw);
-                lastEvent.endDate = e.endraw.toLocaleString();
-                lastEvent.split = true;
-                lastEvent.splitTime = e.startraw;
-                e.tagged = true;
-                events.joined.push(lastEvent);
-              } else if (lastEvent.startraw.getTime() == e.endraw.getTime()) {
-                if (e.location != lastEvent.location) {
-                  lastEvent.summary = `${lastEvent.summary} (in ${lastEvent.location}) and ${e.summary} (in ${e.location})`;
-                  lastEvent.location = "";
-                } else {
-                  lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
-                }
-                lastEvent.startraw = e.startraw;
-                lastEvent.start = parseDate(e.startraw);
-                lastEvent.startDate = e.startraw.toLocaleString();
-                lastEvent.split = true;
-                lastEvent.splitTime = e.endraw;
-                e.tagged = true;
-                events.joined.push(lastEvent);
               }
               !lastEvent.tagged && !e.tagged ? events.joined.push(lastEvent) : null;
               lastEvent = e;
@@ -455,15 +523,30 @@
         t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
       })
       .catch(error => {
+        errors.new(JSON.stringify(error, Object.getOwnPropertyNames(error)), "ClassSync");
         consol.error(error, "ClassSync")
-        document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:8px;">${sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`}</p>`;
+        document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:8px;">${sts != 404 ? `An error has occured, retrying...` : `The link you entered did not work. Please check it and try again.`}</p>`;
         document.getElementById('sp-nc').style.display = 'block';
-        document.getElementById('sp-nc').innerText = sts != 404 ? `An error occured...` : `The link you entered did not work. Please check it and try again.`;
+        document.getElementById('sp-nc').innerText = sts != 404 ? `An error has occured, retrying...` : `The link you entered did not work. Please check it and try again.`;
         calActiveText.textContent = "⚠ Error";
         calActiveText.setAttribute("error", "");
         calActiveText.removeAttribute("active");
+        if (errors.countOfType("ClassSync") < 5) {
+          ClassSync();
+        } else {
+          updateErrorTimer(60 - new Date().getSeconds());
+          t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
+        }
       })
   }
+  function updateErrorTimer(time) {
+    document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:8px;">An error occured. Retrying in ${time}s...</p>`;
+    document.getElementById('sp-nc').style.display = 'block';
+    document.getElementById('sp-nc').innerText = `An error occured. Retrying in ${time}s...`;
+    time > 0 ? ut = setTimeout(updateErrorTimer.bind(null, time-1), 1000 - new Date().getMilliseconds()) : null;
+  }
+  let ut = setTimeout(function() {return}, 60000);
+  setTimeout(ut)
   let t = setTimeout(function() {return}, 60000);
   clearTimeout(t);
   function formatCalLink(link, noscheme = false) {
@@ -629,14 +712,7 @@
       document.querySelector('.cards').appendChild(button)
     })
   }
-  function jsonCheck(json) {
-    try {
-      JSON.parse(json)
-    } catch {
-      return false
-    }
-    return true
-  }
+
   if (localStorage.getItem("buttonlayout")) {
     if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
       consol.log("Failed to parse buttonlayout, resetting", "Buttons")
@@ -675,25 +751,41 @@
           } else {
             let len = structuredClone(bl.buttons.length);
             bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
-            bl.buttons.forEach((b)=>{
+            Promise.all(bl.buttons.map((b)=> new Promise((resolve, reject)=>{
+              let tasks = {a:'required'}
               if (!b.name || !b.icon || !b.url || !(typeof b.id == 'number') ) {b.tagged = true;return;};
-              if (b.pid && !JSON.parse(defbl).all[b.pid]) {b.tagged = true;return;} else if (b.pid) {
+              if (b.pid && !JSON.parse(defbl).all[b.pid]) {b.tagged = true;return;} else if (typeof Number(b.pid) == "number") {
                 if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
                 if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
                 if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
+                tasks.a = true;
               };
+
+              let c = true;
+              for (const [k, v] of Object.entries(tasks)) {
+                if (v == 'required') {
+                  consol.warn(`Failed to fetch "${b.name}" button, task ${k} failed.`, "Buttons");
+                  b.tagged = true;
+                } else if (v == 'res') {
+                  c = false;
+                } else if (!v) {
+                  consol.warn(`Task ${k} for "${b.name}" button was incomplete.`, "Buttons");
+                }
+              }
+              if (c) resolve();
+            }))).then(()=>{
+              let rm = 0;
+              bl.buttons.filter(b=>b.tagged).forEach((b)=>{
+                rm++;
+                bl.buttons.splice(bl.buttons.indexOf(b), 1);
+              })
+              let errmsg = "";
+              if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`};
+              if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
+              if (errmsg) showAlert("Button Layout Updated", errmsg, {});
+              localStorage.setItem("buttonlayout", JSON.stringify(bl));
+              loadLS();
             })
-            let rm = 0;
-            bl.buttons.filter(b=>b.tagged).forEach((b)=>{
-              rm++;
-              bl.buttons.splice(bl.buttons.indexOf(b), 1);
-            })
-            let errmsg = "";
-            if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`};
-            if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
-            if (errmsg) showAlert("Button Layout Updated", errmsg);
-            localStorage.setItem("buttonlayout", JSON.stringify(bl));
-            loadLS();
           }
         })
         .catch(function(e) {
