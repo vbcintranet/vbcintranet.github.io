@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.7";
+  const version = "v1.7.8";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -691,21 +691,17 @@
       document.getElementById("cards-error").innerHTML = "<h2>You don't have any buttons</h2><h3>Visit the <a href='/customise' style='cursor:pointer;color:#b53e3e;font-style:italic;'>customisation centre</a> to add some.</h3>";
       return;
     }
+    bl.buttons.forEach((v, i) => {v.id = i;});
     bl.buttons.forEach(v=>{
       var button = document.createElement('div');
       button.classList.add("card");
-      button.setAttribute("data-href", v.url);
-      button.setAttribute("data-id", v.id);
-      v.param ? button.setAttribute("data-style", "self") : null;
       button.innerHTML = `<img src="${v.icon}" alt="${v.name} Icon"><div class="overlay"><p>${v.name}</p></div>`;
       button.addEventListener('click', (e) => {
         if (e.button == 1 || e.button == 0) {
-          const url = document.querySelector(`[data-id="${v.id}"]`).getAttribute('data-href');
-          const style = document.querySelector(`[data-id="${v.id}"]`).getAttribute('data-style');
-            document.querySelector(`[data-id="${v.id}"]`).classList.add('clicked');
+            button.classList.add('clicked');
           setTimeout(() => {
-            window.open(url, style ? `_${style}` : '_blank');
-              document.querySelector(`[data-id="${v.id}"]`).classList.remove('clicked');
+            window.open(v.url, v.param ? `_self` : '_blank');
+            button.classList.remove('clicked');
           }, 200);
         }
       })
@@ -726,6 +722,7 @@
         .then(function(def) {
           let vdef = JSON.parse(def)
           delete vdef.all;
+          vdef.buttons.forEach((v, i) => {v.id = i;});
           localStorage.setItem("buttonlayout", JSON.stringify(vdef))
           bl = JSON.parse(localStorage.getItem("buttonlayout"))
           loadLS()
@@ -745,6 +742,8 @@
           if (bl.v != JSON.parse(defbl).v) {
             let vdefbl = JSON.parse(def)
             delete vdefbl.all;
+            vdefbl.buttons = bl.buttons;
+            vdefbl.buttons.forEach((v, i) => {v.id = i;});
             localStorage.setItem("buttonlayout", JSON.stringify(vdefbl));
             bl = JSON.parse(localStorage.getItem("buttonlayout"));
             loadLS();
@@ -753,11 +752,12 @@
             bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
             Promise.all(bl.buttons.map((b)=> new Promise((resolve, reject)=>{
               let tasks = {a:'required'}
-              if (!b.name || !b.icon || !b.url || !(typeof b.id == 'number') ) {b.tagged = true;return;};
-              if (b.pid && !JSON.parse(defbl).all[b.pid]) {b.tagged = true;return;} else if (typeof Number(b.pid) == "number") {
-                if (b.name != JSON.parse(defbl).all[b.pid].name) b.name = JSON.parse(defbl).all[b.pid].name
-                if (b.icon != JSON.parse(defbl).all[b.pid].icon) b.icon = JSON.parse(defbl).all[b.pid].icon
-                if (b.url != JSON.parse(defbl).all[b.pid].url) b.url = JSON.parse(defbl).all[b.pid].url
+              if (!b.name || !b.icon || !b.url ) {b.tagged = true;return;};
+              if (b.pid && !JSON.parse(defbl).all.filter(d=>d.pid==b.pid)) {b.tagged = true;return;} else if (typeof Number(b.pid) == "number") {
+                let li = JSON.parse(defbl).all.filter(d=>d.pid==b.pid)[0];
+                ['name', 'icon', 'url'].forEach(p => {
+                  if (b[p] != li[p]) b[p] = li[p];
+                });
                 tasks.a = true;
               };
 
