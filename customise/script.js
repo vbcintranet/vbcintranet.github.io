@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.7";
+  const version = "v1.7.8";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -118,6 +118,7 @@
       v.a = true;
       v.from = from;
       !hide ? changes.push(v) : null;
+      bl.buttons.sort((a, b) => a.id - b.id);
       localStorage.setItem("buttonlayout", JSON.stringify(bl));
     } else if (!add) {
       bl.buttons.forEach(v => {
@@ -131,6 +132,7 @@
           v.a = false;
           v.from = from;
           !hide ? changes.push(v) : null
+          bl.buttons.sort((a, b) => a.id - b.id);
           localStorage.setItem("buttonlayout", JSON.stringify(bl))
         }
       })
@@ -148,6 +150,7 @@
     Array.from(document.querySelector('.cards').children).forEach(function (child) {
       document.querySelector('.cards').removeChild(child);
     });
+    bl.buttons.forEach((v, i) => {v.id = i;});
     bl.buttons.forEach(v => {
       var button = document.createElement('div')
       button.classList.add("card")
