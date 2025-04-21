@@ -60,7 +60,6 @@
     }
   }
 
-  // Close drawer with Escape key
   function keyCloseDrawer(e) {
     if (e.key == "Escape") {
       closeDrawer();
@@ -786,9 +785,6 @@
         loadLS();
       } else if (trashZone.classList.contains('active')) {
         trashZone.classList.remove('active');
-        // if (!(typeof $drag.properties.pid == 'number')) {
-        //   // Custom preset deletion goes here - not implemented yet
-        // }
       }
       
       cleanupDrag();
@@ -835,7 +831,7 @@
     return true
   }
   var bl = {};
-  var cbl = {};
+  var cbl = {cbuttons: []};
   if (localStorage.getItem("buttonlayout")) {
     if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
       consol.log("Failed to parse buttonlayout, resetting", "Buttons")
