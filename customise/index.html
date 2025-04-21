@@ -10,66 +10,131 @@ permalink: /customise
   <title>Customisation Centre (Viewbank College)</title>
   <link href="/customise/style.css" rel="stylesheet" type="text/css" />
   <link href='https://fonts.googleapis.com/css?family=Varela Round' as="style" rel="preload" onload="this.onload=null;this.rel='stylesheet'">
-  <link rel="icon" href="./images/Favicon.ico">
+  <link rel="icon" href="/images/Favicon.ico">
+  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/all.css">
+  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-solid.css">
+  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-regular.css">
+  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-light.css">
+  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/duotone.css"/>
+  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/brands.css"/>
 </head>
 
 <body>
-  <header>
-    <div class="container">
-      <div class="header-content">
-        <div class="header-item no-hover flex">
-          <img src="/images/icons/VBCLogo.webp" alt="VBC Logo" class="header-img">
-          <h1>Viewbank College Intranet</h1>
+  <div class="page-layout hide">
+    <div class="drawer-container">
+      <div class="drawer-pullout" id="drawer-pullout"><i class="fa-solid fa-arrow-right-to-line"></i></div>
+      <div class="drawer-background">
+        <div class="control-button-container">
+          <div class="control-button" id="reset">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            <span>Reset</span>
+          </div>
+          <div class="control-button" id="undo">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Undo</span>
+          </div>
+          <div class="control-button" id="accept">
+            <i class="fa-solid fa-check"></i>
+            <span>Accept</span>
+          </div>
         </div>
-        <div class="header-item">
-          <p id="clock" class="header-itext"></p>
+        <div class="trash-zone" id="trash-zone">
+          <i class="fa-solid fa-trash-can"></i>
+          <p>Drag cards here to remove</p>
         </div>
+        <div class="drawer-header">
+          <h2>Available Buttons</h2>
+          <p>Drag and drop buttons to any insert zone or click one to add it to the end.</p>
+        </div>
+        
+        <div class="presets-container" id="presets-container"></div>
+        
+        <div class="drawer-header">
+          <h2>Custom Buttons</h2>
+          <p>Click the 'Add New' button to create up to 10 custom buttons. To delete one, either click it twice or drag it to the trash zone at the top.</p>
+        </div>
+        <div class="custom-btns-container" id="custom-btns-container"><div class="drawer-custom-btn"><i class="fa-solid fa-plus"></i><div class="overlay" style="padding: 5px;bottom: -8%;"><p>Add New</p></div></div></div>
       </div>
     </div>
-  </header>
-  <div class="cards">
-  </div>
-  <div id="cards-error"></div>
-  <div class="bottom">
-    <div class="item" id="reset" title="Reset buttons">
-      <img src="/images/reset.webp" alt="Reset buttons">
-    </div>
-    <div class="item" id="add" title="Add button">
-      <img src="/images/add.webp" alt="Add button">
-    </div>
-    <div class="item" id="undo" title="Undo">
-      <img src="/images/undo.webp" alt="Undo">
-    </div>
-    <div class="item" id="accept" title="Accept changes">
-      <img src="/images/tick.webp" alt="Accept changes">
-    </div>
-  </div>
-  <div class="add-container" style="display: none;">
-    <div class="add-overlay"></div>
-    <div class="add-background">
-      <h3 id="add-close" class="add-close">X</h3>
-      <h1>Add a Button</h1>
-      <div class="add-group">
-        <h3>Preset</h3>
-        <div id="preset-cards" class="preset-cards"></div>
-        <p id="preset-msg">Press the plus button on an icon to add it to your layout</p>
+    
+    <div id="page-content-wrapper">
+      <header>
+        <div class="container">
+          <div class="header-content">
+            <div class="header-item no-hover flex">
+              <img src="/images/icons/VBCLogo.webp" alt="VBC Logo" class="header-img">
+              <h1>Viewbank College Intranet</h1>
+            </div>
+            <div class="header-item">
+              <p id="clock" class="header-itext"></p>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div class="cards">
       </div>
-      <div class="add-group">
-        <h3>Custom</h3>
-        <h5>there's nothing here right now</h5>
-      </div>
+      <div id="cards-error"></div>
     </div>
   </div>
+  <div class="content-blur show"></div>
   <div class="alert-container" style="display: none;">
     <div class="alert-overlay"></div>
     <div class="alert-background">
       <div class="alert">
         <h1 id="alert-title">Alert</h1>
-        <p id="alert-message">Message</p>
-        <div class="alert-buttons">
-          <button id="alert-ok">OK</button>
-          <button id="alert-cancel">Cancel</button>
+      </div>
+      <p id="alert-message">Message</p>
+      <div class="alert-buttons">
+        <button id="alert-ok">OK</button>
+        <button id="alert-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <div class="custom-button-editor" style="display: none;">
+    <div class="alert-overlay"></div>
+    <div class="editor-background">
+      <div class="editor-header">
+        <h1>Create Custom Button</h1>
+      </div>
+      <div class="editor-content">
+        <div class="editor-section">
+          <div class="editor-form">
+            <div class="input-group">
+              <label for="button-icon-upload">Button Icon</label>
+              <div class="file-upload-container">
+                <button id="upload-btn" class="upload-button">Choose File</button>
+                <span id="file-name">No file chosen</span>
+                <input type="file" id="button-icon-upload" accept="image/*" style="display: none;">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="button-title">Button Title</label>
+              <input type="text" id="button-title" maxlength="15" placeholder="Enter button title">
+              <span class="char-count"><span id="title-char-count">0</span>/15</span>
+            </div>
+            <div class="input-group">
+              <label for="button-url">Button URL</label>
+              <input type="text" id="button-url" placeholder="https://example.com">
+            </div>
+          </div>
         </div>
+        <div class="editor-section">
+          <div class="preview-container">
+            <h3>Preview</h3>
+            <div class="card-preview">
+              <div class="preview-card">
+                <img id="preview-img" src="/images/icons/VBCLogo.webp" alt="Preview Icon">
+                <div class="overlay">
+                  <p id="preview-title">Button Preview</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="editor-buttons">
+        <button id="editor-cancel">Cancel</button>
+        <button id="editor-create" disabled>Create</button>
       </div>
     </div>
   </div>

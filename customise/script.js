@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.8";
+  const version = "v2.0.0";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -16,93 +16,66 @@
   }
   updateClock();
 
-  const cardinserts = document.querySelectorAll('.insert');
-  cardinserts.forEach(insert => {
-    insert.addEventListener('mouseup', (e) => {
-      var card = insert.parentElement;
-      if (e.button == 1 || e.button == 0) {
-        if (bl.buttons.length >= 25) {
-          document.getElementById("preset-msg").innerText = "You have reached the maximum amount of icons (25)";
-          document.getElementById("preset-msg").classList.add("error");
-          setTimeout(() => {
-            document.getElementById("preset-msg").innerText = "";
-            document.getElementById("preset-msg").classList.remove("error");
-          }, 3000)
-          return
-        }
-        let b = {name: card.children[2].children[0].innerText, icon: card.children[0].src, url: card.getAttribute('data-href')};
-        if (card.getAttribute('data-style')) b.param = card.getAttribute('data-style');
-        if (card.getAttribute('data-preset-id')) b.presetId = card.getAttribute('data-preset-id');
-        updateLS(true, b);
-        loadLS()
-        closeAddMenu();
-      }
-    });
-  });
-
+  const pageLayout = document.querySelector('.page-layout');
   const accept = document.getElementById('accept');
+
+  document.addEventListener('DOMContentLoaded', () => {setTimeout(() => {pageLayout.classList.remove('hide');document.querySelector('.content-blur').classList.remove('show');setTimeout(() => {document.querySelector('.content-blur').remove();}, 500);}, 200)});
 
   accept.addEventListener('click', (event) => {
     window.open('/', '_self');
   });
 
-  const addContainer = document.querySelector('.add-container');
-  const addOverlay = document.querySelector('.add-overlay');
-  const addBackground = document.querySelector('.add-background');
-  const addButton = document.getElementById('add');
-  let addOpen = false
+  const drawerContainer = document.querySelector('.drawer-container');
+  const cardsContainer = document.querySelector('.cards');
+  const pulloutButton = document.getElementById('drawer-pullout');
+  const trashZone = document.getElementById('trash-zone');
+  const drawerBackground = document.querySelector('.drawer-background');
+  const presetsContainer = document.getElementById('presets-container');
+  const cButtonContainer = document.getElementById('custom-btns-container');
+  let addOpen = false;
 
-  addButton.addEventListener('click', openAddMenu);
+  pulloutButton.addEventListener('click', toggleDrawer);
 
-  addOverlay.addEventListener('click', () => {
-    closeAddMenu();
-  });
-
-  addBackground.addEventListener('click', (event) => {
-    event.stopPropagation();
-  });
-
-  function openAddMenu() {
+  function openDrawer() {
     if (!addOpen) {
-      document.addEventListener('keydown', keyCloseAM);
+      document.addEventListener('keydown', keyCloseDrawer);
       addOpen = true;
-      addContainer.style = ''
-      setTimeout(() => {
-        addBackground.classList.add('active');
-        addOverlay.classList.add('active');
-      }, 1);
+      pulloutButton.classList.add('active');
+      drawerContainer.classList.add('active');
     }
   }
 
-  function closeAddMenu() {
-    document.removeEventListener('keydown', keyCloseAM);
-    addBackground.classList.remove('active');
-    addOverlay.classList.remove('active');
-    document.getElementById("preset-msg").innerText = "";
-    setTimeout(() => {
-      addBackground.classList.remove('active');
-      addOverlay.classList.remove('active');
-      addContainer.style.display = 'none';
-      addOpen = false;
-    }, 300);
+  function closeDrawer() {
+    document.removeEventListener('keydown', keyCloseDrawer);
+    pulloutButton.classList.remove('active');
+    drawerContainer.classList.remove('active');
+    addOpen = false;
   }
-  document.getElementById("add-close").addEventListener("click", closeAddMenu);
 
-  function keyCloseAM(e) {
+  function toggleDrawer() {
+    if (addOpen) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  }
+
+  // Close drawer with Escape key
+  function keyCloseDrawer(e) {
     if (e.key == "Escape") {
-      closeAddMenu()
+      closeDrawer();
     }
   }
 
   var changes = []
   const $drag = {el: null, id: null, properties: {}, prev: null}
 
-  function updateLS(add, { id, name, icon, url, param, presetId, from }, hide = false) {
+  function updateLS(add, { id, name, icon, url, param, pid, from, cid }, hide = false) {
     if (add && bl.buttons.length < 25) {
       let b = {}
       name && icon && url ? b = { name, icon, url } : console.error("Missing parameters", "Buttons");
       if (param) b.param = param;
-      if (presetId) b.pid = presetId;
+      if (pid != undefined && typeof Number(pid) == "number") b.pid = pid; else if (cid != undefined && typeof Number(cid) == "number") b.cid = cid;
       let f = bl.buttons.some(button => button.id === id)
       if (typeof id == 'number' && f) {
         bl.buttons.forEach(v => {
@@ -120,137 +93,738 @@
       !hide ? changes.push(v) : null;
       bl.buttons.sort((a, b) => a.id - b.id);
       localStorage.setItem("buttonlayout", JSON.stringify(bl));
+      if (bl.buttons.length >= 25) {
+        drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+          p.classList.add('locked');
+        });
+      } else {
+        drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+          p.classList.remove('locked');
+        });
+      }
     } else if (!add) {
       bl.buttons.forEach(v => {
         if (v.id == id) {
-          bl.buttons.splice(bl.buttons.indexOf(v), 1)
-          bl.buttons.forEach(v => {
-            if (v.id > id) {
-              v.id--
-            }
-          })
-          v.a = false;
-          v.from = from;
-          !hide ? changes.push(v) : null
+          const rm = structuredClone(v);
+          
+          bl.buttons.splice(bl.buttons.indexOf(v), 1);
+          
+          bl.buttons.forEach(v => {if (v.id > id) v.id--;});
+          
+          rm.a = false;
+          rm.from = from;
+          !hide ? changes.push(rm) : null;
+          
           bl.buttons.sort((a, b) => a.id - b.id);
-          localStorage.setItem("buttonlayout", JSON.stringify(bl))
+          localStorage.setItem("buttonlayout", JSON.stringify(bl));
+          if (bl.buttons.length >= 25) {
+            drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+              p.classList.add('locked');
+            });
+          } else {
+            drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+              p.classList.remove('locked');
+            });
+          }
+
+          if (!hide) {
+            const cardsContainer = document.querySelector('.cards');
+            const cardToRemove = cardsContainer.querySelector(`.card[data-id="${id}"]`);
+
+            if (cardToRemove) {
+              cardToRemove.classList.add('card-remove');
+              
+              cardToRemove.addEventListener('animationend', () => {
+                let gapToRemove = null;
+                const nextCard = cardToRemove.nextElementSibling;
+
+                if (nextCard && nextCard.classList.contains('card-gap') && parseInt(nextCard.dataset.index) !== bl.buttons.length) {
+                  gapToRemove = nextCard;
+                } else {
+                  const prevGap = cardToRemove.previousElementSibling;
+                  if (prevGap && prevGap.classList.contains('card-gap') && parseInt(prevGap.dataset.index) !== 0) {
+                    gapToRemove = prevGap;
+                  }
+                }
+                
+                if (gapToRemove) {
+                  gapToRemove.remove();
+                }
+
+                cardToRemove.remove();
+
+                const remainingCards = cardsContainer.querySelectorAll('.card');
+                remainingCards.forEach((card, idx) => {
+                  card.setAttribute('data-index', idx);
+                });
+                
+                const remainingGaps = cardsContainer.querySelectorAll('.card-gap');
+                remainingGaps.forEach((gap, idx) => {
+                  gap.setAttribute('data-index', idx);
+                });
+
+                if (bl.buttons.length > 0) {
+                  let lastGap = cardsContainer.querySelector(`.card-gap[data-index="${bl.buttons.length}"]`);
+                  if (!lastGap) {
+                    const newLastGap = document.createElement('div');
+                    newLastGap.classList.add('card-gap');
+                    newLastGap.setAttribute('data-index', bl.buttons.length);
+                    cardsContainer.appendChild(newLastGap);
+                  }
+                }
+              }, { once: true });
+            }
+          }
         }
-      })
+      });
     }
   }
 
   function undoUpdate() {
     if (!changes.length) return;
-    typeof changes[changes.length - 1].from == 'number' && changes[changes.length - 1].a ? (()=>{updateLS(false, { id: changes[changes.length - 1].id }, true); updateLS(true, {id: changes[changes.length - 1].from, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, presetId: changes[changes.length - 1].pid}, true)})() : changes[changes.length - 1].a ? updateLS(false, { id: changes[changes.length - 1].id }, true) : updateLS(true, { id: changes[changes.length - 1].id, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, presetId: changes[changes.length - 1].pid }, true);
+    typeof changes[changes.length - 1].from == 'number' && changes[changes.length - 1].a ? (()=>{updateLS(false, { id: changes[changes.length - 1].id }, true); updateLS(true, {id: changes[changes.length - 1].from, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid}, true)})() : changes[changes.length - 1].a ? updateLS(false, { id: changes[changes.length - 1].id }, true) : updateLS(true, { id: changes[changes.length - 1].id, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid }, true);
     changes.length = changes.length - 1 < 0 ? 0 : changes.length - 1;
     loadLS();
   }
   
-  function loadLS() {
-    Array.from(document.querySelector('.cards').children).forEach(function (child) {
-      document.querySelector('.cards').removeChild(child);
-    });
+  function shrinkToFit(el, minSize = 10) {
+    el.style.wordWrap = '';el.style.width = '';
+    const parentWidth = el.parentNode.clientWidth - 
+      parseFloat(getComputedStyle(el.parentNode).paddingLeft) -
+      parseFloat(getComputedStyle(el.parentNode).paddingRight);
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > parentWidth && fs > minSize) {
+      fs = fs - 1;
+      fs < 16 ? (()=>{el.style.wordWrap = 'break-word';el.style.width = '110px';})() : null;
+      el.style.fontSize = `${fs}px`;
+    }
+  }
+
+  function loadLS() {    
+    let dragGhost = null;
+    let activeGap = null;
+    let vId = -1;
+    
     bl.buttons.forEach((v, i) => {v.id = i;});
-    bl.buttons.forEach(v => {
-      var button = document.createElement('div')
-      button.classList.add("card")
-      button.setAttribute("data-href", v.url)
-      button.setAttribute("data-id", v.id)
-      button.setAttribute("draggable", "true")
-      button.innerHTML = `<img src="${v.icon}" alt="${v.name} Icon"><div class="remove">-</div><div class="cardname"><p>${v.name}</p></div>`;
-      button.children[1].addEventListener('mouseup', (e) => {
-        if (e.button == 1 || e.button == 0) {
-          const id = v.id;
-          updateLS(false, {id})
-          loadLS()
+    fetch("/def/def.json")
+      .then(function (res) {
+        return res.text()
+      })
+      .then(defbl => {
+        let vdefbl = JSON.parse(defbl);
+        let len = structuredClone(bl.buttons.length);
+        let refReq = false;
+        bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
+        Promise.all(bl.buttons.map((b)=> new Promise((resolve, reject)=>{
+          let tasks = {a:'required'}
+          if (!b.name || !b.icon || !b.url ) {b.tagged = true;resolve();};
+          if (b.pid != undefined && typeof Number(b.pid) == "number" && vdefbl.all.filter(d=>d.pid==b.pid).length == 0) {b.tagged = true;resolve();} else if (b.pid != undefined && typeof Number(b.pid) == "number") {
+            let li = vdefbl.all.filter(d=>d.pid==b.pid)[0];
+            ['name', 'icon', 'url'].forEach(p => {
+              if (li[p] && (b[p] != li[p])) {b[p] = li[p];refReq = true;};
+            });
+            tasks.a = true;
+          } else if (b.cid != undefined && typeof Number(b.cid) == "number") {
+            let li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];
+            if (!li) {b.tagged = true;resolve();};
+            ['name', 'icon', 'url'].forEach(p => {
+              if (li[p] && (b[p] != li[p])) {b[p] = li[p];refReq = true;};
+            });
+            tasks.a = true;
+          };
+
+          let c = true;
+          for (const [k, v] of Object.entries(tasks)) {
+            if (v == 'required') {
+              consol.warn(`Failed to fetch "${b.name}" button, task '${k}' failed.`, "Buttons");
+              b.tagged = true;
+            } else if (v == 'res') {
+              c = false;
+            } else if (!v) {
+              consol.warn(`Task ${k} for "${b.name}" button was incomplete.`, "Buttons");
+            }
+          }
+          if (c) resolve();
+        }))).then(()=>{
+          let rm = 0;
+          bl.buttons.filter(b=>b.tagged).forEach((b)=>{
+            rm++;
+            bl.buttons.splice(bl.buttons.indexOf(b), 1);
+          })
+          let errmsg = "";
+          if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`};
+          if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
+          if (errmsg) alertSystem.callAlert("Button Layout Updated", errmsg, {});
+          localStorage.setItem("buttonlayout", JSON.stringify(bl));
+          if (rm > 0 || len > 25 || refReq) {
+            loadLS();
+          }
+        }).catch(function (e) {
+          consol.error("Failed to fetch buttons", "Buttons");
+          console.error(e)
+          alertSystem.callAlert("Failed to check buttons", "The server didn't respond.");
+        });
+      }).catch(function (e) {
+        consol.error("Failed to fetch buttons", "Buttons");
+        console.error(e)
+        alertSystem.callAlert("Failed to check buttons", "The server didn't respond.");
+      });
+    
+
+
+    function createCard(buttonData, index) {
+      const button = document.createElement('div');
+      button.classList.add("card");
+      button.setAttribute("data-href", buttonData.url);
+      button.setAttribute("data-id", buttonData.id);
+      button.setAttribute("data-index", index);
+      button.setAttribute("draggable", "true");
+      button.innerHTML = `<img src="${buttonData.icon}" alt="${buttonData.name} Icon"><div class="overlay"><p>${buttonData.name}</p></div><div class="delete-overlay"><i class="fa-solid fa-xmark"></i></div>`;
+      button.fontSize = "";
+      shrinkToFit(button.querySelector('.overlay p'), 14);
+      let clickAllowed = true;
+      button.addEventListener('mousedown', (e) => {
+        if (e.button == 0) {
+          clickAllowed = true;
+        }
+      });
+      button.addEventListener('mouseup', (e) => {
+        if (e.button == 0 && clickAllowed && !(button.dragging || button.classList.contains("dragging"))) {
+          e.preventDefault();
+          if (button.classList.contains('delete-mode')) {
+            const id = buttonData.id;
+            updateLS(false, { id });
+            button.classList.add('card-removing');
+            setTimeout(loadLS, 300);
+          } else {
+            document.querySelectorAll('.card.delete-mode').forEach(card => {
+              card.classList.remove('delete-mode');
+            });
+            
+            button.classList.add('delete-mode');
+            setTimeout(() => {
+              document.addEventListener('mousedown', removeDeleteMode);
+            }, 0);
+          }
         }
       });
       
+      function removeDeleteMode(e) {
+        if (!button.contains(e.target)) {
+          button.classList.remove('delete-mode');
+          document.removeEventListener('mousedown', removeDeleteMode);
+        }
+      }
+      
       button.addEventListener('dragstart', (e) => {
-        $drag.prev = button.cloneNode(true);
-        $drag.prev.childNodes[1].remove();
-        $drag.prev.style.position = "absolute";
-        $drag.prev.style.top = "-1000px";
-        $drag.prev.style.border = "3px dashed #888";
-        document.body.appendChild($drag.prev);
-        e.dataTransfer.setDragImage($drag.prev, 0, 0);
-        button.style.opacity = '0.4';
-        button.style.border = '3px dashed transparent';
-        $drag.el = button;
-        $drag.id = v.id;
-        const properties = { name: v.name, icon: v.icon, url: v.url };
-        v.param ? properties.param = v.param : null;
-        v.pid ? properties.presetId = v.pid : null;
-        $drag.properties = properties;
+        if (button.classList.contains('delete-mode')) {
+          e.preventDefault();
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+        clickAllowed = false;
+        startDrag(e, button, index, buttonData);
       });
-      button.addEventListener('dragend', () => {button.style.opacity = ''; button.style.border = ''; $drag.el = null; $drag.id = null; $drag.properties = {}; $drag.prev.remove();});
-      button.addEventListener('dragover', (e) => {e.preventDefault();});
-      button.addEventListener('dragenter', (e) => {e.preventDefault();if ($drag.el !== e.target && $drag.id !== v.id && e.target.className == 'card') {e.target.style.border = '3px dashed #45c947';}});
-      button.addEventListener('dragleave', (e) => {e.preventDefault();if ($drag.el !== e.target && $drag.id !== v.id && e.target.className == 'card') {e.target.style.border = '';}});
-      button.addEventListener('drop', () => {
-        let b = structuredClone($drag.properties)
-        b.id = v.id;
-        b.from = $drag.id;
-        updateLS(false, {id: $drag.id}, true)
-        updateLS(true, b)
-        loadLS()
-        $drag.el = null;
-        $drag.id = null;
-        $drag.properties = {};
-        $drag.prev.remove();
-        button.style.border = '';
-        button.style.border = '';
+
+      return button;
+    }
+
+    function createGap(index) {
+      const gap = document.createElement('div');
+      gap.innerHTML = `<div><i class="fa-solid fa-plus"></i></div>`;
+      gap.classList.add('card-gap');
+      gap.setAttribute('data-index', index);
+      return gap;
+    }
+
+    const existingCards = Array.from(cardsContainer.querySelectorAll('.card'));
+    const existingGaps = Array.from(cardsContainer.querySelectorAll('.card-gap'));
+
+    const cardsToKeep = new Set();
+    const gapsToKeep = new Set();
+
+    let needsRebuild = false;
+    
+    if (existingCards.length !== bl.buttons.length || existingCards.length === 0) {
+      needsRebuild = true;
+    }
+    
+    if (needsRebuild) {
+      cardsContainer.innerHTML = '';
+      
+      if (bl.buttons.length == 0) {
+        cardsContainer.appendChild(createGap(0));
+      }
+      
+      bl.buttons.forEach((buttonData, index) => {
+        cardsContainer.appendChild(createGap(index));
+        
+        const card = createCard(buttonData, index);
+        cardsContainer.appendChild(card);
+        card.querySelector('.overlay p').style.fontSize = "";
+        shrinkToFit(card.querySelector('.overlay p'), 14);
       });
-      document.querySelector('.cards').appendChild(button)
-    });
+
+      if (bl.buttons.length > 0) {
+        cardsContainer.appendChild(createGap(bl.buttons.length));
+      }
+    } else {
+      const cardMap = new Map();
+      const positionUpdates = [];
+
+      existingCards.forEach(card => {
+        const cardId = parseInt(card.dataset.id);
+        cardMap.set(cardId, card);
+      });
+
+      bl.buttons.forEach((buttonData, index) => {
+        const id = buttonData.id;
+        const card = cardMap.get(id);
+        
+        if (card) {
+          const currentIndex = parseInt(card.dataset.index);
+          
+          if (currentIndex !== index) {
+            positionUpdates.push({ card, newIndex: index, data: buttonData });
+          } else {
+            const currentHref = card.dataset.href;
+            const currentName = card.querySelector('.overlay p').textContent;
+            const currentIcon = card.querySelector('img').src;
+            
+            if (currentHref !== buttonData.url || currentName !== buttonData.name || currentIcon !== buttonData.icon) {
+              card.dataset.href = buttonData.url;
+              card.querySelector('.overlay p').textContent = buttonData.name;
+              card.querySelector('img').src = buttonData.icon;
+              card.querySelector('img').alt = buttonData.name + ' Icon';
+            }
+
+            cardsToKeep.add(card);
+          }
+          card.querySelector('.overlay p').style.fontSize = "";
+          shrinkToFit(card.querySelector('.overlay p'), 14);
+        } else {
+          needsRebuild = true;
+        }
+      });
+
+      if (positionUpdates.length > 0 && !needsRebuild) {
+        positionUpdates.sort((a, b) => {
+          const aDist = Math.abs(parseInt(a.card.getAttribute('data-index')) - a.newIndex);
+          const bDist = Math.abs(parseInt(b.card.getAttribute('data-index')) - b.newIndex);
+          return bDist - aDist;
+        });
+        
+        positionUpdates.forEach(update => {
+          const { card, newIndex, data } = update;
+
+          card.setAttribute('data-index', newIndex);
+
+          const elements = Array.from(cardsContainer.children);
+          let insertPosition = null;
+
+          for (let i = 0; i < elements.length; i++) {
+            const elem = elements[i];
+            if (elem.classList.contains('card-gap') && parseInt(elem.getAttribute('data-index')) === newIndex) {
+              insertPosition = elem;
+              break;
+            }
+          }
+
+          if (insertPosition && insertPosition.nextElementSibling !== card) {
+            insertPosition.after(card);
+          }
+          
+          cardsToKeep.add(card);
+        });
+
+        existingGaps.forEach(gap => {
+          gapsToKeep.add(gap);
+        });
+      }
+
+      if (needsRebuild) {
+        cardsContainer.innerHTML = '';
+
+        if (bl.buttons.length == 0) {
+          cardsContainer.appendChild(createGap(0));
+        }
+        
+        bl.buttons.forEach((buttonData, index) => {
+          cardsContainer.appendChild(createGap(index));
+          
+          const card = createCard(buttonData, index);
+          cardsContainer.appendChild(card);
+          card.querySelector('.overlay p').style.fontSize = "";
+          shrinkToFit(card.querySelector('.overlay p'), 14);
+        });
+
+        if (bl.buttons.length > 0) {
+          cardsContainer.appendChild(createGap(bl.buttons.length));
+        }
+      }
+    }
+    
+    if (!needsRebuild && bl.buttons.length > 0) {
+      let lastGap = cardsContainer.querySelector(`.card-gap[data-index="${bl.buttons.length}"]`);
+      if (!lastGap) {
+        lastGap = createGap(bl.buttons.length);
+        cardsContainer.appendChild(lastGap);
+      }
+    }
+    
+    let isDragging = false;
+    
+    function startDrag(e, button, index, itemData) {
+      e.preventDefault();
+      
+      vId = index;
+      
+      cardsContainer.classList.add('dragging-active');
+      
+      dragGhost = button.cloneNode(true);
+      dragGhost.classList.add('drag-ghost');
+      dragGhost.style.width = `${button.offsetWidth}px`;
+      dragGhost.style.height = `${button.offsetHeight}px`;
+      document.body.appendChild(dragGhost);
+      
+      isDragging = true;
+      
+      updateGhostPosition(e);
+      
+      button.classList.add('dragging');
+      button.dragging = true;
+      
+      $drag.el = button;
+      $drag.id = itemData.id;
+      const properties = { name: itemData.name, icon: itemData.icon, url: itemData.url };
+      itemData.param ? properties.param = itemData.param : null;
+      itemData.pid != undefined && typeof Number(itemData.pid) == "number" ? properties.pid = itemData.pid : null;
+      $drag.properties = properties;
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function updateGhostPosition(e) {
+      if (!dragGhost) return;
+      dragGhost.style.left = `${e.clientX - 20}px`;
+      dragGhost.style.top = `${e.clientY - 10}px`;
+    }
+    function onMouseMove(e) {
+      e.preventDefault();
+      
+      if (isDragging) {
+        updateGhostPosition(e);
+        
+        const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+
+        if (elemBelow) {
+          let target = elemBelow;
+          while (target && !target.classList.contains('card-gap') && target !== cardsContainer && target !== trashZone) {
+            target = target.parentElement;
+          }
+          
+          if (target && target.classList.contains('card-gap')) {
+            const gapIndex = parseInt(target.getAttribute('data-index'));
+            
+            if (gapIndex !== vId && gapIndex !== vId + 1) {
+              if (activeGap && activeGap !== target) {
+                activeGap.classList.remove('active');
+              }
+
+              target.classList.add('active');
+              activeGap = target;
+            }
+          } else if (activeGap) {
+            activeGap.classList.remove('active');
+            activeGap = null;
+          }
+
+          if (target && target === trashZone) {
+            trashZone.classList.add('active');
+          } else {
+            trashZone.classList.remove('active');
+          }
+        }
+      }
+    }
+    
+    function onMouseUp(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+
+      if (activeGap) {
+        const target = parseInt(activeGap.getAttribute('data-index'));
+        let b = structuredClone(bl.buttons[vId]);
+        updateLS(false, { id: vId }, true);
+        b.id = target > vId ? target - 1 : target;
+        b.from = vId;
+        updateLS(true, b);
+
+        loadLS();
+      } else if (trashZone.classList.contains('active')) {
+        trashZone.classList.remove('active');
+        const id = $drag.id;
+        updateLS(false, { id });
+        $drag.el.classList.add('card-removing');
+        setTimeout(loadLS, 300);
+      }
+      
+      cleanupDrag();
+    }
+    
+    document.addEventListener('dragover', onMouseMove);
+    document.addEventListener('drop', onMouseUp);
+    document.addEventListener('dragend', cleanupDrag);
+    
+    function cleanupDrag() {
+      if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+      }
+
+      if (activeGap) {
+        activeGap.classList.remove('active');
+        activeGap = null;
+      }
+      
+      document.querySelectorAll('.card.dragging').forEach(card => {
+        card.classList.remove('dragging');
+        card.dragging = false;
+      });
+      cardsContainer.classList.remove('dragging-active');
+      
+      vId = -1;
+      $drag.el = null;
+      $drag.id = null;
+      $drag.properties = {};
+      
+      document.removeEventListener('dragover', onMouseMove);
+      document.removeEventListener('drop', onMouseUp);
+      document.removeEventListener('dragend', cleanupDrag);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
   }
 
   (() => {
+    let dragGhost = null;
+    let activeGap = null;
+    let isDragging = false;
+    
     fetch("/def/def.json")
       .then(function (res) {
         return res.text()
       })
       .then(function (defbl) {
-        JSON.parse(defbl).all.forEach((b) => {
-          var a = document.createElement('div');
-          a.classList.add("preset-card");
-          a.setAttribute("data-href", b.url);
-          a.setAttribute("data-preset-id", b.pid);
-          a.innerHTML = `<img src="${b.icon}"><div class="insert">+</div><div class="preset-cardname"><h3>${b.name}</h3></div>`;
-          document.getElementById("preset-cards").append(a);
-        })
-      })
-      .then(function () {
-        const presetInserts = document.querySelectorAll('.insert');
-        presetInserts.forEach(insert => {
-          insert.addEventListener('mouseup', (e) => {
-            var card = insert.parentElement;
-            if (e.button == 1 || e.button == 0) {
-              if (bl.buttons.length >= 25) {
-                document.getElementById("preset-msg").innerText = "You have reached the maximum amount of icons (25)";
-                document.getElementById("preset-msg").classList.add("error");
-                setTimeout(() => {
-                  document.getElementById("preset-msg").innerText = ""
-                  document.getElementById("preset-msg").classList.remove("error");
-                }, 3000)
-                return
-              }
-              let b = {name: card.children[2].children[0].innerText, icon: card.children[0].src, url: card.getAttribute('data-href')};
-              if (card.getAttribute('data-style')) b.param = card.getAttribute('data-style');
-              if (card.getAttribute('data-preset-id')) b.presetId = card.getAttribute('data-preset-id');
-              updateLS(true, b);
-              document.getElementById("preset-msg").innerText = `Added '${card.children[2].children[0].innerText}' preset to your layout`;
-              loadLS();
+        const presets = JSON.parse(defbl).all;
+        
+        presetsContainer.innerHTML = '';
+        
+        presets.forEach((preset) => {
+          const presetElem = document.createElement('div');
+          presetElem.classList.add("drawer-card");
+          presetElem.setAttribute("draggable", "true");
+          bl.buttons.length >= 25 ? presetElem.classList.add('locked') : null;
+          presetElem.dataset.href = preset.url;
+          presetElem.dataset.pid = preset.pid;
+          presetElem.innerHTML = `<img src="${preset.icon}" alt="${preset.name} Icon"><div class="overlay" style="padding: 5px;bottom: -8%;"><p>${preset.name}</p></div><div class="locked-overlay"><i class="fa-solid fa-lock"></i></div>`;
+          let clickAllowed = true;
+
+          const presetData = {
+            name: preset.name,
+            icon: preset.icon,
+            url: preset.url,
+            pid: preset.pid
+          };
+
+          presetElem.addEventListener('mousedown', (e) => {
+            if (e.button == 0 || e.button == 1) {
+              clickAllowed = true;
             }
           });
+          presetElem.addEventListener('mouseup', (e) => {
+            if ((e.button == 0 || e.button == 1) && clickAllowed) {
+              if (bl.buttons.length >= 25) {
+              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+                p.classList.add('locked');
+              });
+
+              alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of buttons (25).\nPlease remove some before adding new ones.");
+              return;
+            }
+
+            updateLS(true, presetData);
+
+            if (bl.buttons.length >= 25) {
+              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+                p.classList.add('locked');
+              });
+            }
+
+            loadLS();
+            }
+          });
+
+          
+          presetElem.addEventListener('dragstart', (e) => {
+            if (presetElem.classList.contains('locked')) {
+              e.preventDefault();
+              return;
+            }
+    
+            e.preventDefault();
+            e.stopPropagation();
+            clickAllowed = false;
+            startDrag(e, presetElem, presetData);
+          });
+          
+          presetsContainer.appendChild(presetElem);
         });
       })
       .catch(function (e) {
         consol.error("Failed to fetch pesets", "Presets")
-        showAlert("Failed to load presets", "The server didn't respond.")
+        alertSystem.callAlert("Failed to load presets", "The server didn't respond.")
         document.getElementById("preset-msg").innerHTML = "Presets failed to load. Please <a onclick='window.window.reloadPage()' style='color: #c94545;font-weight:bold;cursor:pointer;'>refresh</a> the page or try again later."
         document.getElementById("preset-msg").classList.add("error");
       });
+
+    function startDrag(e, presetEl, presetData) {
+      e.preventDefault();
+
+      if (bl.buttons.length >= 25) {
+        drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+          p.classList.add('locked');
+        });
+        return;
+      }
+      
+      cardsContainer.classList.add('dragging-active');
+      
+      dragGhost = presetEl.cloneNode(true);
+      dragGhost.classList.add('drag-ghost');
+      dragGhost.style.width = `${presetEl.offsetWidth}px`;
+      dragGhost.style.height = `${presetEl.offsetHeight}px`;
+      document.body.appendChild(dragGhost);
+      isDragging = true;
+      
+      updateGhostPosition(e);
+      
+      presetEl.classList.add('dragging');
+      presetEl.dragging = true;
+      
+      $drag.el = presetEl;
+      $drag.id = presetData.id;
+      const properties = { name: presetData.name, icon: presetData.icon, url: presetData.url };
+      presetData.param ? properties.param = presetData.param : null;
+      presetData.pid != undefined && typeof Number(presetData.pid) == "number" ? properties.pid = presetData.pid : null;
+      $drag.properties = properties;
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function updateGhostPosition(e) {
+      if (!dragGhost) return;
+      dragGhost.style.left = `${e.clientX - 20}px`;
+      dragGhost.style.top = `${e.clientY - 10}px`;
+    }
+    
+    function onMouseMove(e) {
+      e.preventDefault();
+      
+      if (isDragging) {
+        updateGhostPosition(e);
+        
+        const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+
+        if (elemBelow) {
+          let target = elemBelow;
+          while (target && !target.classList.contains('card-gap') && target !== cardsContainer && target !== trashZone) {
+            target = target.parentElement;
+          }
+          
+          if (target && target.classList.contains('card-gap')) {
+            if (activeGap && activeGap !== target) {
+              activeGap.classList.remove('active');
+            }
+
+            target.classList.add('active');
+            activeGap = target;
+          } else if (activeGap) {
+            activeGap.classList.remove('active');
+            activeGap = null;
+          }
+
+          if (target && target === trashZone) {
+            trashZone.classList.add('active');
+          } else {
+            trashZone.classList.remove('active');
+          }
+        }
+      }
+    }
+    
+    function onMouseUp(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+
+      if (activeGap && bl.buttons.length < 25) {
+        let target = parseInt(activeGap.getAttribute('data-index'));
+        b = $drag.properties;
+        b.id = target;
+        updateLS(true, b);
+
+        loadLS();
+      } else if (trashZone.classList.contains('active')) {
+        trashZone.classList.remove('active');
+        // if (!(typeof $drag.properties.pid == 'number')) {
+        //   // Custom preset deletion goes here - not implemented yet
+        // }
+      }
+      
+      cleanupDrag();
+    }
+    
+    document.addEventListener('dragover', onMouseMove);
+    document.addEventListener('drop', onMouseUp);
+    document.addEventListener('dragend', cleanupDrag);
+    
+    function cleanupDrag() {
+      if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+      }
+
+      if (activeGap) {
+        activeGap.classList.remove('active');
+        activeGap = null;
+      }
+      
+      document.querySelectorAll('.drawer-card.dragging').forEach(card => {
+        card.classList.remove('dragging');
+        card.dragging = false;
+      });
+      cardsContainer.classList.remove('dragging-active');
+      
+      $drag.el = null;
+      $drag.id = null;
+      $drag.properties = {};
+      
+      document.removeEventListener('dragover', onMouseMove);
+      document.removeEventListener('drop', onMouseUp);
+      document.removeEventListener('dragend', cleanupDrag);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
   })();
   function jsonCheck(json) {
     try {
@@ -260,11 +834,12 @@
     }
     return true
   }
-  var bl = {}
+  var bl = {};
+  var cbl = {};
   if (localStorage.getItem("buttonlayout")) {
     if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
       consol.log("Failed to parse buttonlayout, resetting", "Buttons")
-      showAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
+      alertSystem.callAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
       localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
       localStorage.removeItem("buttonlayout")
       fetch("/def/def.json")
@@ -280,11 +855,18 @@
         })
         .catch(function (e) {
           consol.error("Failed to fetch buttons", "Buttons")
-          showAlert("Failed to load buttons", "The server didn't respond.")
+          alertSystem.callAlert("Failed to load buttons", "The server didn't respond.")
           document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
         });
     } else {
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
+      if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
+        let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"))
+        preCBL.cButtons = preCBL.cButtons.filter((cButton, index, self) => {
+          return (typeof cButton.name === 'string' && cButton.name.length > 0 && cButton.name.length <= 15 && typeof cButton.icon === 'string' && cButton.icon.startsWith('data:image/') && typeof cButton.url === 'string' && isValidUrl(cButton.url) && self.findIndex(btn => btn.name === cButton.name || btn.url === cButton.url || btn.icon === cButton.icon || btn.cid === cButton.cid) === index);
+        });
+        cbl = preCBL;
+      }
       loadLS()
     }
   } else {
@@ -301,61 +883,107 @@
       })
       .catch(function (e) {
         consol.error("Failed to fetch buttons", "Buttons")
-        showAlert("Failed to load buttons", "The server didn't respond.")
+        alertSystem.callAlert("Failed to load buttons", "The server didn't respond.")
         document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
       });
   }
 
-  document.getElementById("reset").addEventListener("mouseup", () => {
-    showAlert("Reset Button Layout", "Are you sure you want to reset your button layout?", {okBtn: "Yes", cancelBtn: "No"}, true).then((res) => {
+  document.getElementById("reset").addEventListener("click", () => {
+    alertSystem.callAlert("Reset Button Layout", "Are you sure you want to reset your button layout?\nThis cannot be undone.", {okBtn: "Yes", cancelBtn: "No"}, true).then((res) => {
       if (res) {
         fetch("/def/def.json")
           .then(function(res) {
             return res.text()
           })
           .then(function(def) {  
-            let vdef = JSON.parse(def)
+            let vdef = JSON.parse(def);
             delete vdef.all;
-            localStorage.setItem("buttonlayout", JSON.stringify(vdef))
-            bl = JSON.parse(localStorage.getItem("buttonlayout"))
-            loadLS()
+            localStorage.setItem("buttonlayout", JSON.stringify(vdef));
+            bl = JSON.parse(localStorage.getItem("buttonlayout"));
+            loadLS();
+            changes.length = 0;
+            if (bl.buttons.length >= 25) {
+              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+                p.classList.add('locked');
+              });
+            } else {
+              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+                p.classList.remove('locked');
+              });
+            }
           })
           .catch(function(e) {
             consol.error("Failed to fetch buttons", "Buttons")
-            showAlert("Failed to load buttons", "The server didn't respond.")
+            alertSystem.callAlert("Failed to load buttons", "The server didn't respond.")
             document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
           });
       }
     });
   })
-  document.getElementById("undo").addEventListener("mouseup", undoUpdate);
+  document.getElementById("undo").addEventListener("click", undoUpdate);
 
-  function showAlert(title, message, {okBtn="OK", cancelBtn="Cancel" }, showCancel=false) {
+  let alertSystem = {
+    callAlert: function(title, message, {okBtn="OK", cancelBtn="Cancel"} = {okBtn: "OK", cancelBtn: "Cancel"}, showCancel=false) {
+      return new Promise((resolve, reject) => {
+        this._queue.push({ type: 1, title, message, okBtn, cancelBtn, showCancel, resolve, reject });
+        !this._r?this._rq():null;
+      });
+    },
+    _queue: [],
+    _rq: async function() {
+      if (this._queue.length > 0) {
+        this._r = true;
+        const item = this._queue.shift();
+        if (item.type == 1) {
+          let res = await showAlert(item.title, item.message, {okBtn: item.okBtn, cancelBtn: item.cancelBtn}, item.showCancel);
+          if (res) {
+            item.resolve(true);
+          } else {
+            item.resolve(false);
+          }
+        }
+        setTimeout(()=>{this._rq()}, 300);
+      } else this._r = false;
+    },
+    _r: false,
+  }
+
+  const alertTitle = document.getElementById('alert-title');
+  const alertMessage = document.getElementById('alert-message');
+  const alertOk = document.getElementById('alert-ok');
+  const alertCancel = document.getElementById('alert-cancel');
+  const alertContainer = document.querySelector('.alert-container');
+  const alertOverlay = document.querySelector('.alert-overlay');
+  const alertBackground = document.querySelector('.alert-background');
+
+  function showAlert(title, message, {okBtn="OK", cancelBtn="Cancel"} = {okBtn: "OK", cancelBtn: "Cancel"}, showCancel=false) {
     return new Promise((resolve) => {
-      document.getElementById('alert-title').innerText = title;
-      document.getElementById('alert-message').innerText = message;
-      document.getElementById('alert-ok').innerText = okBtn;
-      showCancel ? document.getElementById('alert-cancel').innerText = cancelBtn : null;
-      document.querySelector('.alert-container').style.display = '';
+      alertContainer.style.display = '';
       setTimeout(() => {
-        document.querySelector('.alert-overlay').style.opacity = 1;
-        document.querySelector('.alert-background').classList.add('active');
-      }, 100);
+        alertTitle.innerText = title;
+      alertMessage.innerText = message;
+      alertOk.innerText = okBtn;
+      showCancel ? alertCancel.innerText = cancelBtn : null;
+      
+      pageLayout.classList.add('hide');
+      alertOverlay.style.opacity = 1;
+      alertBackground.classList.add('active');
       
       function closeAlert() {
         document.removeEventListener('keydown', keyCloseA);
-        document.querySelector('.alert-overlay').removeEventListener('click', resFalse);
-        document.getElementById('alert-ok').removeEventListener('click', resTrue);
-        showCancel ? document.getElementById('alert-cancel').removeEventListener('click', resFalse) : null;
-        document.querySelector('.alert-overlay').style.opacity = 0;
-        document.querySelector('.alert-background').classList.remove('active');
+        alertOverlay.removeEventListener('click', resFalse);
+        alertOk.removeEventListener('click', resTrue);
+        showCancel ? alertCancel.removeEventListener('click', resFalse) : null;
+        alertOverlay.style.opacity = 0;
+        alertBackground.classList.remove('active');
+        pageLayout.classList.remove('hide');
         setTimeout(() => {
-          document.querySelector('.alert-container').style.display = 'none';
-          document.getElementById('alert-title').innerText = "Alert";
-          document.getElementById('alert-message').innerText = "Message";
-          document.getElementById('alert-ok').innerText = "OK";
-          document.getElementById('alert-cancel').style.display = 'none'
-          document.getElementById('alert-cancel').innerText = "Cancel";
+          alertContainer.style.display = 'none';
+          alertTitle.innerText = "Alert";
+          alertMessage.innerText = "Message";
+          alertOk.innerText = "OK";
+          alertCancel.style.display = 'none'
+          alertCancel.innerText = "Cancel";
         }, 300);
       }
       
@@ -363,12 +991,448 @@
       function resTrue() {closeAlert();resolve(true);}
       function resFalse() {closeAlert();resolve(false);}
       
-      document.querySelector('.alert-overlay').addEventListener('click', resFalse);
-      document.getElementById('alert-ok').addEventListener('click', resTrue);
-      showCancel ? document.getElementById('alert-cancel').addEventListener('click', resFalse) : null;
+      alertOverlay.addEventListener('click', resFalse);
+      alertOk.addEventListener('click', resTrue);
+      showCancel ? alertCancel.addEventListener('click', resFalse) : null;
       document.addEventListener('keydown', keyCloseA);
-      showCancel ? document.getElementById('alert-cancel').style.display = '' : document.getElementById('alert-cancel').style.display = 'none';
+      showCancel ? alertCancel.style.display = '' : alertCancel.style.display = 'none';
+      }, 10);
     });
+  }
+
+  const customButtonEditor = document.querySelector('.custom-button-editor');
+  const editorBackground = document.querySelector('.editor-background');
+  const editorOverlay = customButtonEditor.querySelector('.alert-overlay');
+  const uploadButton = document.getElementById('upload-btn');
+  const fileNameDisplay = document.getElementById('file-name');
+  const fileInput = document.getElementById('button-icon-upload');
+  const buttonTitleInput = document.getElementById('button-title');
+  const buttonUrlInput = document.getElementById('button-url');
+  const titleCharCount = document.getElementById('title-char-count');
+  const previewImg = document.getElementById('preview-img');
+  const previewTitle = document.getElementById('preview-title');
+  const editorCreate = document.getElementById('editor-create');
+  const editorCancel = document.getElementById('editor-cancel');
+  const buttonContent = {image: "", title: "", url: ""};
+
+  const addNewButton = document.querySelector('#custom-btns-container .drawer-custom-btn');
+  
+  addNewButton.addEventListener('click', () => {
+    openCustomButtonEditor();
+  });
+
+  function openCustomButtonEditor() {
+    if (cbl.cButtons.length >= 10) {
+      alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of custom buttons (10).\nPlease remove some before adding new ones.");
+      return;
+    }
+    fileNameDisplay.textContent = 'No file chosen';
+    buttonTitleInput.value = '';
+    buttonUrlInput.value = '';
+    titleCharCount.textContent = '0';
+    previewImg.src = '/images/icons/VBCLogo.webp';
+    previewTitle.textContent = 'Custom Button';
+    editorCreate.disabled = true;
+    
+    customButtonEditor.style.display = '';
+    setTimeout(() => {
+      document.addEventListener('keydown', keyCloseEditor);
+      editorBackground.classList.add('active');
+      editorOverlay.style.opacity = '1';
+      pageLayout.classList.add('hide');
+    }, 10);
+  }
+
+  function closeCustomButtonEditor() {
+    document.removeEventListener('keydown', keyCloseEditor);
+    editorBackground.classList.remove('active');
+    editorOverlay.style.opacity = '0';
+    pageLayout.classList.remove('hide');
+    
+    setTimeout(() => {
+      customButtonEditor.style.display = 'none';
+    }, 500);
+  }
+
+  function keyCloseEditor(e) {
+    if (e.key === "Escape") {
+      closeCustomButtonEditor();
+    }
+  }
+
+  uploadButton.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      fileNameDisplay.textContent = 'Invalid file type';
+      return;
+    }
+
+    fileNameDisplay.textContent = file.name;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let w = img.width;
+        let h = img.height;
+
+        if (w > 150 || h > 150) {
+          if (w > h) {
+            h *= 150 / w;
+            w = 150;
+          } else {
+            w *= 150 / h;
+            h = 150;
+          }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const compressedDataUrl = canvas.toDataURL('image/png');
+        previewImg.src = compressedDataUrl;
+        buttonContent.image = compressedDataUrl;
+        validateForm();
+      };
+      img.src = event.target.result;
+    };
+    
+    reader.readAsDataURL(file);
+  });
+
+  buttonTitleInput.addEventListener('input', (e) => {
+    let value = e.target.value;
+    buttonTitleInput.value = value.substring(0, 15);
+    value = buttonTitleInput.value;
+    titleCharCount.textContent = value.length;
+    buttonContent.title = value.trim();
+
+    previewTitle.textContent = value || 'Custom Button';
+
+    previewTitle.style.fontSize = "";
+    shrinkToFit(previewTitle, 14);
+    validateForm();
+  });
+
+  buttonUrlInput.addEventListener('input', () => {
+    buttonContent.url = buttonUrlInput.value.trim();
+    validateForm();
+  });
+
+  function validateForm() {
+    const hasImage = buttonContent.image.length > 0 && buttonContent.image.startsWith('data:image/');
+    const hasTitle = buttonContent.title.length > 0 && buttonContent.title.length <= 15;
+    const hasValidUrl = isValidUrl(buttonContent.url);
+    
+    editorCreate.disabled = !(hasImage && hasTitle && hasValidUrl);
+  }
+
+  function isValidUrl(url) {
+    try {
+      url = url.trim();
+      if (!url) return false;
+
+      if (url.startsWith('/')) return true;
+
+      new URL(url);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  editorCancel.addEventListener('click', closeCustomButtonEditor);
+
+  editorCreate.addEventListener('click', () => {
+    const hasImage = buttonContent.image.length > 0 && buttonContent.image.startsWith('data:image/');
+    const hasTitle = buttonContent.title.length > 0 && buttonContent.title.length <= 15;
+    const hasValidUrl = isValidUrl(buttonContent.url);
+    if (editorCreate.disabled || !(hasImage && hasTitle && hasValidUrl)) return;
+    const newButton = {
+      name: buttonContent.title,
+      icon: buttonContent.image,
+      url: buttonContent.url
+    };
+    
+    updateCLS(true, newButton);
+
+    closeCustomButtonEditor();
+  });
+
+  function updateCLS(add, { cid, name, icon, url }) {
+    if (!cbl.cButtons) cbl.cButtons = [];
+    if (add) {
+      if (!name || !icon || !url) return;
+      if (cbl.cButtons.length >= 10) {
+        alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of custom buttons (10).\nPlease remove some before adding new ones.");
+        return;
+      }
+      let nE = cbl.cButtons.some(cButton => cButton.name === name);
+      let uE = cbl.cButtons.some(cButton => cButton.url === url);
+      let iE = cbl.cButtons.some(cButton => cButton.icon === icon);
+      if (nE || uE || iE) {
+        let prop = nE ? "name" : uE ? "url" : "icon";
+        alertSystem.callAlert(`Duplicate Button ${prop.charAt(0).toUpperCase()+prop.slice(1)}`, `A button with this ${prop} already exists.\nPlease choose a different ${prop}.`);
+        return;
+      }
+      let buttonData = {
+        name,
+        icon,
+        url,
+        cid: cbl.cButtons.reduce((max, cButton) => Math.max(max, cButton.cid || 0), -1) + 1
+      };
+
+      cbl.cButtons.push(buttonData);
+      localStorage.setItem("custombuttonlist", JSON.stringify(cbl));
+      loadCLS();
+    } else {
+      if (cid == undefined || typeof Number(cid) != "number") return;
+      cbl.cButtons = cbl.cButtons.filter(cButton => cButton.cid !== cid);
+      changes = changes.filter(change => change.cid !== cid);
+      localStorage.setItem("custombuttonlist", JSON.stringify(cbl));
+      loadCLS();
+      loadLS();
+    }
+  };
+loadCLS();
+  function loadCLS() {
+    if (!cbl || !cbl.cButtons) return;
+    let cButtons = cbl.cButtons;
+    if (cButtons.length >= 10) cButtons.length = 10;
+    cButtons.forEach((cButton) => {
+      if (typeof cButton.cid !== 'number' || typeof cButton.name !== 'string' || cButton.name.length === 0 || cButton.name.length > 15 || !isValidUrl(cButton.url) || !cButton.icon.startsWith('data:image/')) {
+        cButton.tagged = true;
+      }
+    });
+    cButtons = cButtons.filter(cButton => !cButton.tagged);
+    cbl.cButtons = cButtons;
+    localStorage.setItem("custombuttonlist", JSON.stringify(cbl));
+
+    const customBtn = cButtonContainer.querySelector('.drawer-custom-btn');
+    cButtonContainer.innerHTML = '';
+    cButtonContainer.appendChild(customBtn);
+    
+    cButtons.forEach((cButton) => {
+      const cBtnElem = document.createElement('div');
+      cBtnElem.classList.add("drawer-card");
+      cBtnElem.setAttribute("draggable", "true");
+      bl.buttons.length >= 25 ? cBtnElem.classList.add('locked') : null;
+      cBtnElem.dataset.href = cButton.url;
+      cBtnElem.dataset.cid = cButton.cid;
+      cBtnElem.innerHTML = `<img src="${cButton.icon}" alt="${cButton.name} Icon"><div class="overlay" style="padding: 5px;bottom: -8%;"><p>${cButton.name}</p></div><div class="locked-overlay"><i class="fa-solid fa-lock"></i></div>`;
+      let clickAllowed = true;
+
+      const presetData = {
+        name: cButton.name,
+        icon: cButton.icon,
+        url: cButton.url,
+        cid: cButton.cid
+      };
+
+      cBtnElem.addEventListener('mousedown', (e) => {
+        if (e.button == 0 || e.button == 1) {
+          clickAllowed = true;
+        }
+      });
+      cBtnElem.addEventListener('mouseup', (e) => {
+        if ((e.button == 0 || e.button == 1) && clickAllowed && !(cBtnElem.dragging || cBtnElem.classList.contains("dragging"))) {
+          e.preventDefault();
+          if (cBtnElem.classList.contains('delete-mode')) {
+            const cid = cButton.cid;
+            updateCLS(false, { cid });
+            loadCLS();
+          } else {
+            document.querySelectorAll('.drawer-card.delete-mode').forEach(card => {
+              card.classList.remove('delete-mode');
+              setTimeout(() => {
+                if (card.classList.contains("delete-mode")) return;
+                card.querySelector('.locked-overlay i').classList.remove('fa-xmark');
+                card.querySelector('.locked-overlay i').classList.add('fa-lock');
+              }, card.classList.contains("locked") ? 0 : 400);
+            });
+            
+            cBtnElem.classList.add('delete-mode');
+            cBtnElem.querySelector('.locked-overlay i').classList.add('fa-xmark');
+            cBtnElem.querySelector('.locked-overlay i').classList.remove('fa-lock');
+            setTimeout(() => {
+              document.addEventListener('mousedown', removeDeleteMode);
+            }, 0);
+          }
+        }
+      });
+
+      function removeDeleteMode(e) {
+        if (!cBtnElem.contains(e.target)) {
+          cBtnElem.classList.remove('delete-mode');
+          setTimeout(() => {
+            if (cBtnElem.classList.contains("delete-mode")) return;
+            cBtnElem.querySelector('.locked-overlay i').classList.remove('fa-xmark');
+            cBtnElem.querySelector('.locked-overlay i').classList.add('fa-lock');
+          }, cBtnElem.classList.contains("locked") ? 0 : 400);
+          document.removeEventListener('mousedown', removeDeleteMode);
+        }
+      }
+      
+      cBtnElem.addEventListener('dragstart', (e) => {
+        if (cBtnElem.classList.contains('locked')) {
+          e.preventDefault();
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+        clickAllowed = false;
+        startDrag(e, cBtnElem, presetData);
+      });
+      
+      cButtonContainer.appendChild(cBtnElem);
+    });
+
+    cButtonContainer.appendChild(customBtn);
+
+    let isDragging = false;
+    let dragGhost = null;
+    let activeGap = null;
+
+    function startDrag(e, presetEl, presetData) {
+      e.preventDefault();
+
+      if (bl.buttons.length >= 25) {
+        cButtonContainer.querySelectorAll('.drawer-card').forEach(p => {
+          p.classList.add('locked');
+        });
+        return;
+      }
+      
+      cardsContainer.classList.add('dragging-active');
+      
+      dragGhost = presetEl.cloneNode(true);
+      dragGhost.classList.add('drag-ghost');
+      dragGhost.style.width = `${presetEl.offsetWidth}px`;
+      dragGhost.style.height = `${presetEl.offsetHeight}px`;
+      document.body.appendChild(dragGhost);
+      isDragging = true;
+      
+      updateGhostPosition(e);
+      
+      presetEl.classList.add('dragging');
+      presetEl.dragging = true;
+      
+      $drag.el = presetEl;
+      $drag.id = presetData.id;
+      const properties = { name: presetData.name, icon: presetData.icon, url: presetData.url };
+      presetData.param ? properties.param = presetData.param : null;
+      presetData.cid != undefined && typeof Number(presetData.cid) == "number" ? properties.cid = presetData.cid : null;
+      $drag.properties = properties;
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function updateGhostPosition(e) {
+      if (!dragGhost) return;
+      dragGhost.style.left = `${e.clientX - 20}px`;
+      dragGhost.style.top = `${e.clientY - 10}px`;
+    }
+    
+    function onMouseMove(e) {
+      e.preventDefault();
+      
+      if (isDragging) {
+        updateGhostPosition(e);
+        
+        const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+
+        if (elemBelow) {
+          let target = elemBelow;
+          while (target && !target.classList.contains('card-gap') && target !== cardsContainer && target !== trashZone) {
+            target = target.parentElement;
+          }
+          
+          if (target && target.classList.contains('card-gap')) {
+            if (activeGap && activeGap !== target) {
+              activeGap.classList.remove('active');
+            }
+
+            target.classList.add('active');
+            activeGap = target;
+          } else if (activeGap) {
+            activeGap.classList.remove('active');
+            activeGap = null;
+          }
+
+          if (target && target === trashZone) {
+            trashZone.classList.add('active');
+          } else {
+            trashZone.classList.remove('active');
+          }
+        }
+      }
+    }
+    
+    function onMouseUp(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+
+      if (activeGap && bl.buttons.length < 25) {
+        let target = parseInt(activeGap.getAttribute('data-index'));
+        b = $drag.properties;
+        b.id = target;
+        updateLS(true, b);
+
+        loadLS();
+      } else if (trashZone.classList.contains('active')) {
+        trashZone.classList.remove('active');
+        updateCLS(false, { cid: $drag.properties.cid });
+      }
+      
+      cleanupDrag();
+    }
+    
+    document.addEventListener('dragover', onMouseMove);
+    document.addEventListener('drop', onMouseUp);
+    document.addEventListener('dragend', cleanupDrag);
+    
+    function cleanupDrag() {
+      if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+      }
+
+      if (activeGap) {
+        activeGap.classList.remove('active');
+        activeGap = null;
+      }
+      
+      document.querySelectorAll('.drawer-card.dragging').forEach(card => {
+        card.classList.remove('dragging');
+        card.dragging = false;
+      });
+      cardsContainer.classList.remove('dragging-active');
+      
+      $drag.el = null;
+      $drag.id = null;
+      $drag.properties = {};
+      
+      document.removeEventListener('dragover', onMouseMove);
+      document.removeEventListener('drop', onMouseUp);
+      document.removeEventListener('dragend', cleanupDrag);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
   }
 
   console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)

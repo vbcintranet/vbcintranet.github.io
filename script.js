@@ -1,5 +1,5 @@
 (() => {
-  const version = "v1.7.8";
+  const version = "v2.0.0";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -16,6 +16,7 @@
   }
   updateClock();
   
+  const contentDiv = document.getElementById('content');
   const searchContainer = document.querySelector('.search-container');
   const searchOverlay = document.querySelector('.search-overlay');
   const searchBar = document.querySelector('.search-bar');
@@ -52,6 +53,7 @@
       searchContainer.style = '';
       setTimeout(() => {
         searchBar.classList.add('active');
+        contentDiv.classList.add('hide');
         searchOverlay.classList.add('active');
         searchBar.querySelector('input').focus();
         searchInput.value = key;
@@ -61,13 +63,14 @@
   }
   
   function closeSearchBar() {
-    searchOpen = false
     searchBar.classList.remove('active');
+    contentDiv.classList.remove('hide');
     searchOverlay.classList.remove('active');
     searchBar.querySelector('input').blur();
     searchBar.querySelector('input').value = '';
     setTimeout(() => {
       searchContainer.style.display = 'none';
+      searchOpen = false
     }, 300);
   }
   
@@ -96,6 +99,15 @@
     }
   });
   
+  let pl = document.createElement('i');
+  pl.classList.add('fa-solid', 'fa-cloud-arrow-down');
+  document.body.appendChild(pl);
+  setTimeout(() => {
+    
+  }, 100);
+  pl.classList.remove('fa-solid','fa-cloud-arrow-down');
+  pl.classList.add('fa-regular', 'fa-calendar-minus');
+  pl.remove();
   let isOnline = true;
   
   window.addEventListener('online', () => {
@@ -107,7 +119,6 @@
       document.getElementById('no-internet').children[0].style.animation = "none";
       document.getElementById('no-internet').children[0].style.opacity = "1";
       setTimeout(() => {
-        document.getElementById('no-internet').children[0].style.transition = "opacity 1s ease";
         document.getElementById('no-internet').children[0].style.opacity = "0";
         document.getElementById('no-internet').children[1].style.opacity = "1";
         document.getElementById('no-internet').children[1].style.transform = "scale(1)";
@@ -128,9 +139,12 @@
     internetAnim();
 
     if (calActive) {
-      document.getElementById("classSync").innerHTML = 'Network reconnected<p style="font-size:8px;">Fetching info...</p>';
+      document.getElementById("classSync").innerHTML = '<i class="fa-solid fa-magnifying-glass-arrows-rotate"></i><p style="font-size:8px;">Fetching...</p>';
+      document.getElementById("classSync").parentElement.classList.add('cs-icon');
       document.getElementById('sp-nc').style.display = 'none';
-      document.getElementById('sp-nc').innerText = last_events.today.length ? 'No more classes for today' : 'No classes today';
+      document.getElementById('sp-err').style.display = 'flex';
+      document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-magnifying-glass-arrows-rotate"></i> Fetching class data...</div>`;
+      document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
       clearTimeout(t);
       ClassSync();
       calActiveText.textContent = "✓ Active";
@@ -141,11 +155,14 @@
   window.addEventListener('offline', () => {
     consol.warn("Running on offline mode", "Network");
     isOnline = false;
-    document.getElementById('no-internet').style.display = 'block';
+    document.getElementById('no-internet').style.display = 'flex';
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `Next: ${last_events.next.summary}${last_events.next.location ? ` in ${last_events.next.location}` : ''}. <p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``} (Warning: Last updated at ${parseDate(last_events.timeChecked)})</p>` : last_events.today.length ? `No more classes for today<p style="font-size:8px;">Class data last updated at ${parseDate(last_events.timeChecked)}</p>` : `No classes today<p style="font-size:8px;">Class data last updated at ${parseDate(last_events.timeChecked)}</p>`;
-      document.getElementById('sp-nc').style.display = 'block';
-      document.getElementById('sp-nc').innerText = last_events.next ? `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.` : `Warning: Network disconnected. Class data last updated at ${parseDate(last_events.timeChecked)}.\n${last_events.today.length ? `No more classes for today` : `No classes today`}`;
+      document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-caret-right"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+      document.getElementById('sp-err').style.display = 'flex';
+      document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
+      document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
+      document.getElementById('sp-nc').innerHTML = `<div class="spt"><i class="fa-solid fa-calendar-minus"></i> ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
+      document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
       calActiveText.textContent = "⚠ Network disconnected";
       calActiveText.setAttribute("error", "");
       calActiveText.removeAttribute("active");
@@ -176,7 +193,7 @@
         .then(response => {
           if (!response.ok) {
             incorrectText.textContent = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
-            throw new Error(`Failed to fetch the file. Status: ${response.status}`);
+            throw new Error(`Failed to fetch calendar. Status: ${response.status}`);
           } else {
             calActive = true;
             incorrectText.textContent = "";
@@ -283,9 +300,14 @@
     }
   }
 
+  let classSyncLock = false;
+
   function ClassSync() {
+    if (classSyncLock) return;
+    classSyncLock = true;
     if (!localStorage.getItem('compass-cal')) {
       document.getElementById("classSync").innerText = "";
+      classSyncLock = false;
       return null;
     }
     if (!isOnline) {
@@ -296,10 +318,10 @@
       startTime.setHours(0, 0, 0, 0);
       let tagged = [];
       events.joined.forEach(e=>{
-        if (e.endraw.getTime() < new Date().getTime()) {
+        if (e.endraw.getTime() <= new Date().getTime()) {
           tagged.push(e);
-        } else if (e.startraw.getTime() <= new Date().getTime() && e.endraw.getTime() > new Date().getTime() && !e.summary.startsWith("Now:")) {
-          e.summary = `Now: ${e.summary}`;
+        } else if (e.startraw.getTime() <= new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
+          e.now = true;
         }
       })
       tagged.forEach(e=>{
@@ -311,7 +333,10 @@
         events.next = null;
         events.joined.forEach(e=>{
           if (events.next == null || ((events.next.startraw.getTime() <= new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
+            e.next = true;
             events.next = e;
+          } else {
+            e.next = false;
           }
         })
         if (events.next.startraw.getTime() <= new Date().getTime()) {
@@ -320,40 +345,61 @@
       }
 
       if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``} (Warning: Class data last updated at ${parseDate(events.timeChecked)})</p>`
-        document.getElementById('sp-nc').style.display = 'block';
-        document.getElementById('sp-nc').innerText = `Warning: Network disconnected. Class data last updated at ${parseDate(events.timeChecked)}.`;
+        document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-caret-right"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+        document.getElementById('sp-err').style.display = 'flex';
+        document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
+        document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
+        document.getElementById('sp-nc').innerHTML = `<div class="spt"><i class="fa-solid fa-calendar-minus"></i> ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-          if (c.id != 'sp-nc') {
+          if (!['sp-nc','sp-err'].includes(c.id)) {
             c.remove()
           }
         })
         events.joined.forEach(e=>{
           var sp_class = document.createElement('div')
-          sp_class.innerHTML = `<div class="spt">${e.summary} ${e.location ? ` in ${e.location}` : ''}</div><div class="spti">${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`
-          sp_class.classList.add('sneakpeek-card')
-          document.getElementById('sp-c').appendChild(sp_class)
+          sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-caret-right" style="margin-left: 14.39px;"></i>` : `<i style="margin-left: 24px;"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
+          sp_class.classList.add('sneakpeek-card');
+          document.getElementById('sp-c').appendChild(sp_class);
         })
+        document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
       } else {
-        document.getElementById("classSync").innerHTML = `${events.today.length ? `No more classes for today` : `No classes today`}<p style="font-size:8px;">Class data last updated at ${parseDate(events.timeChecked)}</p>`
-        document.getElementById('sp-nc').style.display = 'block';
-        document.getElementById('sp-nc').innerText = `Warning: Network disconnected. Class data last updated at ' + parseDate(events.timeChecked) + '.\n${events.today.length ? `No more classes for today` : `No classes today`}`;
+        document.getElementById("classSync").innerHTML = `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+        document.getElementById('sp-err').style.display = 'flex';
+        document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
+        document.getElementById('sp-nc').style.display = 'flex';
+        document.getElementById('sp-nc').innerHTML = `<div class="spt"><i class="fa-solid fa-calendar-minus"></i> ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-          if (c.id != 'sp-nc') {
+          if (!['sp-nc','sp-err'].includes(c.id)) {
             c.remove()
           }
         })
+        document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
       }
-      t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
+      t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
       return;
     };
 
+    if (!formatCalLink(localStorage.getItem('compass-cal'), true).startsWith('viewbank-vic.compass.education/download/sharedCalendar.aspx')) {
+      errors.new({error: "Link failed test", url: localStorage.getItem('compass-cal')}, "ClassSync");
+      consol.error("Link failed test", "ClassSync");
+      document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-cloud-xmark"></i><p style="font-size:8px;">Link Error</p>`;
+      document.getElementById("classSync").parentElement.classList.add('cs-icon');
+      document.getElementById('sp-nc').style.display = 'none';
+      document.getElementById('sp-err').style.display = 'flex';
+      document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-xmark"></i> The link provided did not work.<div class="spti">Please check your link and try again.</div>`;
+      document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
+      calActiveText.textContent = "⚠ Error";
+      calActiveText.setAttribute("error", "");
+      calActiveText.removeAttribute("active");
+      classSyncLock = false;
+      return null;
+    }
     let sts = '';
     fetch(localStorage.getItem('compass-cal'))
       .then(response => {
         if (!response.ok) {
           sts = response.status;
-          throw new Error(`Failed to fetch the file. Status: ${response.status}`);
+          throw new Error(`Failed to fetch calendar. Status: ${response.status}`);
         }
         return response.text();
       })
@@ -361,7 +407,7 @@
         calActiveText.textContent = "✓ Active";
         calActiveText.setAttribute("active", "");
         calActiveText.removeAttribute("error");
-        errors.saveSessionOfType("ClassSync");
+        // errors.saveSessionOfType("ClassSync");
         const lines = fileContents.split('\n');
         var endTime = new Date();
         endTime.setHours(23, 59, 59, 0);
@@ -403,6 +449,7 @@
           events.today.sort((a, b) => a.startraw - b.startraw);
           events.today.forEach(e=>{
             if (events.next == null || (e.startraw.getTime() < events.next.startraw.getTime() && e.startraw.getTime() > new Date().getTime())) {
+              e.next = true;
               events.next = e;
             }
           })
@@ -415,7 +462,7 @@
               if (!lastEvent.tagged) {
                 if (lastEvent.endraw.getTime() == e.startraw.getTime() && lastEvent.summary == e.summary) {
                   if (e.location != lastEvent.location) {
-                    lastEvent.location += ` (B: ${e.location})`
+                    lastEvent.location += ` <i class="fa-solid fa-arrow-right"></i> ${e.location}`
                   }
                   lastEvent.endraw = e.endraw;
                   lastEvent.end = parseDate(e.endraw);
@@ -424,7 +471,7 @@
                   events.joined.push(lastEvent);
                 } else if (lastEvent.startraw.getTime() == e.endraw.getTime() && lastEvent.summary == e.summary) {
                   if (e.location != lastEvent.location) {
-                    lastEvent.location += ` (B: ${e.location})`
+                    lastEvent.location += ` <i class="fa-solid fa-arrow-right"></i> ${e.location}`
                   }
                   lastEvent.startraw = e.startraw;
                   lastEvent.start = parseDate(e.startraw);
@@ -434,8 +481,8 @@
                 } else if (lastEvent.endraw.getTime() == e.startraw.getTime()) {
                   if (lastEvent.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime()) {
                   } else if (e.location != lastEvent.location) {
-                    lastEvent.summary = `${lastEvent.summary} (in ${lastEvent.location}) and ${e.summary} (in ${e.location})`;
-                    lastEvent.location = "";
+                    lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
+                    lastEvent.location = `${lastEvent.location} <i class="fa-solid fa-arrow-right"></i> ${e.location}`;
                   } else {
                     lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
                   }
@@ -448,8 +495,8 @@
                   events.joined.push(lastEvent);
                 } else if (lastEvent.startraw.getTime() == e.endraw.getTime()) {
                   if (e.location != lastEvent.location) {
-                    lastEvent.summary = `${lastEvent.summary} (in ${lastEvent.location}) and ${e.summary} (in ${e.location})`;
-                    lastEvent.location = "";
+                    lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
+                    lastEvent.location = `${lastEvent.location} <i class="fa-solid fa-arrow-right"></i> ${e.location}`;
                   } else {
                     lastEvent.summary = `${lastEvent.summary} and ${e.summary}`;
                   }
@@ -469,10 +516,10 @@
 
           let tagged = [];
           events.joined.forEach(e=>{
-            if (e.endraw.getTime() < new Date().getTime()) {
+            if (e.endraw.getTime() <= new Date().getTime()) {
               tagged.push(e);
             } else if (e.startraw.getTime() <= new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
-              e.summary = `Now: ${e.summary}`;
+              e.now = true;
             }
           })
           tagged.forEach(e=>{
@@ -487,7 +534,10 @@
           events.next = null;
           events.joined.forEach(e=>{
             if (events.next == null || ((events.next.startraw.getTime() <= new Date().getTime() || (e.startraw.getTime() > new Date().getTime() && e.startraw.getTime() < events.next.startraw.getTime())) && (oldEvent.endraw.getTime() < e.startraw.getTime()))) {
+              e.next = true;
               events.next = e;
+            } else {
+              e.next = false;
             }
           })
           if (events.next && events.next.startraw.getTime() < new Date().getTime()) {
@@ -495,55 +545,89 @@
           }
         }
         
-        if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-          document.getElementById("classSync").innerHTML = `Next: ${events.next.summary}${events.next.location ? ` in ${events.next.location}` : ''}. <p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`
+        if ((events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime())) {
+          document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-caret-right"></i> ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`;
+          document.getElementById('sp-err').style.display = 'none';
           document.getElementById('sp-nc').style.display = 'none';
+          document.getElementById("classSync").parentElement.classList.remove('cs-icon');
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-            if (c.id != 'sp-nc') {
+            if (!['sp-nc','sp-err'].includes(c.id)) {
               c.remove()
             }
           })
           events.joined.forEach(e=>{
             var sp_class = document.createElement('div')
-            sp_class.innerHTML = `<div class="spt">${e.summary} ${e.location ? ` in ${e.location}` : ''}</div><div class="spti">${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`
-            sp_class.classList.add('sneakpeek-card')
-            document.getElementById('sp-c').appendChild(sp_class)
+            sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-caret-right" style="margin-left: 14.39px;"></i>` : `<i style="margin-left: 24px;"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
+            sp_class.classList.add('sneakpeek-card');
+            document.getElementById('sp-c').appendChild(sp_class);
           })
+          document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
         } else {
-          document.getElementById("classSync").innerHTML = events.today.length ? 'No more classes for today' : 'No classes today';
-          document.getElementById('sp-nc').style.display = 'block';
-          document.getElementById('sp-nc').innerText = events.today.length ? 'No more classes for today' : 'No classes today';
+          document.getElementById("classSync").innerHTML = '<i class="fa-regular fa-calendar-minus"></i>';
+          document.getElementById('classSync').parentElement.classList.add('cs-icon');
+          document.getElementById('sp-err').style.display = 'none';
+          document.getElementById('sp-nc').style.display = events.joined.find(e=>e.now) ? 'none' : 'flex';
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-            if (c.id != 'sp-nc') {
+            if (!['sp-nc','sp-err'].includes(c.id)) {
               c.remove()
             }
           })
+          events.joined.forEach(e=>{
+            var sp_class = document.createElement('div')
+            sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-caret-right" style="margin-left: 14.39px;"></i>` : `<i style="margin-left: 24px;"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
+            sp_class.classList.add('sneakpeek-card');
+            document.getElementById('sp-c').appendChild(sp_class);
+          })
+          document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
+          document.getElementById('sp-nc').innerHTML = events.joined.find(e=>e.now) ? '' : `<div class="spt"><i class="fa-regular fa-calendar-minus"></i> ${events.today.length ? 'No more classes for today' : 'No classes today'}</div>`;
         }
         last_events = events;
-        t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
+        t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
       })
       .catch(error => {
         errors.new(JSON.stringify(error, Object.getOwnPropertyNames(error)), "ClassSync");
         consol.error(error, "ClassSync")
-        document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:8px;">${sts != 404 ? `An error has occured, retrying...` : `The link you entered did not work. Please check it and try again.`}</p>`;
-        document.getElementById('sp-nc').style.display = 'block';
-        document.getElementById('sp-nc').innerText = sts != 404 ? `An error has occured, retrying...` : `The link you entered did not work. Please check it and try again.`;
+        document.getElementById("classSync").innerHTML = `<i class="fa-solid ${sts != 404 ? 'fa-cloud-exclamation' : 'fa-cloud-xmark'}"></i><p style="font-size:8px;">${sts != 404 ? `Retrying...` : `Link Error`}</p>`;
+        document.getElementById("classSync").parentElement.classList.add('cs-icon');
+        document.getElementById('sp-nc').style.display = 'none';
+        document.getElementById('sp-err').style.display = 'flex';
+        document.getElementById('sp-err').innerHTML = `<div class="spt">${sts != 404 ? `<i class="fa-solid fa-cloud-exclamation"></i> An error has occured` : `<i class="fa-solid fa-cloud-xmark"></i> Link did not work.`}</div><div class="spti">${sts != 404 ? `Retrying...` : `Please check your link and try again.`}</div>`;
+        document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
         calActiveText.textContent = "⚠ Error";
         calActiveText.setAttribute("error", "");
         calActiveText.removeAttribute("active");
         if (errors.countOfType("ClassSync") < 5) {
-          ClassSync();
+          consol.error("ClassSync running again", "ClassSync");
+          setTimeout(() => { classSyncLock = false; ClassSync(); }, 0);
         } else {
+          consol.error("ClassSync running again in 60 seconds", "ClassSync");
           updateErrorTimer(60 - new Date().getSeconds());
-          t = setTimeout(ClassSync, (60 - new Date().getSeconds()) * 1000);
+          t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
         }
       })
   }
-  function updateErrorTimer(time) {
-    document.getElementById("classSync").innerHTML = `ClassSync Error<p style="font-size:8px;">An error occured. Retrying in ${time}s...</p>`;
-    document.getElementById('sp-nc').style.display = 'block';
-    document.getElementById('sp-nc').innerText = `An error occured. Retrying in ${time}s...`;
-    time > 0 ? ut = setTimeout(updateErrorTimer.bind(null, time-1), 1000 - new Date().getMilliseconds()) : null;
+  let errorTimerActive = false;
+
+  function updateErrorTimer(time, ft = true) {
+    if (errorTimerActive) return;
+    errorTimerActive = true;
+    if (!ft && document.getElementById("classSync").innerHTML != `<i class="fa-solid fa-cloud-exclamation"></i><p style="font-size:8px;">Retry: ${time + 1}s</p>`) {
+      errorTimerActive = false;
+      return;
+    }
+    document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-cloud-exclamation"></i><p style="font-size:8px;">Retry: ${time}s</p>`;
+    document.getElementById("classSync").parentElement.classList.add('cs-icon');
+    document.getElementById('sp-err').style.display = 'flex';
+    document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-exclamation"></i> An error occured.</div><div class="spti">Retrying in ${time}s...</div>`;
+    document.getElementById('sp-nc').style.display = 'none';
+
+    if (time > 0) {
+      ut = setTimeout(() => {
+        updateErrorTimer(time - 1, false);
+      }, 1000 - new Date().getMilliseconds());
+    } else {
+      errorTimerActive = false;
+    }
   }
   let ut = setTimeout(function() {return}, 60000);
   setTimeout(ut)
@@ -588,34 +672,32 @@
   }
   function setupSP() {
     let spOpen = false;
-    let last = {x:0,y:0};
-    function openSP(e) {
-      last.x = e.clientX;
-      last.y = e.clientY;
-      document.querySelector('.sneakpeek-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
-      document.querySelector('.sneakpeek-background').style.left = e.clientX+"px";
-      document.querySelector('.sneakpeek-background').style.top = e.clientY+"px";
+
+    function openSP() {
+      canSearch = false;
       document.querySelector('.sneakpeek-container').style.display = '';
       document.addEventListener('keydown', keyCloseSP);
       setTimeout(() => {
         document.querySelector('.sneakpeek-overlay').style.opacity = 1;
-        document.querySelector('.sneakpeek-background').style.transform = 'scale(1)';
-        document.querySelector('.sneakpeek-background').style.left = `64vw`;
-        document.querySelector('.sneakpeek-background').style.top = `5vh`;
+        document.querySelector('.sneakpeek-background').classList.add('active');
+        document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
+        contentDiv.classList.add('hide');
       }, 100);
       spOpen = true;
     }
+
     function closeSP() {
+      if (!spOpen) return;
       document.querySelector('.sneakpeek-container').style.display = 'block';
       document.querySelector('.sneakpeek-overlay').style.opacity = 0;
-      document.querySelector('.sneakpeek-background').style.transform = 'translate(-50%,-50%) scale(.0000001)';
-      document.querySelector('.sneakpeek-background').style.left = last.x+"px";
-      document.querySelector('.sneakpeek-background').style.top = last.y+"px";
+      document.querySelector('.sneakpeek-background').classList.remove('active');
+      contentDiv.classList.remove('hide');
       document.removeEventListener('keydown', keyCloseSP);
       setTimeout(() => {
         document.querySelector('.sneakpeek-container').style.display = 'none';
+        spOpen = false;
+        canSearch = true;
       }, 300);
-      spOpen = false;
     }
     function keyCloseSP(e) {
       if (e.key == "Escape" || e.key == "Enter") {
@@ -660,6 +742,7 @@
       setTimeout(() => {
         settingsBackground.classList.add('active');
         settingsOverlay.classList.add('active');
+        contentDiv.classList.add('hide'); 
         settingsOpen = true
       }, 1);
     }
@@ -671,6 +754,7 @@
     canSearch = true;
     settingsBackground.classList.remove('active');
     settingsOverlay.classList.remove('active');
+    contentDiv.classList.remove('hide');
     setTimeout(() => {
       settingsContainer.style.display = 'none';
     }, 300);
@@ -686,16 +770,31 @@
   document.getElementById("customise-page").addEventListener('click', (event) => {
     window.open("./customise", '_self');
   })
+
+  function shrinkToFit(el, minSize = 10) {
+    el.style.wordWrap = '';el.style.width = '';
+    const parentWidth = el.parentNode.clientWidth - 
+      parseFloat(getComputedStyle(el.parentNode).paddingLeft) -
+      parseFloat(getComputedStyle(el.parentNode).paddingRight);
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > parentWidth && fs > minSize) {
+      fs = fs - 1;
+      fs < 16 ? (()=>{el.style.wordWrap = 'break-word';el.style.width = '110px';})() : null;
+      el.style.fontSize = `${fs}px`;
+    }
+  }
+
   function loadLS() {
     if (bl.buttons.length == 0) {
       document.getElementById("cards-error").innerHTML = "<h2>You don't have any buttons</h2><h3>Visit the <a href='/customise' style='cursor:pointer;color:#b53e3e;font-style:italic;'>customisation centre</a> to add some.</h3>";
       return;
     }
+    document.querySelector('.cards').innerHTML = "";
     bl.buttons.forEach((v, i) => {v.id = i;});
     bl.buttons.forEach(v=>{
       var button = document.createElement('div');
       button.classList.add("card");
-      button.innerHTML = `<img src="${v.icon}" alt="${v.name} Icon"><div class="overlay"><p>${v.name}</p></div>`;
+      button.innerHTML = `<img src="${v.icon}" alt="${v.name} Icon"><div class="overlay"><p>${v.name}${v.cid != undefined && typeof Number(v.cid) == "number" ? ` <i class="fa-solid fa-circle-user" style="color:#b5004b;"></i>` : ``}</p></div>`;
       button.addEventListener('click', (e) => {
         if (e.button == 1 || e.button == 0) {
             button.classList.add('clicked');
@@ -704,15 +803,18 @@
             button.classList.remove('clicked');
           }, 200);
         }
-      })
-      document.querySelector('.cards').appendChild(button)
+      });
+      document.querySelector('.cards').appendChild(button);
+      shrinkToFit(button.querySelector('p'),12);
     })
   }
+  var bl = {};
+  var cbl = {};
 
   if (localStorage.getItem("buttonlayout")) {
     if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
       consol.log("Failed to parse buttonlayout, resetting", "Buttons")
-      showAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
+      alertSystem.callAlert("Button Layout Reset", "An error was detected in your button layout.\n It has been reset to the default configuration.")
       localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
       localStorage.removeItem("buttonlayout")
       fetch("/def/def.json")
@@ -729,7 +831,7 @@
         })
         .catch(function(e) {
           consol.error("Failed to fetch buttons", "Buttons")
-          showAlert("Failed to load buttons", "The server didn't respond.")
+          alertSystem.callAlert("Failed to load buttons", "The server didn't respond.")
           document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
         });
     } else {
@@ -740,23 +842,51 @@
         })
         .then(function(defbl) {
           if (bl.v != JSON.parse(defbl).v) {
-            let vdefbl = JSON.parse(def)
+            let vdefbl = JSON.parse(defbl);
             delete vdefbl.all;
+            vdefbl.defaultButtons = structuredClone(vdefbl.buttons);
             vdefbl.buttons = bl.buttons;
             vdefbl.buttons.forEach((v, i) => {v.id = i;});
             localStorage.setItem("buttonlayout", JSON.stringify(vdefbl));
             bl = JSON.parse(localStorage.getItem("buttonlayout"));
+            if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
+              let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"))
+              preCBL.cButtons = preCBL.cButtons.filter(cButton => {
+                return (typeof cButton.name === 'string' && cButton.name.length > 0 && cButton.name.length <= 15 && typeof cButton.icon === 'string' && cButton.icon.startsWith('data:image/') && typeof cButton.url === 'string' && isValidUrl(cButton.url));
+              });
+              cbl = preCBL;
+            }
             loadLS();
           } else {
+            let vdefbl = JSON.parse(defbl);
+            if (!bl.defaultButtons) {
+              bl.defaultButtons = structuredClone(vdefbl.buttons);
+              localStorage.setItem("buttonlayout", JSON.stringify(bl));
+            }
+            if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
+              let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"))
+              preCBL.cButtons = preCBL.cButtons.filter(cButton => {
+                return (typeof cButton.name === 'string' && cButton.name.length > 0 && cButton.name.length <= 15 && typeof cButton.icon === 'string' && cButton.icon.startsWith('data:image/') && typeof cButton.url === 'string' && isValidUrl(cButton.url));
+              });
+              cbl = preCBL;
+            }
+            
             let len = structuredClone(bl.buttons.length);
             bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
             Promise.all(bl.buttons.map((b)=> new Promise((resolve, reject)=>{
               let tasks = {a:'required'}
-              if (!b.name || !b.icon || !b.url ) {b.tagged = true;return;};
-              if (b.pid && !JSON.parse(defbl).all.filter(d=>d.pid==b.pid)) {b.tagged = true;return;} else if (typeof Number(b.pid) == "number") {
-                let li = JSON.parse(defbl).all.filter(d=>d.pid==b.pid)[0];
+              if (!b.name || !b.icon || !b.url ) {b.tagged = true;resolve();};
+              if (b.pid != undefined && typeof Number(b.pid) == "number" && vdefbl.all.filter(d=>d.pid==b.pid).length == 0) {b.tagged = true;resolve();} else if (b.pid != undefined && typeof Number(b.pid) == "number") {
+                let li = vdefbl.all.filter(d=>d.pid==b.pid)[0];
                 ['name', 'icon', 'url'].forEach(p => {
-                  if (b[p] != li[p]) b[p] = li[p];
+                  if (li[p] && (b[p] != li[p])) b[p] = li[p];
+                });
+                tasks.a = true;
+              } else if (b.cid != undefined && typeof Number(b.cid) == "number") {
+                let li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];
+                if (!li) {b.tagged = true;resolve();};
+                ['name', 'icon', 'url'].forEach(p => {
+                  if (li[p] && (b[p] != li[p])) b[p] = li[p];
                 });
                 tasks.a = true;
               };
@@ -764,7 +894,7 @@
               let c = true;
               for (const [k, v] of Object.entries(tasks)) {
                 if (v == 'required') {
-                  consol.warn(`Failed to fetch "${b.name}" button, task ${k} failed.`, "Buttons");
+                  consol.warn(`Failed to fetch "${b.name}" button, task '${k}' failed.`, "Buttons");
                   b.tagged = true;
                 } else if (v == 'res') {
                   c = false;
@@ -782,15 +912,17 @@
               let errmsg = "";
               if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`};
               if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
-              if (errmsg) showAlert("Button Layout Updated", errmsg, {});
+              if (errmsg) alertSystem.callAlert("Button Layout Updated", errmsg, {});
               localStorage.setItem("buttonlayout", JSON.stringify(bl));
               loadLS();
-            })
+            }).then(()=>{
+              checkForNewDefaultButtons(defbl);
+            });
           }
         })
         .catch(function(e) {
           consol.error(`Failed to fetch buttons, ${e}`, "Buttons")
-          showAlert("Failed to load buttons", "The server didn't respond.")
+          alertSystem.callAlert("Failed to load buttons", "The server didn't respond.")
           document.getElementById("cards-error").innerHTML = "<h2>Failed to load your buttons</h2>";
         });
     }
@@ -809,36 +941,91 @@
       })
       .catch(function(err) {
         consol.error(err, "Buttons")
-        showAlert("Failed to load buttons", "The server didn't respond.")
+        alertSystem.callAlert("Failed to load buttons", "The server didn't respond.")
       });
   }
-  
-  function showAlert(title, message, {okBtn="OK", cancelBtn="Cancel" }, showCancel=false) {
+
+  function isValidUrl(url) {
+    try {
+      url = url.trim();
+      if (!url) return false;
+
+      if (url.startsWith('/')) return true;
+
+      new URL(url);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  let alertSystem = {
+    callAlert: function(title, message, {okBtn="OK", cancelBtn="Cancel"} = {okBtn: "OK", cancelBtn: "Cancel"}, showCancel=false) {
+      return new Promise((resolve) => {
+        this._queue.push({ type: 1, title, message, okBtn, cancelBtn, showCancel, resolve });
+        !this._r?this._rq():null;
+      });
+    },
+    callNewButtonsDialog: function(title, newButtons, originalLength) {
+      return new Promise((resolve) => {
+        this._queue.push({ type: 2, title, newButtons, originalLength, resolve });
+        !this._r?this._rq():null;
+      });
+    },
+    _queue: [],
+    _rq: async function() {
+      if (this._queue.length > 0) {
+        this._r = true;
+        const item = this._queue.shift();
+        if (item.type == 1) {
+          await showAlert(item.title, item.message, {okBtn: item.okBtn, cancelBtn: item.cancelBtn}, item.showCancel);
+          item.resolve();
+        } else if (item.type == 2) {
+          await showNewButtonsDialog(item.title, item.newButtons, item.originalLength);
+          item.resolve();
+        }
+        setTimeout(()=>{this._rq()}, 300);
+      } else this._r = false;
+    },
+    _r: false,
+  }
+
+  const alertTitle = document.getElementById('alert-title');
+  const alertMessage = document.getElementById('alert-message');
+  const alertOk = document.getElementById('alert-ok');
+  const alertCancel = document.getElementById('alert-cancel');
+  const alertContainer = document.querySelector('.alert-container');
+  const alertOverlay = document.querySelector('.alert-overlay');
+  const alertBackground = document.querySelector('.alert-background');
+
+  function showAlert(title, message, {okBtn="OK", cancelBtn="Cancel"} = {okBtn: "OK", cancelBtn: "Cancel"}, showCancel=false) {
     return new Promise((resolve) => {
-      document.getElementById('alert-title').innerText = title;
-      document.getElementById('alert-message').innerText = message;
-      document.getElementById('alert-ok').innerText = okBtn;
-      showCancel ? document.getElementById('alert-cancel').innerText = cancelBtn : null;
-      document.querySelector('.alert-container').style.display = '';
+      alertContainer.style.display = '';
       setTimeout(() => {
-        document.querySelector('.alert-overlay').style.opacity = 1;
-        document.querySelector('.alert-background').classList.add('active');
-      }, 100);
+        alertTitle.innerText = title;
+      alertMessage.innerText = message;
+      alertOk.innerText = okBtn;
+      showCancel ? alertCancel.innerText = cancelBtn : null;
+      
+      contentDiv.classList.add('hide');
+      alertOverlay.style.opacity = 1;
+      alertBackground.classList.add('active');
       
       function closeAlert() {
         document.removeEventListener('keydown', keyCloseA);
-        document.querySelector('.alert-overlay').removeEventListener('click', resFalse);
-        document.getElementById('alert-ok').removeEventListener('click', resTrue);
-        showCancel ? document.getElementById('alert-cancel').removeEventListener('click', resFalse) : null;
-        document.querySelector('.alert-overlay').style.opacity = 0;
-        document.querySelector('.alert-background').classList.remove('active');
+        alertOverlay.removeEventListener('click', resFalse);
+        alertOk.removeEventListener('click', resTrue);
+        showCancel ? alertCancel.removeEventListener('click', resFalse) : null;
+        alertOverlay.style.opacity = 0;
+        alertBackground.classList.remove('active');
+        contentDiv.classList.remove('hide');
         setTimeout(() => {
-          document.querySelector('.alert-container').style.display = 'none';
-          document.getElementById('alert-title').innerText = "Alert";
-          document.getElementById('alert-message').innerText = "Message";
-          document.getElementById('alert-ok').innerText = "OK";
-          document.getElementById('alert-cancel').style.display = 'none'
-          document.getElementById('alert-cancel').innerText = "Cancel";
+          alertContainer.style.display = 'none';
+          alertTitle.innerText = "Alert";
+          alertMessage.innerText = "Message";
+          alertOk.innerText = "OK";
+          alertCancel.style.display = 'none'
+          alertCancel.innerText = "Cancel";
         }, 300);
       }
       
@@ -846,13 +1033,116 @@
       function resTrue() {closeAlert();resolve(true);}
       function resFalse() {closeAlert();resolve(false);}
       
-      document.querySelector('.alert-overlay').addEventListener('click', resFalse);
-      document.getElementById('alert-ok').addEventListener('click', resTrue);
-      showCancel ? document.getElementById('alert-cancel').addEventListener('click', resFalse) : null;
+      alertOverlay.addEventListener('click', resFalse);
+      alertOk.addEventListener('click', resTrue);
+      showCancel ? alertCancel.addEventListener('click', resFalse) : null;
       document.addEventListener('keydown', keyCloseA);
-      showCancel ? document.getElementById('alert-cancel').style.display = '' : document.getElementById('alert-cancel').style.display = 'none';
+      showCancel ? alertCancel.style.display = '' : alertCancel.style.display = 'none';
+      }, 10);
     });
   }
   
+  function showNewButtonsDialog(title, newButtons, originalLength) {
+    if (newButtons.length == 0) return;
+    return new Promise((resolve) => {
+      const container = document.querySelector('.new-buttons-container');
+      const overlay = document.querySelector('.new-buttons-overlay');
+      const background = document.querySelector('.new-buttons-background');
+      const cardsContainer = document.querySelector('.new-buttons-cards');
+      const message = document.getElementById('new-buttons-message');
+      const titleElem = document.getElementById('new-buttons-title');
+      const okBtn = document.getElementById('new-buttons-ok');
+
+      titleElem.textContent = title;
+      cardsContainer.innerHTML = '';
+
+      newButtons.forEach(button => {
+        const card = document.createElement('div');
+        card.classList.add('newcard');
+        card.innerHTML = `
+          <img src="${button.icon}" alt="${button.name} Icon">
+          <div class="overlay"><p>${button.name}</p></div>
+        `;
+        cardsContainer.appendChild(card);
+      });
+      
+      if (originalLength + newButtons.length <= 25) {
+        message.textContent = `${newButtons.length==1?`This button has`:`These buttons have`} been added to your configuration.`;
+      } else if (originalLength < 25 && originalLength + newButtons.length > 25) {
+        const excess = originalLength + newButtons.length - 25;
+        message.innerHTML = `The first ${newButtons.length - excess == 1 ? `one has`:`${newButtons.length - excess} of these have`} been added.<br>To add the rest, please remove some cards through the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>.`;
+      } else if (originalLength == 25) {
+        message.innerHTML = `To add these buttons, please remove some cards through the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>.`;
+      }
+      
+      container.style.display = '';
+      setTimeout(() => {
+        overlay.style.opacity = 1;
+        background.classList.add('active');
+        contentDiv.classList.add('hide');
+      }, 100);
+      
+      function closeDialog() {
+        document.removeEventListener('keydown', keyCloseDialog);
+        overlay.style.opacity = 0;
+        background.classList.remove('active');
+        contentDiv.classList.remove('hide');
+        setTimeout(() => {
+          container.style.display = 'none';
+        }, 300);
+        resolve();
+      }
+      
+      function keyCloseDialog(e) {
+        if (e.key === "Escape" || e.key === "Enter") {
+          closeDialog();
+        }
+      }
+
+      okBtn.addEventListener('click', closeDialog, { once: true });
+      overlay.addEventListener('click', closeDialog, { once: true });
+      document.addEventListener('keydown', keyCloseDialog);
+    });
+  }
+  
+  function checkForNewDefaultButtons(defbl) {
+    try {
+      const vdefbl = JSON.parse(defbl);
+
+      if (!bl.defaultButtons) return;
+
+      const defaultPids = bl.defaultButtons.map(b => b.pid);
+
+      const newButtons = vdefbl.buttons.filter(b => !defaultPids.includes(b.pid));
+      const originalLength = structuredClone(bl.buttons.length);
+
+      if (newButtons.length > 0) {
+        const toAdd = newButtons.slice(0, Math.max(0, bl.buttons.length - 25));
+        
+        if (toAdd.length > 0) {
+          toAdd.forEach(button => {
+            if (bl.buttons.length >= 25) return;
+            const newButton = {
+              name: button.name,
+              icon: button.icon,
+              url: button.url,
+              pid: button.pid
+            };
+            if (button.param) newButton.param = button.param;
+            bl.buttons.push(newButton);
+          });
+
+          bl.buttons.forEach((v, i) => { v.id = i; });
+
+          loadLS();
+        }
+        bl.defaultButtons = structuredClone(vdefbl.buttons);
+        localStorage.setItem("buttonlayout", JSON.stringify(bl));
+        alertSystem.callNewButtonsDialog(newButtons.length === 1 ? "New Button Available" : "New Buttons Available", newButtons, originalLength);
+      }
+    } catch (error) {
+      consol.error(`Error checking for new buttons: ${error}`, "Buttons");
+    }
+  }
   console.log(`                ,---,.   ,----..   \n       ,---.  ,'  .'  \\ /   /   \\  \n      /__./|,---.' .' ||   :     : \n ,---.;  ; ||   |  |: |.   |  ;. / \n/___/ \\  | |:   :  :  /.   ; /--\`  \n\\   ;  \\ ' |:   |    ; ;   | ;     \n \\   \\  \\: ||   :     \\|   : |     \n  ;   \\  ' .|   |   . |.   | '___  \n   \\   \\   ''   :  '; |'   ; : .'| \n    \\   \`  ;|   |  | ; '   | '/  : \n     :   \\ ||   :   /  |   :    /  \n      '---\" |   | ,'    \\   \\ .'   \n            \`----'       \`---\`     \nIntranet ${version}`)
 })();
