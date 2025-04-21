@@ -1280,7 +1280,7 @@ loadCLS();
       }
       
       cBtnElem.addEventListener('dragstart', (e) => {
-        if (cBtnElem.classList.contains('locked')) {
+        if (cBtnElem.classList.contains('locked') || cBtnElem.classList.contains('delete-mode')) {
           e.preventDefault();
           return;
         }
