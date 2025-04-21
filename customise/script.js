@@ -831,7 +831,7 @@
     return true
   }
   var bl = {};
-  var cbl = {cbuttons: []};
+  var cbl = {cButtons: []};
   if (localStorage.getItem("buttonlayout")) {
     if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
       consol.log("Failed to parse buttonlayout, resetting", "Buttons")
