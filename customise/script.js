@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.0";
+  const version = "v2.0.1";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -515,39 +515,45 @@
       e.preventDefault();
       
       if (isDragging) {
-        updateGhostPosition(e);
+      updateGhostPosition(e);
+      
+      const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+
+      if (elemBelow) {
+        let target = elemBelow;
+        while (target && !target.classList.contains('card-gap') && target !== cardsContainer && target !== trashZone) {
+          target = target.parentElement;
+        }
         
-        const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
-
-        if (elemBelow) {
-          let target = elemBelow;
-          while (target && !target.classList.contains('card-gap') && target !== cardsContainer && target !== trashZone) {
-            target = target.parentElement;
-          }
+        if (target && target.classList.contains('card-gap')) {
+          const gapIndex = parseInt(target.getAttribute('data-index'));
           
-          if (target && target.classList.contains('card-gap')) {
-            const gapIndex = parseInt(target.getAttribute('data-index'));
-            
-            if (gapIndex !== vId && gapIndex !== vId + 1) {
-              if (activeGap && activeGap !== target) {
-                activeGap.classList.remove('active');
-              }
-
-              target.classList.add('active');
-              activeGap = target;
-            }
-          } else if (activeGap) {
+          if (gapIndex !== vId && gapIndex !== vId + 1) {
+            if (activeGap && activeGap !== target) {
             activeGap.classList.remove('active');
-            activeGap = null;
-          }
+            }
 
-          if (target && target === trashZone) {
-            trashZone.classList.add('active');
-          } else {
-            trashZone.classList.remove('active');
+            target.classList.add('active');
+            activeGap = target;
           }
+        } else if (activeGap) {
+          activeGap.classList.remove('active');
+          activeGap = null;
+        }
+
+        if (target && target === trashZone) {
+          trashZone.classList.add('active');
+        } else {
+          trashZone.classList.remove('active');
         }
       }
+
+      if (e.clientY < 50) {
+        window.scrollBy(0, -10);
+      } else if (e.clientY > window.innerHeight - 50) {
+        window.scrollBy(0, 10);
+      }
+    }
     }
     
     function onMouseUp(e) {
@@ -650,23 +656,23 @@
           presetElem.addEventListener('mouseup', (e) => {
             if ((e.button == 0 || e.button == 1) && clickAllowed) {
               if (bl.buttons.length >= 25) {
-              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-                p.classList.add('locked');
-              });
+                drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+                  p.classList.add('locked');
+                });
 
-              alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of buttons (25).\nPlease remove some before adding new ones.");
-              return;
-            }
+                alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of buttons (25).\nPlease remove some before adding new ones.");
+                return;
+              }
 
-            updateLS(true, presetData);
+              updateLS(true, presetData);
 
-            if (bl.buttons.length >= 25) {
-              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-                p.classList.add('locked');
-              });
-            }
+              if (bl.buttons.length >= 25) {
+                drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+                  p.classList.add('locked');
+                });
+              }
 
-            loadLS();
+              loadLS();
             }
           });
 
@@ -766,6 +772,12 @@
             trashZone.classList.remove('active');
           }
         }
+
+        if (e.clientY < 50) {
+          window.scrollBy(0, -10);
+        } else if (e.clientY > window.innerHeight - 50) {
+          window.scrollBy(0, 10);
+        }
       }
     }
     
@@ -863,7 +875,8 @@
         });
         cbl = preCBL;
       }
-      loadLS()
+      loadLS();
+      loadCLS();
     }
   } else {
     fetch("/def/def.json")
@@ -871,11 +884,12 @@
         return res.text()
       })
       .then(function (def) {
-        let vdef = JSON.parse(def)
+        let vdef = JSON.parse(def);
         delete vdef.all;
-        localStorage.setItem("buttonlayout", JSON.stringify(vdef))
-        bl = JSON.parse(localStorage.getItem("buttonlayout"))
-        loadLS()
+        localStorage.setItem("buttonlayout", JSON.stringify(vdef));
+        bl = JSON.parse(localStorage.getItem("buttonlayout"));
+        loadLS();
+        loadCLS();
       })
       .catch(function (e) {
         consol.error("Failed to fetch buttons", "Buttons")
@@ -1200,7 +1214,7 @@
       loadLS();
     }
   };
-loadCLS();
+
   function loadCLS() {
     if (!cbl || !cbl.cButtons) return;
     let cButtons = cbl.cButtons;
@@ -1372,6 +1386,12 @@ loadCLS();
           } else {
             trashZone.classList.remove('active');
           }
+        }
+
+        if (e.clientY < 50) {
+          window.scrollBy(0, -10);
+        } else if (e.clientY > window.innerHeight - 50) {
+          window.scrollBy(0, 10);
         }
       }
     }

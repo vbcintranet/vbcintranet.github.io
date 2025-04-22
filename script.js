@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.0";
+  const version = "v2.0.1";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -146,6 +146,7 @@
       document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-magnifying-glass-arrows-rotate"></i> Fetching class data...</div>`;
       document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
       clearTimeout(t);
+      classSyncLock = false;
       ClassSync();
       calActiveText.textContent = "✓ Active";
       calActiveText.setAttribute("active", "");
@@ -743,6 +744,7 @@
         settingsBackground.classList.add('active');
         settingsOverlay.classList.add('active');
         contentDiv.classList.add('hide'); 
+        settingsButton.classList.add('active');
         settingsOpen = true
       }, 1);
     }
@@ -755,6 +757,7 @@
     settingsBackground.classList.remove('active');
     settingsOverlay.classList.remove('active');
     contentDiv.classList.remove('hide');
+    settingsButton.classList.remove('active');
     setTimeout(() => {
       settingsContainer.style.display = 'none';
     }, 300);
