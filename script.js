@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.1";
+  const version = "v2.0.2";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -408,7 +408,6 @@
         calActiveText.textContent = "✓ Active";
         calActiveText.setAttribute("active", "");
         calActiveText.removeAttribute("error");
-        // errors.saveSessionOfType("ClassSync");
         const lines = fileContents.split('\n');
         var endTime = new Date();
         endTime.setHours(23, 59, 59, 0);
@@ -583,6 +582,7 @@
           document.getElementById('sp-nc').innerHTML = events.joined.find(e=>e.now) ? '' : `<div class="spt"><i class="fa-regular fa-calendar-minus"></i> ${events.today.length ? 'No more classes for today' : 'No classes today'}</div>`;
         }
         last_events = events;
+        errors.saveSessionOfType("ClassSync");
         t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
       })
       .catch(error => {
@@ -599,23 +599,26 @@
         calActiveText.removeAttribute("active");
         if (errors.countOfType("ClassSync") < 5) {
           consol.error("ClassSync running again", "ClassSync");
-          setTimeout(() => { classSyncLock = false; ClassSync(); }, 0);
+          setTimeout(() => { classSyncLock = false; ClassSync(); }, 100);
         } else {
-          consol.error("ClassSync running again in 60 seconds", "ClassSync");
+          consol.error("ClassSync running again next cycle", "ClassSync");
           updateErrorTimer(60 - new Date().getSeconds());
           t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
         }
       })
   }
-  let errorTimerActive = false;
-
-  function updateErrorTimer(time, ft = true) {
-    if (errorTimerActive) return;
-    errorTimerActive = true;
+  let etThread = 0;
+  let etActive = false;
+  
+  function updateErrorTimer(time, ft = true, thread = -1, ts = false) {
+    if (etActive && thread !== etThread) return;
     if (!ft && document.getElementById("classSync").innerHTML != `<i class="fa-solid fa-cloud-exclamation"></i><p style="font-size:8px;">Retry: ${time + 1}s</p>`) {
-      errorTimerActive = false;
+      etThread++;
+      etActive = false;
       return;
     }
+    thread = ts ? thread : etThread;
+    ts, etActive = true;
     document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-cloud-exclamation"></i><p style="font-size:8px;">Retry: ${time}s</p>`;
     document.getElementById("classSync").parentElement.classList.add('cs-icon');
     document.getElementById('sp-err').style.display = 'flex';
@@ -624,16 +627,17 @@
 
     if (time > 0) {
       ut = setTimeout(() => {
-        updateErrorTimer(time - 1, false);
+        updateErrorTimer(time - 1, false, thread, ts);
       }, 1000 - new Date().getMilliseconds());
     } else {
-      errorTimerActive = false;
+      etThread++;
+      etActive = false;
     }
   }
-  let ut = setTimeout(function() {return}, 60000);
-  setTimeout(ut)
-  let t = setTimeout(function() {return}, 60000);
+  let ut, t = setTimeout(function() {return}, 60000);
+  clearTimeout(ut);
   clearTimeout(t);
+
   function formatCalLink(link, noscheme = false) {
     if (link.startsWith('webcal://')) {
       return (noscheme ? '' : 'https://') + link.slice(9);

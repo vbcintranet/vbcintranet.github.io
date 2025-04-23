@@ -112,7 +112,7 @@ a {
 }
 .delete-overlay i, .locked-overlay i {
   color: white;
-  font-size: 6em;
+  font-size: 5em;
   transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   transform: scale(0.5) rotate(-15deg);
 }

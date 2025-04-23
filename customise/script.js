@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.1";
+  const version = "v2.0.2";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -278,7 +278,7 @@
       button.setAttribute("data-id", buttonData.id);
       button.setAttribute("data-index", index);
       button.setAttribute("draggable", "true");
-      button.innerHTML = `<img src="${buttonData.icon}" alt="${buttonData.name} Icon"><div class="overlay"><p>${buttonData.name}</p></div><div class="delete-overlay"><i class="fa-solid fa-xmark"></i></div>`;
+      button.innerHTML = `<img src="${buttonData.icon}" alt="${buttonData.name} Icon"><div class="overlay"><p>${buttonData.name}</p></div><div class="delete-overlay"><i class="fa-solid fa-trash"></i></div>`;
       button.fontSize = "";
       shrinkToFit(button.querySelector('.overlay p'), 14);
       let clickAllowed = true;
@@ -1266,13 +1266,13 @@
               card.classList.remove('delete-mode');
               setTimeout(() => {
                 if (card.classList.contains("delete-mode")) return;
-                card.querySelector('.locked-overlay i').classList.remove('fa-xmark');
+                card.querySelector('.locked-overlay i').classList.remove('fa-trash');
                 card.querySelector('.locked-overlay i').classList.add('fa-lock');
               }, card.classList.contains("locked") ? 0 : 400);
             });
             
             cBtnElem.classList.add('delete-mode');
-            cBtnElem.querySelector('.locked-overlay i').classList.add('fa-xmark');
+            cBtnElem.querySelector('.locked-overlay i').classList.add('fa-trash');
             cBtnElem.querySelector('.locked-overlay i').classList.remove('fa-lock');
             setTimeout(() => {
               document.addEventListener('mousedown', removeDeleteMode);
@@ -1286,7 +1286,7 @@
           cBtnElem.classList.remove('delete-mode');
           setTimeout(() => {
             if (cBtnElem.classList.contains("delete-mode")) return;
-            cBtnElem.querySelector('.locked-overlay i').classList.remove('fa-xmark');
+            cBtnElem.querySelector('.locked-overlay i').classList.remove('fa-trash');
             cBtnElem.querySelector('.locked-overlay i').classList.add('fa-lock');
           }, cBtnElem.classList.contains("locked") ? 0 : 400);
           document.removeEventListener('mousedown', removeDeleteMode);
