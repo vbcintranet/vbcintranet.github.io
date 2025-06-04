@@ -154,7 +154,7 @@
     }
   });
   window.addEventListener('offline', () => {
-    consol.warn("Running on offline mode", "Network");
+    consol.warn("Running in offline mode", "Network");
     isOnline = false;
     document.getElementById('no-internet').style.display = 'flex';
     if (calActive) {
