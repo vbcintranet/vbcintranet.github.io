@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.2";
+  const version = "v2.0.3";
   
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -159,6 +159,7 @@
     document.getElementById('no-internet').style.display = 'flex';
     if (calActive) {
       document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-caret-right"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+      last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
       document.getElementById('sp-err').style.display = 'flex';
       document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
       document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
@@ -347,6 +348,7 @@
 
       if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
         document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-caret-right"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+        last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
         document.getElementById('sp-err').style.display = 'flex';
         document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
         document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
@@ -365,6 +367,7 @@
         document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
       } else {
         document.getElementById("classSync").innerHTML = `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+        document.getElementById("classSync").parentElement.classList.add('cs-icon');
         document.getElementById('sp-err').style.display = 'flex';
         document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
         document.getElementById('sp-nc').style.display = 'flex';
@@ -547,9 +550,9 @@
         
         if ((events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime())) {
           document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-caret-right"></i> ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`;
+          document.getElementById("classSync").parentElement.classList.remove('cs-icon');
           document.getElementById('sp-err').style.display = 'none';
           document.getElementById('sp-nc').style.display = 'none';
-          document.getElementById("classSync").parentElement.classList.remove('cs-icon');
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
             if (!['sp-nc','sp-err'].includes(c.id)) {
               c.remove()
