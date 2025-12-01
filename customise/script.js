@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.5";
+  const version = "v2.0.6";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -647,6 +647,7 @@
             url: preset.url,
             pid: preset.pid
           };
+          if (preset.param != undefined) presetData.param = preset.param;          
 
           presetElem.addEventListener('mousedown', (e) => {
             if (e.button == 0 || e.button == 1) {

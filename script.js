@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.5";
+  const version = "v2.0.6";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -14,11 +14,7 @@
     document.getElementById("clock").innerText = `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()]}, ${now.getDate()}${(!(String(now.getDate())[0] == "1" && String(now.getDate()).length == 2)&&[1,2,3].includes(now.getDate() % 10))?['st','nd','rd'][(now.getDate() % 10)-1]:'th'} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][now.getMonth()]} ${now.getFullYear()}, ${[0,12].includes(now.getHours()) ? '12' : now.getHours() > 11 ? now.getHours()-12 : now.getHours()}:${now.getMinutes() < 10 ? "0"+now.getMinutes() : now.getMinutes()}:${now.getSeconds() < 10 ? "0"+now.getSeconds() : now.getSeconds()} ${now.getHours() > 11 ? 'PM' : 'AM'}`
     setTimeout(updateClock, 1000 - now.getMilliseconds());
   }
-  if (/Googlebot|AdsBot-Google|Mediapartners-Google/i.test((typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '')) {
-    return;
-  } else {
-    updateClock();
-  }
+  updateClock();
   
   const contentDiv = document.getElementById('content');
   const searchContainer = document.querySelector('.search-container');
