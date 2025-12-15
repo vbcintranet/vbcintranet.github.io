@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.6";
+  const version = "v2.1.0";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -69,11 +69,230 @@
   var changes = []
   const $drag = {el: null, id: null, properties: {}, prev: null}
 
-  function updateLS(add, { id, name, icon, url, param, pid, from, cid }, hide = false) {
+  function shatterCard(card, callfirst) {
+    if (typeof callfirst === 'function') callfirst();
+    try {
+      const shards = 8 + Math.floor(Math.random() * 6);
+      const duration = 850;
+      const container = document.createElement('div');
+      const rect = card.getBoundingClientRect();
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const scale = 2;
+      canvas.width = rect.width * scale;
+      canvas.height = rect.height * scale;
+      ctx.scale(scale, scale);
+      
+      const cardStyle = window.getComputedStyle(card);
+      const img = card.querySelector('img');
+      const overlayText = card.querySelector('.overlay p');
+      
+      const cardRadius = cardStyle.borderRadius || '8px';
+      
+      const radiusValue = parseFloat(cardRadius);
+      ctx.beginPath();
+      ctx.roundRect(0, 0, rect.width, rect.height, radiusValue);
+      ctx.clip();
+      
+      ctx.fillStyle = cardStyle.backgroundColor;
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      const bgImage = cardStyle.backgroundImage
+      const bgSize = cardStyle.backgroundSize;
+
+      const proceedAfterBG = () => {
+        const overlayGradient = ctx.createLinearGradient(0, rect.height * 0.6, 0, rect.height);
+        overlayGradient.addColorStop(0, 'rgba(0,0,0,0)');
+        overlayGradient.addColorStop(1, 'rgba(0,0,0,0.8)');
+        ctx.fillStyle = overlayGradient;
+        ctx.fillRect(0, rect.height * 0.6, rect.width, rect.height * 0.4);
+
+        if (overlayText) {
+          const textStyle = window.getComputedStyle(overlayText);
+          const rawText = overlayText.textContent || '';
+          ctx.font = `${textStyle.fontWeight || 'bold'} ${textStyle.fontSize || '18.72px'} ${textStyle.fontFamily || 'Varela Round'}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const textX = rect.width / 2;
+          let textY = rect.height * 0.8;
+          textY = Math.max(0, Math.min(rect.height, textY));
+          ctx.fillStyle = '#ffffff';
+          const maxWidth = rect.width * 0.8;
+          const fontSize = parseFloat(textStyle.fontSize || '18.72');
+          const lineHeight = fontSize * 1.2;
+          const words = rawText.split(' ');
+          const lines = [];
+          let currentLine = '';
+          
+          for (const word of words) {
+            const testLine = currentLine ? currentLine + ' ' + word : word;
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && currentLine) {
+              lines.push(currentLine);
+              currentLine = word;
+            } else {
+              currentLine = testLine;
+            }
+          }
+          if (currentLine) lines.push(currentLine);
+          
+          let currentY = textY - (lines.length - 1) * lineHeight / 2;
+          lines.forEach(line => {
+            ctx.fillText(line, textX, currentY);
+            currentY += lineHeight;
+          });
+        }
+
+        const cardDataUrl = canvas.toDataURL('image/png');
+
+        container.className = 'shatter-container';
+        container.style.position = 'fixed';
+        container.style.left = `${rect.left}px`;
+        container.style.top = `${rect.top}px`;
+        container.style.width = `${rect.width}px`;
+        container.style.height = `${rect.height}px`;
+        container.style.pointerEvents = 'none';
+        container.style.overflow = 'visible';
+        container.style.zIndex = 9999;
+        document.body.appendChild(container);
+        card.style.visibility = 'hidden';
+
+        const cx = 50 + (Math.random() - 0.5) * 50;
+        const cy = 50 + (Math.random() - 0.5) * 50;
+
+        const degToRad = d => d * Math.PI / 180;
+        for (let i = 0; i < shards; i++) {
+          const angleA = (i / shards) * 360 + (Math.random() - 0.5) * 12;
+          const angleB = ((i + 1) / shards) * 360 + (Math.random() - 0.5) * 12;
+
+          const edgePoints = [];
+          const steps = 3 + Math.floor(Math.random() * 3);
+          for (let s = 0; s <= steps; s++) {
+            const t = s / steps;
+            const angle = angleA + (angleB - angleA) * t;
+            const baseRadius = 60 + Math.random() * 50;
+            const jitter = (Math.random() - 0.5) * 18;
+            const radius = baseRadius + jitter;
+            const rad = degToRad(angle);
+            const x = cx + Math.cos(rad) * radius;
+            const y = cy + Math.sin(rad) * radius * (rect.height / rect.width);
+            edgePoints.push([x, y]);
+          }
+
+          const points = [[cx, cy], ...edgePoints];
+
+          const shard = document.createElement('div');
+          shard.className = 'shard';
+          shard.style.position = 'absolute';
+          shard.style.left = '0';
+          shard.style.top = '0';
+          shard.style.width = '100%';
+          shard.style.height = '100%';
+          shard.style.backgroundRepeat = 'no-repeat';
+          shard.style.backgroundSize = `${rect.width}px ${rect.height}px`;
+          shard.style.backgroundPosition = '0 0';
+          if (cardDataUrl) shard.style.backgroundImage = `url(${cardDataUrl})`;
+
+          const poly = points.map(p => `${p[0].toFixed(2)}% ${p[1].toFixed(2)}%`).join(', ');
+          shard.style.clipPath = `polygon(${poly})`;
+          shard.style.transition = `transform ${duration}ms cubic-bezier(.2,.8,.2,1), opacity ${duration}ms ease`;
+          shard.style.transformOrigin = `${cx}% ${cy}%`;
+          container.appendChild(shard);
+
+          (function(s) {
+            requestAnimationFrame(() => {
+              setTimeout(() => {
+                const force = 0.6 + Math.random() * 1.6;
+                const dx = (Math.cos(degToRad((angleA + angleB) / 2)) * rect.width * force) * (0.6 + Math.random() * 0.8);
+                const dy = (Math.sin(degToRad((angleA + angleB) / 2)) * rect.height * force) * (0.6 + Math.random() * 0.8) - (20 + Math.random() * 40);
+                const rot = (Math.random() - 0.5) * 90;
+                s.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+                s.style.opacity = '0';
+              }, Math.random() * 80);
+            });
+          })(shard);
+        }
+
+        setTimeout(() => {
+          try { container.remove(); } catch (e) { container.parentNode && container.parentNode.removeChild(container); }
+          try { card.remove(); } catch (e) { card.parentNode && card.parentNode.removeChild(card); }
+        }, duration + shards * 22 + 140);
+      };
+
+      if (bgImage && bgImage !== 'none' && !bgImage.includes('gradient')) {
+        const urlMatch = bgImage.match(/url\(['"]?([^'"\)]+)['"]?\)/);
+        if (urlMatch && urlMatch[1]) {
+          const src = urlMatch[1];
+          const bgImg = new Image();
+          bgImg.src = src;
+          bgImg.onload = () => {
+            try {
+              let tileW = bgImg.width;
+              let tileH = bgImg.height;
+              const sizeMatch = bgSize && bgSize.match(/(\d+)(px)\s+(\d+)(px)/);
+              if (sizeMatch) {
+                tileW = parseFloat(sizeMatch[1]);
+                tileH = parseFloat(sizeMatch[3]);
+              }
+              const tileCanvas = document.createElement('canvas');
+              tileCanvas.width = tileW;
+              tileCanvas.height = tileH;
+              const tctx = tileCanvas.getContext('2d');
+              tctx.drawImage(bgImg, 0, 0, tileW, tileH);
+              const pattern = ctx.createPattern(tileCanvas, 'repeat');
+              ctx.filter = 'blur(6px)';
+              ctx.fillStyle = pattern || ctx.fillStyle;
+              ctx.fillRect(0, 0, rect.width, rect.height);
+              ctx.filter = 'none';
+              bgRendered = true;
+            } catch (e) {
+              consol.warn('Failed to render background pattern', 'Shatter');
+            } finally {
+              proceedAfterBG();
+            }
+          };
+          bgImg.onerror = (e) => {
+            consol.warn('Background image failed to load', 'Shatter');
+            proceedAfterBG();
+          };
+        } else {
+          proceedAfterBG();
+        }
+      } else {
+        proceedAfterBG();
+      }
+      
+      if (img && img.complete && img.naturalWidth > 0) {
+          if (img && img.complete && img.naturalWidth > 0) {
+            const imgRect = img.getBoundingClientRect();
+            const imgX = imgRect.left - rect.left;
+            const imgY = imgRect.top - rect.top;
+            try {
+              ctx.drawImage(img, imgX, imgY, imgRect.width, imgRect.height);
+            } catch (e) {
+              consol.warn('Failed to draw card image to canvas (CORS?)', 'Shatter');
+            }
+          } else {
+            consol.log('Icon not ready or missing', 'Shatter');
+          }
+      }
+
+      setTimeout(() => {
+        try { container.remove(); } catch (e) { container.parentNode && container.parentNode.removeChild(container); }
+        try { card.remove(); } catch (e) { card.parentNode && card.parentNode.removeChild(card); }
+      }, duration + shards * 22 + 140);
+    } catch (e) {
+      consol.error('Effect failed', 'Shatter');
+      try { card.remove(); } catch (err) { card.parentNode && card.parentNode.removeChild(card); }
+    }
+  }
+
+  function updateLS(add, { id, name, icon, url, param, pid, from, cid, popup }, hide = false) {
     if (add && bl.buttons.length < 25) {
       let b = {}
       name && icon && url ? b = { name, icon, url } : console.error("Missing parameters", "Buttons");
       if (param) b.param = param;
+      if (popup) b.popup = structuredClone(popup);
       if (pid != undefined && typeof Number(pid) == "number") b.pid = pid; else if (cid != undefined && typeof Number(cid) == "number") b.cid = cid;
       let f = bl.buttons.some(button => button.id === id)
       if (typeof id == 'number' && f) {
@@ -131,9 +350,7 @@
             const cardToRemove = cardsContainer.querySelector(`.card[data-id="${id}"]`);
 
             if (cardToRemove) {
-              cardToRemove.classList.add('card-remove');
-              
-              cardToRemove.addEventListener('animationend', () => {
+              shatterCard(cardToRemove, () => {
                 let gapToRemove = null;
                 const nextCard = cardToRemove.nextElementSibling;
 
@@ -149,8 +366,6 @@
                 if (gapToRemove) {
                   gapToRemove.remove();
                 }
-
-                cardToRemove.remove();
 
                 const remainingCards = cardsContainer.querySelectorAll('.card');
                 remainingCards.forEach((card, idx) => {
@@ -171,7 +386,7 @@
                     cardsContainer.appendChild(newLastGap);
                   }
                 }
-              }, { once: true });
+              });
             }
           }
         }
@@ -181,7 +396,7 @@
 
   function undoUpdate() {
     if (!changes.length) return;
-    typeof changes[changes.length - 1].from == 'number' && changes[changes.length - 1].a ? (()=>{updateLS(false, { id: changes[changes.length - 1].id }, true); updateLS(true, {id: changes[changes.length - 1].from, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid}, true)})() : changes[changes.length - 1].a ? updateLS(false, { id: changes[changes.length - 1].id }, true) : updateLS(true, { id: changes[changes.length - 1].id, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid }, true);
+    typeof changes[changes.length - 1].from == 'number' && changes[changes.length - 1].a ? (()=>{updateLS(false, { id: changes[changes.length - 1].id }, true); updateLS(true, {id: changes[changes.length - 1].from, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid, popup: changes[changes.length - 1].popup}, true)})() : changes[changes.length - 1].a ? updateLS(false, { id: changes[changes.length - 1].id }, true) : updateLS(true, { id: changes[changes.length - 1].id, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid, popup: changes[changes.length - 1].popup }, true);
     changes.length = changes.length - 1 < 0 ? 0 : changes.length - 1;
     loadLS();
   }
@@ -222,6 +437,12 @@
             ['name', 'icon', 'url'].forEach(p => {
               if (li[p] && (b[p] != li[p])) {b[p] = li[p];refReq = true;};
             });
+            if (li.param && !b.param) {b.param = li.param;refReq = true;}
+            else if (!li.param && b.param) {delete b.param;refReq = true;}
+            else if (li.param && b.param && li.param !== b.param) {b.param = li.param;refReq = true;}
+            if (li.popup && !b.popup) {b.popup = structuredClone(li.popup);refReq = true;}
+            else if (!li.popup && b.popup) {delete b.popup;refReq = true;}
+            else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) {b.popup = structuredClone(li.popup);refReq = true;}
             tasks.a = true;
           } else if (b.cid != undefined && typeof Number(b.cid) == "number") {
             let li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];
@@ -229,6 +450,12 @@
             ['name', 'icon', 'url'].forEach(p => {
               if (li[p] && (b[p] != li[p])) {b[p] = li[p];refReq = true;};
             });
+            if (li.param && !b.param) {b.param = li.param;refReq = true;}
+            else if (!li.param && b.param) {delete b.param;refReq = true;}
+            else if (li.param && b.param && li.param !== b.param) {b.param = li.param;refReq = true;}
+            if (li.popup && !b.popup) {b.popup = structuredClone(li.popup);refReq = true;}
+            else if (!li.popup && b.popup) {delete b.popup;refReq = true;}
+            else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) {b.popup = structuredClone(li.popup);refReq = true;}
             tasks.a = true;
           };
 
@@ -489,6 +716,9 @@
       document.body.appendChild(dragGhost);
       
       isDragging = true;
+      document.querySelectorAll('.card-gap i').forEach(icon => {
+        icon.className = 'fa-solid fa-arrows-up-down-left-right';
+      });
       
       updateGhostPosition(e);
       
@@ -499,6 +729,7 @@
       $drag.id = itemData.id;
       const properties = { name: itemData.name, icon: itemData.icon, url: itemData.url };
       itemData.param ? properties.param = itemData.param : null;
+      itemData.popup ? properties.popup = structuredClone(itemData.popup) : null;
       itemData.pid != undefined && typeof Number(itemData.pid) == "number" ? properties.pid = itemData.pid : null;
       $drag.properties = properties;
       
@@ -608,6 +839,9 @@
       $drag.el = null;
       $drag.id = null;
       $drag.properties = {};
+      document.querySelectorAll('.card-gap i').forEach(icon => {
+        icon.className = 'fa-solid fa-plus';
+      });
       
       document.removeEventListener('dragover', onMouseMove);
       document.removeEventListener('drop', onMouseUp);
@@ -647,7 +881,8 @@
             url: preset.url,
             pid: preset.pid
           };
-          if (preset.param != undefined) presetData.param = preset.param;          
+          if (preset.param != undefined) presetData.param = preset.param;
+          if (preset.popup != undefined) presetData.popup = structuredClone(preset.popup);          
 
           presetElem.addEventListener('mousedown', (e) => {
             if (e.button == 0 || e.button == 1) {
@@ -728,6 +963,7 @@
       $drag.id = presetData.id;
       const properties = { name: presetData.name, icon: presetData.icon, url: presetData.url };
       presetData.param ? properties.param = presetData.param : null;
+      presetData.popup ? properties.popup = structuredClone(presetData.popup) : null;
       presetData.pid != undefined && typeof Number(presetData.pid) == "number" ? properties.pid = presetData.pid : null;
       $drag.properties = properties;
       
@@ -1343,6 +1579,7 @@
       $drag.id = presetData.id;
       const properties = { name: presetData.name, icon: presetData.icon, url: presetData.url };
       presetData.param ? properties.param = presetData.param : null;
+      presetData.popup ? properties.popup = structuredClone(presetData.popup) : null;
       presetData.cid != undefined && typeof Number(presetData.cid) == "number" ? properties.cid = presetData.cid : null;
       $drag.properties = properties;
       

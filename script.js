@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.0.6";
+  const version = "v2.1.0";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -808,9 +808,24 @@
       button.addEventListener('click', (e) => {
         if (e.button == 1 || e.button == 0) {
             button.classList.add('clicked');
-          setTimeout(() => {
-            window.open(v.url, v.param ? `_self` : '_blank');
-            button.classList.remove('clicked');
+          setTimeout(async () => {
+            try {
+              const popup = v.popup || null;
+              const shouldShowPopup = popup && (popup.show === true || popup.show === "true");
+              if (shouldShowPopup) {
+                const title = popup.title || "Notice";
+                const message = popup.msg || "";
+                if (await alertSystem.callAlert(title, message, {okBtn: "Continue", cancelBtn: "Cancel"}, true)) {
+                  window.open(v.url, v.param ? `_self` : '_blank');
+                }
+              } else {
+                window.open(v.url, v.param ? `_self` : '_blank');
+              }
+            } catch (err) {
+              window.open(v.url, v.param ? `_self` : '_blank');
+            } finally {
+              button.classList.remove('clicked');
+            }
           }, 200);
         }
       });
@@ -833,8 +848,9 @@
         })
         .then(function(def) {
           let vdef = JSON.parse(def)
-          delete vdef.all;
+          vdef.defaultButtons = Array.isArray(vdef.buttons) ? vdef.buttons.map(x => (x.pid)) : [];
           vdef.buttons.forEach((v, i) => {v.id = i;});
+          vdef.all = Array.isArray(vdef.all) ? vdef.all.map(x => (x.pid)) : [];
           localStorage.setItem("buttonlayout", JSON.stringify(vdef))
           bl = JSON.parse(localStorage.getItem("buttonlayout"))
           loadLS()
@@ -853,10 +869,10 @@
         .then(function(defbl) {
           if (bl.v != JSON.parse(defbl).v) {
             let vdefbl = JSON.parse(defbl);
-            delete vdefbl.all;
-            vdefbl.defaultButtons = structuredClone(vdefbl.buttons);
+            vdefbl.defaultButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.map(x => (x.pid)) : [];
             vdefbl.buttons = bl.buttons;
             vdefbl.buttons.forEach((v, i) => {v.id = i;});
+            vdefbl.all = Array.isArray(vdefbl.all) ? vdefbl.all.map(x => (x.pid)) : [];
             localStorage.setItem("buttonlayout", JSON.stringify(vdefbl));
             bl = JSON.parse(localStorage.getItem("buttonlayout"));
             if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
@@ -870,7 +886,11 @@
           } else {
             let vdefbl = JSON.parse(defbl);
             if (!bl.defaultButtons) {
-              bl.defaultButtons = structuredClone(vdefbl.buttons);
+              bl.defaultButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.map(x => (x.pid)) : [];
+              localStorage.setItem("buttonlayout", JSON.stringify(bl));
+            }
+            if (!bl.all) {
+              bl.all = Array.isArray(vdefbl.all) ? vdefbl.all.map(x => (x.pid)) : [];
               localStorage.setItem("buttonlayout", JSON.stringify(bl));
             }
             if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
@@ -891,6 +911,12 @@
                 ['name', 'icon', 'url'].forEach(p => {
                   if (li[p] && (b[p] != li[p])) b[p] = li[p];
                 });
+                if (li.param && !b.param) b.param = li.param;
+                else if (!li.param && b.param) delete b.param;
+                else if (li.param && b.param && li.param !== b.param) b.param = li.param;
+                if (li.popup && !b.popup) b.popup = structuredClone(li.popup);
+                else if (!li.popup && b.popup) delete b.popup;
+                else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) b.popup = structuredClone(li.popup);
                 tasks.a = true;
               } else if (b.cid != undefined && typeof Number(b.cid) == "number") {
                 let li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];
@@ -898,6 +924,12 @@
                 ['name', 'icon', 'url'].forEach(p => {
                   if (li[p] && (b[p] != li[p])) b[p] = li[p];
                 });
+                if (li.param && !b.param) b.param = li.param;
+                else if (!li.param && b.param) delete b.param;
+                else if (li.param && b.param && li.param !== b.param) b.param = li.param;
+                if (li.popup && !b.popup) b.popup = structuredClone(li.popup);
+                else if (!li.popup && b.popup) delete b.popup;
+                else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) b.popup = structuredClone(li.popup);
                 tasks.a = true;
               };
 
@@ -920,7 +952,7 @@
                 bl.buttons.splice(bl.buttons.indexOf(b), 1);
               })
               let errmsg = "";
-              if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`};
+              if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed.`};
               if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
               if (errmsg) alertSystem.callAlert("Button Layout Updated", errmsg, {});
               localStorage.setItem("buttonlayout", JSON.stringify(bl));
@@ -944,7 +976,8 @@
       })
       .then(function(def) {
         let vdef = JSON.parse(def)
-        delete vdef.all;
+        vdef.defaultButtons = Array.isArray(vdef.buttons) ? vdef.buttons.map(x => (x.pid)) : [];
+        vdef.all = Array.isArray(vdef.all) ? vdef.all.map(x => (x.pid)) : [];
         localStorage.setItem("buttonlayout", JSON.stringify(vdef));
         bl = JSON.parse(localStorage.getItem("buttonlayout"))
         loadLS()
@@ -976,9 +1009,9 @@
         !this._r?this._rq():null;
       });
     },
-    callNewButtonsDialog: function(title, newButtons, originalLength) {
+    callNewButtonsDialog: function(title, newButtons, originalLength, options = {added: true}) {
       return new Promise((resolve) => {
-        this._queue.push({ type: 2, title, newButtons, originalLength, resolve });
+        this._queue.push({ type: 2, title, newButtons, originalLength, options, resolve });
         !this._r?this._rq():null;
       });
     },
@@ -988,10 +1021,10 @@
         this._r = true;
         const item = this._queue.shift();
         if (item.type == 1) {
-          await showAlert(item.title, item.message, {okBtn: item.okBtn, cancelBtn: item.cancelBtn}, item.showCancel);
-          item.resolve();
+          const result = await showAlert(item.title, item.message, {okBtn: item.okBtn, cancelBtn: item.cancelBtn}, item.showCancel);
+          item.resolve(result);
         } else if (item.type == 2) {
-          await showNewButtonsDialog(item.title, item.newButtons, item.originalLength);
+          await showNewButtonsDialog(item.title, item.newButtons, item.originalLength, item.options || {added: true});
           item.resolve();
         }
         setTimeout(()=>{this._rq()}, 300);
@@ -1052,16 +1085,16 @@
     });
   }
   
-  function showNewButtonsDialog(title, newButtons, originalLength) {
+  function showNewButtonsDialog(title, newButtons, originalLength, options = {added: true}) {
     if (newButtons.length == 0) return;
     return new Promise((resolve) => {
-      const container = document.querySelector('.new-buttons-container');
-      const overlay = document.querySelector('.new-buttons-overlay');
-      const background = document.querySelector('.new-buttons-background');
-      const cardsContainer = document.querySelector('.new-buttons-cards');
-      const message = document.getElementById('new-buttons-message');
-      const titleElem = document.getElementById('new-buttons-title');
-      const okBtn = document.getElementById('new-buttons-ok');
+      const container = document.querySelector('.nb-container');
+      const overlay = document.querySelector('.nb-overlay');
+      const background = document.querySelector('.nb-background');
+      const cardsContainer = document.querySelector('.nb-cards');
+      const message = document.getElementById('nb-message');
+      const titleElem = document.getElementById('nb-title');
+      const okBtn = document.getElementById('nb-ok');
 
       titleElem.textContent = title;
       cardsContainer.innerHTML = '';
@@ -1075,23 +1108,27 @@
         `;
         cardsContainer.appendChild(card);
       });
-      
-      if (originalLength + newButtons.length <= 25) {
-        message.textContent = `${newButtons.length==1?`This button has`:`These buttons have`} been added to your configuration.`;
-      } else if (originalLength < 25 && originalLength + newButtons.length > 25) {
-        const excess = originalLength + newButtons.length - 25;
-        message.innerHTML = `The first ${newButtons.length - excess == 1 ? `one has`:`${newButtons.length - excess} of these have`} been added.<br>To add the rest, please remove some cards through the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>.`;
-      } else if (originalLength == 25) {
-        message.innerHTML = `To add these buttons, please remove some cards through the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>.`;
+
+      if (options.added) {
+        if (originalLength + newButtons.length <= 25) {
+          message.innerHTML = `${newButtons.length==1?`This button has`:`These buttons have`} been added to your configuration. To remove ${newButtons.length==1?`it`:`them`}, please visit the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>.`;
+        } else if (originalLength < 25 && originalLength + newButtons.length > 25) {
+          const excess = originalLength + newButtons.length - 25;
+          message.innerHTML = `The first ${newButtons.length - excess == 1 ? `button has`:`${newButtons.length - excess} of these buttons have`} been added.<br>To add the rest, please remove some cards through the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>.`;
+        } else if (originalLength == 25) {
+          message.innerHTML = `To add these buttons, please remove some cards through the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>.`;
+        }
+      } else {
+        message.innerHTML = `${newButtons.length==1?`This button is`:`These buttons are`} now available in the <a href='/customise' style='cursor:pointer;font-style:italic;'>customisation centre</a>. Visit it to add ${newButtons.length==1?`this button`:`them`} to your configuration.`;
       }
-      
+
       container.style.display = '';
       setTimeout(() => {
         overlay.style.opacity = 1;
         background.classList.add('active');
         contentDiv.classList.add('hide');
       }, 100);
-      
+
       function closeDialog() {
         document.removeEventListener('keydown', keyCloseDialog);
         overlay.style.opacity = 0;
@@ -1102,7 +1139,7 @@
         }, 300);
         resolve();
       }
-      
+
       function keyCloseDialog(e) {
         if (e.key === "Escape" || e.key === "Enter") {
           closeDialog();
@@ -1119,16 +1156,20 @@
     try {
       const vdefbl = JSON.parse(defbl);
 
-      if (!bl.defaultButtons) return;
-
-      const defaultPids = bl.defaultButtons.map(b => b.pid);
-
-      const newButtons = vdefbl.buttons.filter(b => !defaultPids.includes(b.pid));
+      if (!bl.defaultButtons || !bl.all) return;
+      // legacy support
+      const defaultPids = Array.isArray(bl.defaultButtons) && bl.defaultButtons.every(b => typeof b === 'number') ? bl.defaultButtons : bl.defaultButtons.map(b => b.pid);
+      const allPids = Array.isArray(bl.all) && bl.all.every(b => typeof b === 'number') ? bl.all : bl.all.map(b => b.pid);
       const originalLength = structuredClone(bl.buttons.length);
 
-      if (newButtons.length > 0) {
-        const toAdd = newButtons.slice(0, Math.max(0, bl.buttons.length - 25));
-        
+      const newInButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.filter(b => !defaultPids.includes(b.pid)) : [];
+      const newInAll = Array.isArray(vdefbl.all) ? vdefbl.all.filter(b => !allPids.includes(b.pid)) : [];
+      const newAllExclusive = newInAll.filter(a => !newInButtons.some(nb => nb.pid === a.pid));
+
+      if (newInButtons.length > 0) {
+        const spaceLeft = Math.max(0, 25 - bl.buttons.length);
+        const toAdd = newInButtons.slice(0, spaceLeft);
+
         if (toAdd.length > 0) {
           toAdd.forEach(button => {
             if (bl.buttons.length >= 25) return;
@@ -1139,17 +1180,24 @@
               pid: button.pid
             };
             if (button.param) newButton.param = button.param;
+            if (button.popup) newButton.popup = structuredClone(button.popup);
             bl.buttons.push(newButton);
           });
 
           bl.buttons.forEach((v, i) => { v.id = i; });
-
           loadLS();
         }
-        bl.defaultButtons = structuredClone(vdefbl.buttons);
-        localStorage.setItem("buttonlayout", JSON.stringify(bl));
-        alertSystem.callNewButtonsDialog(newButtons.length === 1 ? "New Button Available" : "New Buttons Available", newButtons, originalLength);
+
+        alertSystem.callNewButtonsDialog(`New Button${newInButtons.length === 1 ? "" : "s"}`, toAdd, originalLength, {added: true});
       }
+
+      if (newAllExclusive.length > 0) {
+        alertSystem.callNewButtonsDialog(`New Button${newAllExclusive.length === 1 ? "" : "s"} Available in Customisation Centre`, newAllExclusive, originalLength, {added: false});
+      }
+
+      bl.defaultButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.map(x => (x.pid)) : [];
+      bl.all = Array.isArray(vdefbl.all) ? vdefbl.all.map(x => (x.pid)) : [];
+      localStorage.setItem("buttonlayout", JSON.stringify(bl));
     } catch (error) {
       consol.error(`Error checking for new buttons: ${error}`, "Buttons");
     }

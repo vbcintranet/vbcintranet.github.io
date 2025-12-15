@@ -8,4 +8,8 @@
     <loc>https://vbcintranet.github.io/customise/</loc>
     <priority>0.0</priority>
   </url>
+  <url>
+    <loc>https://vbcintranet.github.io/guides/</loc>
+    <priority>0.0</priority>
+  </url>
 </urlset>
