@@ -44,14 +44,22 @@ permalink: /customise
         </div>
         <div class="drawer-header">
           <h2>Available Buttons</h2>
-          <p>Drag and drop buttons to any insert zone or click one to add it to the end.</p>
+          <p>Drag and drop buttons to any insert zone or click one to add it to the end of your layout.</p>
         </div>
         
         <div class="presets-container" id="presets-container"></div>
         
         <div class="drawer-header">
           <h2>Custom Buttons</h2>
-          <p>Click the 'Add New' button to create up to 10 custom buttons. To delete one, either click it twice or drag it to the trash zone at the top.</p>
+          <p>
+            Click the 'Add New' button to create up to 10 custom buttons.
+            <br><br>
+            To edit a custom button, 
+            <span class="hotkey"><span id="edit-hotkey">CTRL</span> + click</span> on it.
+            From there, you can modify its properties or delete it.
+            <br><br>
+            To add a custom button to your layout, either drag and drop it to any insert zone or click one to add it to the end.
+          </p>
         </div>
         <div class="custom-btns-container" id="custom-btns-container"><div class="drawer-custom-btn"><i class="fa-solid fa-plus"></i><div class="overlay" style="padding: 5px;bottom: -8%;"><p>Add New</p></div></div></div>
       </div>
@@ -94,27 +102,53 @@ permalink: /customise
     <div class="alert-overlay"></div>
     <div class="editor-background">
       <div class="editor-header">
-        <h1>Create Custom Button</h1>
+        <h1 id="editor-title">Create Custom Button</h1>
       </div>
       <div class="editor-content">
         <div class="editor-section">
           <div class="editor-form">
             <div class="input-group">
               <label for="button-icon-upload">Button Icon</label>
-              <div class="file-upload-container">
-                <button id="upload-btn" class="upload-button">Choose File</button>
-                <span id="file-name">No file chosen</span>
-                <input type="file" id="button-icon-upload" accept="image/*" style="display: none;">
+              <div class="image-input-container">
+                <div class="image-input-toggle">
+                  <button id="upload-btn" class="upload-button">Upload Image</button>
+                  <span class="toggle-separator">or</span>
+                  <input type="text" id="button-image-url" class="url-input" placeholder="Enter image URL" autocomplete="off">
+                  <button id="clear-image-btn" class="clear-image-button"><i class="fa-solid fa-trash"></i></button>
+                  <input type="file" id="button-icon-upload" accept="image/*" style="display: none;">
+                </div>
+                <div class="image-input-message">
+                  <span id="file-name">No file chosen</span>
+                </div>
               </div>
             </div>
             <div class="input-group">
               <label for="button-title">Button Title</label>
-              <input type="text" id="button-title" maxlength="15" placeholder="Enter button title">
+              <input type="text" id="button-title" maxlength="15" placeholder="Enter button title" autocomplete="off">
               <span class="char-count"><span id="title-char-count">0</span>/15</span>
+              <div class="input-message">
+                <span id="title-message">No title</span>
+              </div>
             </div>
             <div class="input-group">
               <label for="button-url">Button URL</label>
-              <input type="text" id="button-url" placeholder="https://example.com">
+              <input type="text" id="button-url" placeholder="https://example.com" autocomplete="off">
+              <div class="input-message">
+                <span id="url-message">No URL</span>
+              </div>
+            </div>
+            <div class="input-group advanced-section">
+              <button type="button" class="advanced-toggle"><i class="fa-solid fa-chevron-right"></i><span>Advanced</span></button>
+              <div class="advanced-content">
+                <div class="checkbox-row">
+                  <label for="same-tab" class="checkbox-button" title="Useful for application URL protocols (e.g., msteams://, zoommtg://).">
+                    <input type="checkbox" id="same-tab" />
+                    <span class="checkbox-ui"></span>
+                    <span class="checkbox-label">Do not open in a new tab</span>
+                  </label>
+                </div>
+                <div class="helper-text">Useful for application URL protocols (e.g., msteams://, zoommtg://)</div>
+              </div>
             </div>
           </div>
         </div>
@@ -123,7 +157,7 @@ permalink: /customise
             <h3>Preview</h3>
             <div class="card-preview">
               <div class="preview-card">
-                <img id="preview-img" src="/images/icons/VBCLogo.webp" alt="Preview Icon">
+                <img id="preview-img" src="/images/icons/Unknown.webp" alt="Preview Icon" onerror="this.src='/images/icons/Unknown.webp'">
                 <div class="overlay">
                   <p id="preview-title">Button Preview</p>
                 </div>
@@ -134,10 +168,17 @@ permalink: /customise
       </div>
       <div class="editor-buttons">
         <button id="editor-cancel">Cancel</button>
-        <button id="editor-create" disabled>Create</button>
+        <button id="editor-delete" style="display: none;">
+          Delete
+          <div class="delete-overlay">
+            <i class="fa-solid fa-trash"></i>
+          </div>
+        </button>
+        <button id="editor-apply" disabled>Create</button>
       </div>
     </div>
   </div>
+  <div class="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="/customise/script.js"></script>
 </body>
 

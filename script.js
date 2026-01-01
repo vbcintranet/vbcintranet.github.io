@@ -1,11 +1,116 @@
 (() => {
-  const version = "v2.1.0";
+  const version = "v2.2.0";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
     warn: (message, title="Core") => { console.warn(`%c(${title}) %c${message}`, `color:#FFD699;font-weight:bold`, "") },
     error: (message, title="Core") => { console.error(`%c(${title}) %c${message}`, `color:#FFB3B3;font-weight:bold`, "") }
   }
+
+  const iconDB = {
+    dbName: 'vbcIntranet',
+    storeName: 'customButtonIcons',
+    db: null,
+    initPromise: null,
+    init: async function() {
+      if (this.db) return this.db;
+      if (this.initPromise) return this.initPromise;
+      
+      this.initPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(this.dbName, 1);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => { 
+          this.db = req.result; 
+          this.initPromise = null;
+          resolve(this.db); 
+        };
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(this.storeName)) {
+            db.createObjectStore(this.storeName, { keyPath: 'cid' });
+          }
+        };
+      });
+      
+      try {
+        await this.initPromise;
+        return this.db;
+      } catch (e) {
+        this.initPromise = null;
+        throw e;
+      }
+    },
+    set: async function(cid, dataUrl) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.put({ cid, dataUrl, timestamp: Date.now() });
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve(req.result);
+        });
+      } catch (e) { 
+        consol.error(`Failed to store icon ${cid}`, 'IndexedDB');
+        throw e;
+      }
+    },
+    get: async function(cid) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readonly');
+          const store = tx.objectStore(this.storeName);
+          const req = store.get(cid);
+          req.onerror = () => resolve(null);
+          req.onsuccess = () => resolve(req.result?.dataUrl || null);
+        });
+      } catch (e) { 
+        consol.error(`Failed to retrieve icon ${cid}`, 'IndexedDB');
+        return null;
+      }
+    },
+    delete: async function(cid) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.delete(cid);
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve();
+        });
+      } catch (e) { 
+        consol.error(`Failed to delete icon ${cid}`, 'IndexedDB');
+        throw e;
+      }
+    },
+    deleteUnused: async function(usedCids) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.openCursor();
+          req.onerror = () => reject(req.error);
+          req.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              if (!usedCids.includes(cursor.key)) {
+                store.delete(cursor.key);
+              }
+              cursor.continue();
+            } else {
+              resolve();
+            }
+          };
+        });
+      } catch (e) { 
+        consol.error(`Failed to delete unused icons`, 'IndexedDB');
+        throw e;
+      }
+    }
+  };
   
   document.addEventListener('mousedown', e => { if (e.button == 1) { e.preventDefault() } });
 
@@ -15,6 +120,31 @@
     setTimeout(updateClock, 1000 - now.getMilliseconds());
   }
   updateClock();
+  
+  const escapeStack = {
+    items: [],
+    push(name, closeFunc) {
+      this.items.push({ name, closeFunc });
+      this.updateListener();
+    },
+    pop(name) {
+      this.items = this.items.filter(item => item.name !== name);
+      this.updateListener();
+    },
+    updateListener() {
+      document.removeEventListener('keydown', this.globalEscapeHandler);
+      if (this.items.length > 0) {
+        document.addEventListener('keydown', this.globalEscapeHandler);
+      }
+    },
+    globalEscapeHandler: (e) => {
+      if (e.key === 'Escape' && escapeStack.items.length > 0) {
+        e.preventDefault();
+        const topItem = escapeStack.items[escapeStack.items.length - 1];
+        topItem.closeFunc();
+      }
+    }
+  };
   
   const contentDiv = document.getElementById('content');
   const searchContainer = document.querySelector('.search-container');
@@ -33,7 +163,9 @@
   };
   
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && !searchOpen) {
+      return;
+    } else if (event.key === 'Escape' && searchOpen) {
       closeSearchBar();
     } else if (/^[a-zA-Z0-9]$/.test(event.key) && !event.shiftKey && !event.ctrlKey && !event.altKey) {
       openSearchBar(event.key);
@@ -121,7 +253,7 @@
       setTimeout(() => {
         document.getElementById('no-internet').children[0].style.opacity = "0";
         document.getElementById('no-internet').children[1].style.opacity = "1";
-        document.getElementById('no-internet').children[1].style.transform = "scale(1)";
+        document.getElementById('no-internet').children[1].style.transform = "scale(1) translate(-50%, -50%)";
         setTimeout(() => {
           document.getElementById('no-internet').children[1].style.opacity = "0";
           setTimeout(() => {
@@ -281,6 +413,13 @@
         localStorage.setItem("session-error", JSON.stringify([{type, date: new Date().toLocaleString(), count: l.length, list: l, dateRaw: new Date()}]));
       }
     },
+    init() {
+      if (!jsonCheck(localStorage.getItem("session-error"))) return;
+      const sessions = JSON.parse(localStorage.getItem("session-error"));
+      const now = Date.now();
+      const filtered = sessions.filter(s => !s.dateRaw || (now - new Date(s.dateRaw).getTime()) < 7*24*60*60*1000);
+      if (filtered.length !== sessions.length) {filtered.length ? localStorage.setItem("session-error", JSON.stringify(filtered)) : localStorage.removeItem("session-error");}
+    },
     get count() {return this._t;},
     get list() {return this._l;},
   }
@@ -288,6 +427,8 @@
   addEventListener('beforeunload', function (event) {
     errors.saveSession();
   });
+
+  errors.init();
 
   function jsonCheck(json) {
     try {
@@ -680,37 +821,40 @@
   }
   function setupSP() {
     let spOpen = false;
+    let spCloseTimeout = null;
 
     function openSP() {
+      if (spOpen) return;
+      spOpen = true;
       canSearch = false;
+      if (spCloseTimeout) {
+        clearTimeout(spCloseTimeout);
+        spCloseTimeout = null;
+      }
       document.querySelector('.sneakpeek-container').style.display = '';
-      document.addEventListener('keydown', keyCloseSP);
       setTimeout(() => {
         document.querySelector('.sneakpeek-overlay').style.opacity = 1;
         document.querySelector('.sneakpeek-background').classList.add('active');
         document.querySelector('.sneakpeek-background').style.height = `calc(10vh + ${document.querySelector('.sneakpeek-content').clientHeight}px)`;
         contentDiv.classList.add('hide');
-      }, 100);
-      spOpen = true;
+        escapeStack.push('sneakpeek', closeSP);
+      }, 1);
     }
 
     function closeSP() {
       if (!spOpen) return;
+      spOpen = false;
       document.querySelector('.sneakpeek-container').style.display = 'block';
       document.querySelector('.sneakpeek-overlay').style.opacity = 0;
       document.querySelector('.sneakpeek-background').classList.remove('active');
       contentDiv.classList.remove('hide');
-      document.removeEventListener('keydown', keyCloseSP);
-      setTimeout(() => {
+      escapeStack.pop('sneakpeek');
+      if (spCloseTimeout) clearTimeout(spCloseTimeout);
+      spCloseTimeout = setTimeout(() => {
         document.querySelector('.sneakpeek-container').style.display = 'none';
-        spOpen = false;
         canSearch = true;
+        spCloseTimeout = null;
       }, 300);
-    }
-    function keyCloseSP(e) {
-      if (e.key == "Escape" || e.key == "Enter") {
-        closeSP()
-      }
     }
     document.getElementById("header-classSync").addEventListener('click', (event) => {
       if (spOpen) {
@@ -728,7 +872,8 @@
   const settingsOverlay = document.querySelector('.settings-overlay');
   const settingsBackground = document.querySelector('.settings-background');
   const settingsButton = document.querySelector('.settings-button');
-  let settingsOpen = false
+  let settingsOpen = false;
+  let settingsCloseTimeout = null;
   
   settingsButton.addEventListener('click', (event) => {
     openSettingsMenu();
@@ -743,37 +888,37 @@
   });
   
   function openSettingsMenu() {
-    document.addEventListener('keydown', keyCloseSM);
-    if (!settingsOpen) {
-      canSearch = false;
-      settingsContainer.style = ''
-      setTimeout(() => {
-        settingsBackground.classList.add('active');
-        settingsOverlay.classList.add('active');
-        contentDiv.classList.add('hide'); 
-        settingsButton.classList.add('active');
-        settingsOpen = true
-      }, 1);
+    if (settingsOpen) return;
+    settingsOpen = true;
+    canSearch = false;
+    if (settingsCloseTimeout) {
+      clearTimeout(settingsCloseTimeout);
+      settingsCloseTimeout = null;
     }
+    settingsContainer.style = ''
+    setTimeout(() => {
+      settingsBackground.classList.add('active');
+      settingsOverlay.classList.add('active');
+      contentDiv.classList.add('hide'); 
+      settingsButton.classList.add('active');
+      escapeStack.push('settings', closeSettingsMenu);
+    }, 1);
   }
   
   function closeSettingsMenu(e) {
-    document.removeEventListener('keydown', keyCloseSM);
-    settingsOpen = false
+    if (!settingsOpen) return;
+    settingsOpen = false;
     canSearch = true;
     settingsBackground.classList.remove('active');
     settingsOverlay.classList.remove('active');
     contentDiv.classList.remove('hide');
     settingsButton.classList.remove('active');
-    setTimeout(() => {
+    escapeStack.pop('settings');
+    if (settingsCloseTimeout) clearTimeout(settingsCloseTimeout);
+    settingsCloseTimeout = setTimeout(() => {
       settingsContainer.style.display = 'none';
+      settingsCloseTimeout = null;
     }, 300);
-  }
-  
-  function keyCloseSM(e) {
-    if (e.key == "Escape") {
-      closeSettingsMenu()
-    }
   }
   
   document.getElementById("settings-close").addEventListener("click",closeSettingsMenu)
@@ -804,7 +949,22 @@
     bl.buttons.forEach(v=>{
       var button = document.createElement('div');
       button.classList.add("card");
-      button.innerHTML = `<img src="${v.icon}" alt="${v.name} Icon"><div class="overlay"><p>${v.name}${v.cid != undefined && typeof Number(v.cid) == "number" ? ` <i class="fa-solid fa-circle-user" style="color:#b5004b;"></i>` : ``}</p></div>`;
+      let resolvedIcon = v.icon;
+      if (v.icon && (v.icon.startsWith('idb:') && v.icon.slice(4) == v.cid)) {
+        resolvedIcon = '/images/icons/Unknown.webp';
+      }
+      button.innerHTML = `<img src="${resolvedIcon}" alt="${v.name} Icon" onerror="this.src='/images/icons/Unknown.webp'"><div class="overlay"><p>${v.name}${v.cid != undefined && typeof Number(v.cid) == "number" ? ` <i class="fa-solid fa-circle-user" style="color:#b5004b;"></i>` : ``}</p></div>`;
+      if (v.icon && (v.icon.startsWith('idb:') && v.icon.slice(4) == v.cid)) {
+        const cid = parseInt(v.icon.split(':')[1], 10);
+        iconDB.get(cid).then(idbIcon => {
+          if (idbIcon) {
+            try {
+              const imgEl = button.querySelector('img');
+              if (imgEl) imgEl.src = idbIcon;
+            } catch (e) {}
+          }
+        }).catch(() => {});
+      }
       button.addEventListener('click', (e) => {
         if (e.button == 1 || e.button == 0) {
             button.classList.add('clicked');
@@ -833,6 +993,153 @@
       shrinkToFit(button.querySelector('p'),12);
     })
   }
+
+  function updateCBL() {
+    let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"));
+    (async () => {
+      const removed = [];
+      const migrated = [];
+      cbl.cButtons = Array.isArray(preCBL.cButtons) ? [...preCBL.cButtons] : [];
+      const tasks = cbl.cButtons.map(async (cb) => {
+        try {
+          if (!cb || typeof cb.cid !== 'number' || typeof cb.name !== 'string' || !cb.name || !isValidUrl(cb.url)) {
+            removed.push(cb?.name || 'Custom Button');
+            return null;
+          }
+          if (typeof cb.icon !== 'string') {
+            removed.push(cb.name);
+            return null;
+          }
+          if (cb.icon.startsWith('idb:') && cb.icon.slice(4) == cb.cid) {
+            return cb;
+          }
+          if (cb.icon.startsWith('data:image/')) {
+            const dataUrl = await (async () => {
+              return await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                  let w = img.width, h = img.height;
+                  const minDim = 150, maxDim = 512;
+                  if (w > maxDim || h > maxDim) {
+                    const scale = Math.min(maxDim / w, maxDim / h);
+                    w = Math.floor(w * scale); h = Math.floor(h * scale);
+                  }
+                  if (w < minDim || h < minDim) {
+                    const scale = Math.max(minDim / w, minDim / h);
+                    w = Math.floor(w * scale); h = Math.floor(h * scale);
+                  }
+                  const canvas = document.createElement('canvas');
+                  canvas.width = w; canvas.height = h;
+                  const ctx = canvas.getContext('2d');
+                  ctx.imageSmoothingEnabled = true;
+                  ctx.imageSmoothingQuality = 'high';
+                  ctx.drawImage(img, 0, 0, w, h);
+                  try { resolve(canvas.toDataURL('image/webp')); } catch { resolve(canvas.toDataURL('image/png')); }
+                };
+                img.onerror = () => reject(new Error('Image load failed'));
+                img.src = cb.icon;
+              });
+            })();
+            await iconDB.set(cb.cid, dataUrl);
+            cb.icon = `idb:${cb.cid}`;
+            migrated.push(cb.name);
+            return cb;
+          }
+          if (isImageUrl(cb.icon)) {
+            try {
+              await new Promise((resolve, reject) => {
+                const img = new Image();
+                let settled = false;
+                const timeout = setTimeout(() => {
+                  if (settled) return;
+                  settled = true;
+                  reject(new Error('Image load timeout'));
+                }, 4000);
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                  if (settled) return;
+                  settled = true;
+                  clearTimeout(timeout);
+                  resolve();
+                };
+                img.onerror = () => {
+                  if (settled) return;
+                  settled = true;
+                  clearTimeout(timeout);
+                  reject(new Error('Image failed to load'));
+                };
+                img.src = cb.icon;
+              });
+
+              await iconDB.set(cb.cid, cb.icon);
+              cb.icon = `idb:${cb.cid}`;
+              migrated.push(cb.name);
+              return cb;
+            } catch (err) {
+              removed.push(cb.name);
+              return null;
+            }
+          }
+          removed.push(cb.name);
+          return null;
+        } catch {
+          removed.push(cb?.name || 'Custom Button');
+          return null;
+        }
+      });
+      const results = await Promise.all(tasks);
+      cbl.cButtons = results.filter(Boolean).sort((a,b)=> (a.cid||0) - (b.cid||0));
+      const usedCids = cbl.cButtons.map(cb => cb.cid);
+      await iconDB.deleteUnused(usedCids);
+      localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
+    })();
+  }
+
+  function deepEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return a === b;
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) if (!deepEqual(a[i], b[i])) return false;
+      return true;
+    }
+    if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+    if (typeof a === 'object' && typeof b === 'object') {
+      const ak = Object.keys(a), bk = Object.keys(b);
+      if (ak.length !== bk.length) return false;
+      for (const k of ak) {
+        if (!bk.includes(k) || !deepEqual(a[k], b[k])) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  const localStorageQueue = {
+    queue: [],
+    processing: false,
+    add: function(key, value) {
+      this.queue.push({ key, value });
+      this.process();
+    },
+    process: async function() {
+      if (this.processing || this.queue.length === 0) return;
+      this.processing = true;
+      
+      while (this.queue.length > 0) {
+        const { key, value } = this.queue.shift();
+        try {
+          localStorage.setItem(key, value);
+        } catch (e) {
+          consol.error(`Failed to update localStorage for ${key}`, 'Storage');
+        }
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      
+      this.processing = false;
+    }
+  };
+
   var bl = {};
   var cbl = {};
 
@@ -840,7 +1147,7 @@
     if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
       consol.log("Failed to parse buttonlayout, resetting", "Buttons")
       alertSystem.callAlert("Button Layout Reset", "An error was detected in your button layout.\n It has been reset to the default configuration.")
-      localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
+      localStorageQueue.add("old-buttonlayout", localStorage.getItem("buttonlayout"))
       localStorage.removeItem("buttonlayout")
       fetch("/def/def.json")
         .then(function(res) {
@@ -851,8 +1158,8 @@
           vdef.defaultButtons = Array.isArray(vdef.buttons) ? vdef.buttons.map(x => (x.pid)) : [];
           vdef.buttons.forEach((v, i) => {v.id = i;});
           vdef.all = Array.isArray(vdef.all) ? vdef.all.map(x => (x.pid)) : [];
-          localStorage.setItem("buttonlayout", JSON.stringify(vdef))
-          bl = JSON.parse(localStorage.getItem("buttonlayout"))
+          localStorageQueue.add("buttonlayout", JSON.stringify(vdef))
+          bl = JSON.parse(JSON.stringify(vdef))
           loadLS()
         })
         .catch(function(e) {
@@ -873,65 +1180,40 @@
             vdefbl.buttons = bl.buttons;
             vdefbl.buttons.forEach((v, i) => {v.id = i;});
             vdefbl.all = Array.isArray(vdefbl.all) ? vdefbl.all.map(x => (x.pid)) : [];
-            localStorage.setItem("buttonlayout", JSON.stringify(vdefbl));
-            bl = JSON.parse(localStorage.getItem("buttonlayout"));
+            localStorageQueue.add("buttonlayout", JSON.stringify(vdefbl));
+            bl = JSON.parse(JSON.stringify(vdefbl));
             if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
-              let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"))
-              preCBL.cButtons = preCBL.cButtons.filter(cButton => {
-                return (typeof cButton.name === 'string' && cButton.name.length > 0 && cButton.name.length <= 15 && typeof cButton.icon === 'string' && cButton.icon.startsWith('data:image/') && typeof cButton.url === 'string' && isValidUrl(cButton.url));
-              });
-              cbl = preCBL;
+              updateCBL();
             }
             loadLS();
           } else {
             let vdefbl = JSON.parse(defbl);
             if (!bl.defaultButtons) {
               bl.defaultButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.map(x => (x.pid)) : [];
-              localStorage.setItem("buttonlayout", JSON.stringify(bl));
+              localStorageQueue.add("buttonlayout", JSON.stringify(bl));
             }
             if (!bl.all) {
               bl.all = Array.isArray(vdefbl.all) ? vdefbl.all.map(x => (x.pid)) : [];
-              localStorage.setItem("buttonlayout", JSON.stringify(bl));
+              localStorageQueue.add("buttonlayout", JSON.stringify(bl));
             }
             if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
-              let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"))
-              preCBL.cButtons = preCBL.cButtons.filter(cButton => {
-                return (typeof cButton.name === 'string' && cButton.name.length > 0 && cButton.name.length <= 15 && typeof cButton.icon === 'string' && cButton.icon.startsWith('data:image/') && typeof cButton.url === 'string' && isValidUrl(cButton.url));
-              });
-              cbl = preCBL;
+              updateCBL();
             }
             
             let len = structuredClone(bl.buttons.length);
             bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
             Promise.all(bl.buttons.map((b)=> new Promise((resolve, reject)=>{
               let tasks = {a:'required'}
+              let li = null;
               if (!b.name || !b.icon || !b.url ) {b.tagged = true;resolve();};
-              if (b.pid != undefined && typeof Number(b.pid) == "number" && vdefbl.all.filter(d=>d.pid==b.pid).length == 0) {b.tagged = true;resolve();} else if (b.pid != undefined && typeof Number(b.pid) == "number") {
-                let li = vdefbl.all.filter(d=>d.pid==b.pid)[0];
-                ['name', 'icon', 'url'].forEach(p => {
-                  if (li[p] && (b[p] != li[p])) b[p] = li[p];
-                });
-                if (li.param && !b.param) b.param = li.param;
-                else if (!li.param && b.param) delete b.param;
-                else if (li.param && b.param && li.param !== b.param) b.param = li.param;
-                if (li.popup && !b.popup) b.popup = structuredClone(li.popup);
-                else if (!li.popup && b.popup) delete b.popup;
-                else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) b.popup = structuredClone(li.popup);
-                tasks.a = true;
-              } else if (b.cid != undefined && typeof Number(b.cid) == "number") {
-                let li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];
-                if (!li) {b.tagged = true;resolve();};
-                ['name', 'icon', 'url'].forEach(p => {
-                  if (li[p] && (b[p] != li[p])) b[p] = li[p];
-                });
-                if (li.param && !b.param) b.param = li.param;
-                else if (!li.param && b.param) delete b.param;
-                else if (li.param && b.param && li.param !== b.param) b.param = li.param;
-                if (li.popup && !b.popup) b.popup = structuredClone(li.popup);
-                else if (!li.popup && b.popup) delete b.popup;
-                else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) b.popup = structuredClone(li.popup);
-                tasks.a = true;
-              };
+              if (b.pid != undefined && typeof Number(b.pid) == "number" && vdefbl.all.filter(d=>d.pid==b.pid).length == 0) {b.tagged = true;resolve();}
+              else if (b.pid != undefined && typeof Number(b.pid) == "number") {li = vdefbl.all.filter(d=>d.pid==b.pid)[0];}
+              else if (b.cid != undefined && typeof Number(b.cid) == "number") {li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];};
+              if (!li) {b.tagged = true;resolve();};
+              ['name', 'icon', 'url', 'param', 'popup'].forEach(p => {
+                if (!!li[p] && !deepEqual(b[p], li[p])) b[p] = structuredClone(li[p]);
+              });
+              tasks.a = true;
 
               let c = true;
               for (const [k, v] of Object.entries(tasks)) {
@@ -941,7 +1223,7 @@
                 } else if (v == 'res') {
                   c = false;
                 } else if (!v) {
-                  consol.warn(`Task ${k} for "${b.name}" button was incomplete.`, "Buttons");
+                  consol.warn(`Task ${k} for "${b.name}" (${bl.buttons.indexOf(b)}) button was incomplete.`, "Buttons");
                 }
               }
               if (c) resolve();
@@ -955,7 +1237,7 @@
               if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed.`};
               if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
               if (errmsg) alertSystem.callAlert("Button Layout Updated", errmsg, {});
-              localStorage.setItem("buttonlayout", JSON.stringify(bl));
+              localStorageQueue.add("buttonlayout", JSON.stringify(bl));
               loadLS();
             }).then(()=>{
               checkForNewDefaultButtons(defbl);
@@ -978,9 +1260,9 @@
         let vdef = JSON.parse(def)
         vdef.defaultButtons = Array.isArray(vdef.buttons) ? vdef.buttons.map(x => (x.pid)) : [];
         vdef.all = Array.isArray(vdef.all) ? vdef.all.map(x => (x.pid)) : [];
-        localStorage.setItem("buttonlayout", JSON.stringify(vdef));
-        bl = JSON.parse(localStorage.getItem("buttonlayout"))
-        loadLS()
+        localStorageQueue.add("buttonlayout", JSON.stringify(vdef));
+        bl = JSON.parse(JSON.stringify(vdef))
+        loadLS();
       })
       .catch(function(err) {
         consol.error(err, "Buttons")
@@ -1000,6 +1282,11 @@
     } catch (error) {
       return false;
     }
+  }
+
+  function isImageUrl(url) {
+    const urlPath = url.split('?')[0];
+    return(urlPath.match(/\.(jpeg|jpg|png|svg|webp|bmp|tiff|ico|avif)$/i) != null) && isValidUrl(url);
   }
 
   let alertSystem = {
@@ -1055,13 +1342,13 @@
       alertBackground.classList.add('active');
       
       function closeAlert() {
-        document.removeEventListener('keydown', keyCloseA);
         alertOverlay.removeEventListener('click', resFalse);
         alertOk.removeEventListener('click', resTrue);
         showCancel ? alertCancel.removeEventListener('click', resFalse) : null;
         alertOverlay.style.opacity = 0;
         alertBackground.classList.remove('active');
         contentDiv.classList.remove('hide');
+        escapeStack.pop('alert');
         setTimeout(() => {
           alertContainer.style.display = 'none';
           alertTitle.innerText = "Alert";
@@ -1072,14 +1359,13 @@
         }, 300);
       }
       
-      function keyCloseA(e) {if (e.key == "Escape") {closeAlert();resolve(false);}}
       function resTrue() {closeAlert();resolve(true);}
       function resFalse() {closeAlert();resolve(false);}
       
       alertOverlay.addEventListener('click', resFalse);
       alertOk.addEventListener('click', resTrue);
       showCancel ? alertCancel.addEventListener('click', resFalse) : null;
-      document.addEventListener('keydown', keyCloseA);
+      escapeStack.push('alert', resFalse);
       showCancel ? alertCancel.style.display = '' : alertCancel.style.display = 'none';
       }, 10);
     });
@@ -1103,7 +1389,7 @@
         const card = document.createElement('div');
         card.classList.add('newcard');
         card.innerHTML = `
-          <img src="${button.icon}" alt="${button.name} Icon">
+          <img src="${button.icon}" alt="${button.name} Icon" onerror="this.src='/images/icons/Unknown.webp'">
           <div class="overlay"><p>${button.name}</p></div>
         `;
         cardsContainer.appendChild(card);
@@ -1130,25 +1416,27 @@
       }, 100);
 
       function closeDialog() {
-        document.removeEventListener('keydown', keyCloseDialog);
         overlay.style.opacity = 0;
         background.classList.remove('active');
         contentDiv.classList.remove('hide');
+        escapeStack.pop('dialog');
+        document.removeEventListener('keydown', handleDialogKeydown);
         setTimeout(() => {
           container.style.display = 'none';
         }, 300);
         resolve();
       }
 
-      function keyCloseDialog(e) {
-        if (e.key === "Escape" || e.key === "Enter") {
+      function handleDialogKeydown(e) {
+        if (e.key === "Enter") {
           closeDialog();
         }
       }
 
       okBtn.addEventListener('click', closeDialog, { once: true });
       overlay.addEventListener('click', closeDialog, { once: true });
-      document.addEventListener('keydown', keyCloseDialog);
+      document.addEventListener('keydown', handleDialogKeydown);
+      escapeStack.push('dialog', closeDialog);
     });
   }
   
@@ -1160,10 +1448,11 @@
       // legacy support
       const defaultPids = Array.isArray(bl.defaultButtons) && bl.defaultButtons.every(b => typeof b === 'number') ? bl.defaultButtons : bl.defaultButtons.map(b => b.pid);
       const allPids = Array.isArray(bl.all) && bl.all.every(b => typeof b === 'number') ? bl.all : bl.all.map(b => b.pid);
+      const blPids = Array.isArray(bl.buttons) ? bl.buttons.map(b => b.pid).filter(pid => pid !== undefined) : [];
       const originalLength = structuredClone(bl.buttons.length);
 
-      const newInButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.filter(b => !defaultPids.includes(b.pid)) : [];
-      const newInAll = Array.isArray(vdefbl.all) ? vdefbl.all.filter(b => !allPids.includes(b.pid)) : [];
+      const newInButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.filter(b => !defaultPids.includes(b.pid) && !blPids.includes(b.pid)) : [];
+      const newInAll = Array.isArray(vdefbl.all) ? vdefbl.all.filter(b => !allPids.includes(b.pid) && !blPids.includes(b.pid)) : [];
       const newAllExclusive = newInAll.filter(a => !newInButtons.some(nb => nb.pid === a.pid));
 
       if (newInButtons.length > 0) {
@@ -1197,7 +1486,7 @@
 
       bl.defaultButtons = Array.isArray(vdefbl.buttons) ? vdefbl.buttons.map(x => (x.pid)) : [];
       bl.all = Array.isArray(vdefbl.all) ? vdefbl.all.map(x => (x.pid)) : [];
-      localStorage.setItem("buttonlayout", JSON.stringify(bl));
+      localStorageQueue.add("buttonlayout", JSON.stringify(bl));
     } catch (error) {
       consol.error(`Error checking for new buttons: ${error}`, "Buttons");
     }

@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.1.0";
+  const version = "v2.2.0";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -7,19 +7,162 @@
     error: (message, title = "Core") => { console.error(`%c(${title}) %c${message}`, `color:#FFB3B3;font-weight:bold`, "") }
   }
 
+  const iconDB = {
+    dbName: 'vbcIntranet',
+    storeName: 'customButtonIcons',
+    db: null,
+    initPromise: null,
+    init: async function() {
+      if (this.db) return this.db;
+      if (this.initPromise) return this.initPromise;
+      
+      this.initPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(this.dbName, 1);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => { 
+          this.db = req.result; 
+          this.initPromise = null;
+          resolve(this.db); 
+        };
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(this.storeName)) {
+            db.createObjectStore(this.storeName, { keyPath: 'cid' });
+          }
+        };
+      });
+      
+      try {
+        await this.initPromise;
+        return this.db;
+      } catch (e) {
+        this.initPromise = null;
+        throw e;
+      }
+    },
+    set: async function(cid, dataUrl) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.put({ cid, dataUrl, timestamp: Date.now() });
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve(req.result);
+        });
+      } catch (e) { 
+        consol.error(`Failed to store icon ${cid}`, 'IndexedDB');
+        throw e;
+      }
+    },
+    get: async function(cid) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readonly');
+          const store = tx.objectStore(this.storeName);
+          const req = store.get(cid);
+          req.onerror = () => resolve('/images/icons/Unknown.webp');
+          req.onsuccess = () => resolve(req.result?.dataUrl || '/images/icons/Unknown.webp');
+        });
+      } catch (e) { 
+        consol.error(`Failed to retrieve icon ${cid}`, 'IndexedDB');
+        return '/images/icons/Unknown.webp';
+      }
+    },
+    delete: async function(cid) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.delete(cid);
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve();
+        });
+      } catch (e) { 
+        consol.error(`Failed to delete icon ${cid}`, 'IndexedDB');
+        throw e;
+      }
+    },
+    move: async function(oldCid, newCid) {
+      try {
+        if (oldCid === newCid) return;
+        const db = await this.init();
+        const existing = await this.get(oldCid);
+        if (!existing || existing === '/images/icons/Unknown.webp') return;
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.put({ cid: newCid, dataUrl: existing, timestamp: Date.now() });
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve();
+        });
+        await this.delete(oldCid);
+      } catch (e) { 
+        consol.error(`Failed to move icon ${oldCid} -> ${newCid}`, 'IndexedDB');
+        throw e;
+      }
+    },
+    deleteUnused: async function(usedCids) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.openCursor();
+          req.onerror = () => reject(req.error);
+          req.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              if (!usedCids.includes(cursor.key)) {
+                store.delete(cursor.key);
+              }
+              cursor.continue();
+            } else {
+              resolve();
+            }
+          };
+        });
+      } catch (e) { 
+        consol.error(`Failed to delete unused icons`, 'IndexedDB');
+        throw e;
+      }
+    }
+  };
+
   document.addEventListener('mousedown', e => { if (e.button == 1) { e.preventDefault() } });
 
   function updateClock() {
     let now = new Date()
-    document.getElementById("clock").innerText = `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()]}, ${now.getDate()}${(!(String(now.getDate())[0] == "1" && String(now.getDate()).length == 2) && [1, 2, 3].includes(now.getDate() % 10)) ? ['st', 'nd', 'rd'][(now.getDate() % 10) - 1] : 'th'} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][now.getMonth()]} ${now.getFullYear()}, ${[0, 12].includes(now.getHours()) ? '12' : now.getHours() > 11 ? now.getHours() - 12 : now.getHours()}:${now.getMinutes() < 10 ? "0" + now.getMinutes() : now.getMinutes()}:${now.getSeconds() < 10 ? "0" + now.getSeconds() : now.getSeconds()} ${now.getHours() > 11 ? 'PM' : 'AM'}`
-    setTimeout(updateClock, 1000);
+    document.getElementById("clock").innerText = `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()]}, ${now.getDate()}${(!(String(now.getDate())[0] == "1" && String(now.getDate()).length == 2)&&[1,2,3].includes(now.getDate() % 10))?['st','nd','rd'][(now.getDate() % 10)-1]:'th'} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][now.getMonth()]} ${now.getFullYear()}, ${[0,12].includes(now.getHours()) ? '12' : now.getHours() > 11 ? now.getHours()-12 : now.getHours()}:${now.getMinutes() < 10 ? "0"+now.getMinutes() : now.getMinutes()}:${now.getSeconds() < 10 ? "0"+now.getSeconds() : now.getSeconds()} ${now.getHours() > 11 ? 'PM' : 'AM'}`
+    setTimeout(updateClock, 1000 - now.getMilliseconds());
   }
   updateClock();
 
   const pageLayout = document.querySelector('.page-layout');
   const accept = document.getElementById('accept');
+  const advancedSection = document.querySelector('.advanced-section');
+  const advancedToggle = document.querySelector('.advanced-toggle');
 
-  document.addEventListener('DOMContentLoaded', () => {setTimeout(() => {pageLayout.classList.remove('hide');document.querySelector('.content-blur').classList.remove('show');setTimeout(() => {document.querySelector('.content-blur').remove();}, 500);}, 200)});
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      pageLayout.classList.remove('hide');
+      document.querySelector('.content-blur').classList.remove('show');
+      setTimeout(() => { document.querySelector('.content-blur').remove(); }, 500);
+      try {
+        const isMac = /Mac/i.test(navigator.platform) || /Mac/i.test(navigator.userAgent);
+        const hotkeyEl = document.getElementById('edit-hotkey');
+        if (hotkeyEl) hotkeyEl.textContent = isMac ? '⌘' : 'CTRL';
+      } catch {}
+      if (advancedSection) advancedSection.classList.remove('open');
+      if (advancedToggle && advancedSection) {
+        advancedToggle.addEventListener('click', () => {
+          advancedSection.classList.toggle('open');
+        });
+      }
+    }, 200)
+  });
 
   accept.addEventListener('click', (event) => {
     window.open('/', '_self');
@@ -38,18 +181,18 @@
 
   function openDrawer() {
     if (!addOpen) {
-      document.addEventListener('keydown', keyCloseDrawer);
       addOpen = true;
       pulloutButton.classList.add('active');
       drawerContainer.classList.add('active');
+      escapeStack.push('drawer', closeDrawer);
     }
   }
 
   function closeDrawer() {
-    document.removeEventListener('keydown', keyCloseDrawer);
     pulloutButton.classList.remove('active');
     drawerContainer.classList.remove('active');
     addOpen = false;
+    escapeStack.pop('drawer');
   }
 
   function toggleDrawer() {
@@ -60,17 +203,100 @@
     }
   }
 
-  function keyCloseDrawer(e) {
-    if (e.key == "Escape") {
-      closeDrawer();
+  const escapeStack = {
+    items: [],
+    push(name, closeFunc) {
+      this.items.push({ name, closeFunc });
+      this.updateListener();
+    },
+    pop(name) {
+      this.items = this.items.filter(item => item.name !== name);
+      this.updateListener();
+    },
+    updateListener() {
+      document.removeEventListener('keydown', this.globalEscapeHandler);
+      if (this.items.length > 0) {
+        document.addEventListener('keydown', this.globalEscapeHandler);
+      }
+    },
+    globalEscapeHandler: (e) => {
+      if (e.key === 'Escape' && escapeStack.items.length > 0) {
+        e.preventDefault();
+        const topItem = escapeStack.items[escapeStack.items.length - 1];
+        topItem.closeFunc();
+      }
     }
-  }
+  };
 
   var changes = []
   const $drag = {el: null, id: null, properties: {}, prev: null}
+  const $mouseclick = {el: null, x: 0, y: 0}
+  let lastMovedIndex = null;
+  
+  const localStorageQueue = {
+    queue: [],
+    processing: false,
+    add: function(key, value) {
+      this.queue.push({ key, value });
+      this.process();
+    },
+    process: async function() {
+      if (this.processing || this.queue.length === 0) return;
+      this.processing = true;
+      
+      while (this.queue.length > 0) {
+        const { key, value } = this.queue.shift();
+        try {
+          localStorage.setItem(key, value);
+        } catch (e) {
+          consol.error(`Failed to update localStorage for ${key}`, 'Storage');
+        }
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      
+      this.processing = false;
+    }
+  };
 
   function shatterCard(card, callfirst) {
     if (typeof callfirst === 'function') callfirst();
+    
+    const img = card.querySelector('img');
+    const needsCORS = img && img.src && !img.src.startsWith('data:') && !img.src.includes(window.location.hostname);
+    
+    if (needsCORS && (!img.crossOrigin || img.crossOrigin !== 'anonymous')) {
+      consol.log('external image detected, attempting CORS reload', 'Shatter');
+      const corsImg = new Image();
+      corsImg.crossOrigin = 'anonymous';
+      
+      let corsTimeout = setTimeout(() => {
+        consol.warn('CORS load timeout, using fallback', 'Shatter');
+        shatterCardInternal(card);
+      }, 2000);
+      
+      corsImg.onload = () => {
+        clearTimeout(corsTimeout);
+        consol.log('CORS image loaded successfully', 'Shatter');
+        img.crossOrigin = 'anonymous';
+        img.src = corsImg.src;
+        setTimeout(() => shatterCardInternal(card), 50);
+      };
+      
+      corsImg.onerror = () => {
+        clearTimeout(corsTimeout);
+        consol.warn('CORS not supported by server, using fallback', 'Shatter');
+        img.src = '/images/icons/Unknown.webp';
+        setTimeout(() => shatterCardInternal(card), 50);
+      };
+      
+      corsImg.src = img.src;
+      return;
+    }
+    
+    shatterCardInternal(card);
+  }
+  
+  function shatterCardInternal(card) {
     try {
       const shards = 8 + Math.floor(Math.random() * 6);
       const duration = 850;
@@ -143,7 +369,18 @@
           });
         }
 
-        const cardDataUrl = canvas.toDataURL('image/png');
+        let cardDataUrl;
+        try {
+          cardDataUrl = canvas.toDataURL('image/png');
+          consol.log(`Captured dataURL length=${cardDataUrl.length}`, 'Shatter');
+        } catch (e) {
+          consol.warn('Failed to export canvas (still CORS tainted). Using fallback.', 'Shatter');
+          card.classList.add('card-removing');
+          setTimeout(() => {
+            try { card.remove(); } catch (err) { card.parentNode && card.parentNode.removeChild(card); }
+          }, 300);
+          return;
+        }
 
         container.className = 'shatter-container';
         container.style.position = 'fixed';
@@ -157,8 +394,8 @@
         document.body.appendChild(container);
         card.style.visibility = 'hidden';
 
-        const cx = 50 + (Math.random() - 0.5) * 50;
-        const cy = 50 + (Math.random() - 0.5) * 50;
+        const cx = $mouseclick.x ? Math.max(0, Math.min(100, ((($mouseclick.x - rect.left) / rect.width) * 100))) : 50 + (Math.random() - 0.5) * 50;
+        const cy = $mouseclick.y ? Math.max(0, Math.min(100, ((($mouseclick.y - rect.top) / rect.height) * 100))) : 50 + (Math.random() - 0.5) * 50;
 
         const degToRad = d => d * Math.PI / 180;
         for (let i = 0; i < shards; i++) {
@@ -309,17 +546,10 @@
       v.a = true;
       v.from = from;
       !hide ? changes.push(v) : null;
+      !hide ? lastMovedIndex = b.id : null;
       bl.buttons.sort((a, b) => a.id - b.id);
-      localStorage.setItem("buttonlayout", JSON.stringify(bl));
-      if (bl.buttons.length >= 25) {
-        drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-          p.classList.add('locked');
-        });
-      } else {
-        drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-          p.classList.remove('locked');
-        });
-      }
+      localStorageQueue.add("buttonlayout", JSON.stringify(bl));
+      updateDrawerLockState();
     } else if (!add) {
       bl.buttons.forEach(v => {
         if (v.id == id) {
@@ -334,16 +564,8 @@
           !hide ? changes.push(rm) : null;
           
           bl.buttons.sort((a, b) => a.id - b.id);
-          localStorage.setItem("buttonlayout", JSON.stringify(bl));
-          if (bl.buttons.length >= 25) {
-            drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-              p.classList.add('locked');
-            });
-          } else {
-            drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-              p.classList.remove('locked');
-            });
-          }
+          localStorageQueue.add("buttonlayout", JSON.stringify(bl));
+          updateDrawerLockState();
 
           if (!hide) {
             const cardsContainer = document.querySelector('.cards');
@@ -394,11 +616,97 @@
     }
   }
 
-  function undoUpdate() {
+  async function undoUpdate() {
     if (!changes.length) return;
-    typeof changes[changes.length - 1].from == 'number' && changes[changes.length - 1].a ? (()=>{updateLS(false, { id: changes[changes.length - 1].id }, true); updateLS(true, {id: changes[changes.length - 1].from, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid, popup: changes[changes.length - 1].popup}, true)})() : changes[changes.length - 1].a ? updateLS(false, { id: changes[changes.length - 1].id }, true) : updateLS(true, { id: changes[changes.length - 1].id, name: changes[changes.length - 1].name, icon: changes[changes.length - 1].icon, url: changes[changes.length - 1].url, param: changes[changes.length - 1].param, pid: changes[changes.length - 1].pid, cid: changes[changes.length - 1].cid, popup: changes[changes.length - 1].popup }, true);
+    const lastChange = changes[changes.length - 1];
+    const label = lastChange && lastChange.name ? lastChange.name : 'Button';
+    const idxText = typeof lastChange?.from === 'number' ? ` position ${(lastChange.from ?? 0) + 1}` : typeof lastChange?.id === 'number' ? ` position ${(lastChange.id ?? 0) + 1}` : '';
+    let desc = 'The last change has been undone.';
+
+    if (lastChange) {
+      if (lastChange.cbl) {
+        const count = Array.isArray(lastChange.removedLayout) ? lastChange.removedLayout.length : 0;
+        desc = count > 0
+          ? `Restored custom button "${label}" and ${count} layout instance${count>1?'s':''}.`
+          : `Restored custom button "${label}".`;
+      } else if (lastChange.a && typeof lastChange.from === 'number') {
+        desc = `Moved "${label}" back to${idxText || ' its previous spot'}.`;
+      } else if (lastChange.a) {
+        desc = `Removed "${label}" at${idxText || ''}.`;
+      } else {
+        desc = `Restored "${label}" to${idxText || ' the layout'}.`;
+      }
+    }
+
+    if (lastChange.cbl && lastChange.created) {
+      const confirmed = await alertSystem.callAlert(
+        'Undo Custom Button Creation',
+        `Are you sure you want to undo the creation of custom button "${label}"?`,
+        { okBtn: 'Yes', cancelBtn: 'No' },
+        true
+      );
+      if (confirmed) {
+        await updateCLS(false, { cid: lastChange.cid }, true);
+        changes.length = changes.length - 1 < 0 ? 0 : changes.length - 1;
+        loadLS();
+        toastSystem.notify('Action Undone', `Creation of "${label}" has been undone.`, { type: 'success' });
+      }
+      return;
+    }
+    if (lastChange.cbl) {
+      const targetCid = lastChange.cid;
+      const affectedUp = cbl.cButtons.filter(cb => cb.cid >= targetCid).sort((a,b)=> b.cid - a.cid);
+
+      for (const cb of affectedUp) {
+        const oldCid = cb.cid;
+        const newCid = oldCid + 1;
+        cb.cid = newCid;
+        if (typeof cb.icon === 'string' && cb.icon.startsWith('idb:')) {
+          cb.icon = `idb:${newCid}`;
+        }
+        try { await iconDB.move(oldCid, newCid); } catch {}
+      }
+
+      bl.buttons.forEach(btn => {
+        if (typeof btn.cid === 'number' && btn.cid >= targetCid) {
+          btn.cid = btn.cid + 1;
+          if (typeof btn.icon === 'string' && btn.icon.startsWith('idb:')) {
+            try {
+              const oldCid = parseInt(btn.icon.slice(4), 10);
+              if (!Number.isNaN(oldCid) && oldCid >= targetCid) btn.icon = `idb:${oldCid + 1}`;
+            } catch {}
+          }
+        }
+      });
+
+      const restored = { name: lastChange.name, icon: lastChange.icon, url: lastChange.url, cid: targetCid };
+      if (lastChange.param === 'self') restored.param = 'self';
+      if (typeof restored.icon === 'string' && restored.icon.startsWith('idb:') && lastChange.idbIcon) {
+        try { await iconDB.set(targetCid, lastChange.idbIcon); } catch {}
+        restored.icon = `idb:${targetCid}`;
+      }
+      cbl.cButtons.push(restored);
+      cbl.cButtons.sort((a,b)=> (a.cid||0) - (b.cid||0));
+      localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
+      localStorageQueue.add("buttonlayout", JSON.stringify(bl));
+      loadCLS();
+      
+      if (Array.isArray(lastChange.removedLayout) && lastChange.removedLayout.length) {
+        const items = [...lastChange.removedLayout].sort((a,b)=> (a.id ?? 0) - (b.id ?? 0));
+        items.forEach(item => {
+          updateLS(true, {id: item.id, name: item.name, icon: item.icon, url: item.url, param: item.param, pid: item.pid, cid: item.cid, popup: item.popup}, true);
+        });
+      }
+    } else if (typeof lastChange.from == 'number' && lastChange.a) {
+      (()=>{updateLS(false, { id: lastChange.id }, true); updateLS(true, {id: lastChange.from, name: lastChange.name, icon: lastChange.icon, url: lastChange.url, param: lastChange.param, pid: lastChange.pid, cid: lastChange.cid, popup: lastChange.popup}, true)})()
+    } else if (lastChange.a) {
+      updateLS(false, { id: lastChange.id }, true)
+    } else {
+      updateLS(true, { id: lastChange.id, name: lastChange.name, icon: lastChange.icon, url: lastChange.url, param: lastChange.param, pid: lastChange.pid, cid: lastChange.cid, popup: lastChange.popup }, true)
+    }
     changes.length = changes.length - 1 < 0 ? 0 : changes.length - 1;
     loadLS();
+    toastSystem.notify("Action Undone", desc, { type: 'success' });
   }
   
   function shrinkToFit(el, minSize = 10) {
@@ -414,7 +722,27 @@
     }
   }
 
-  function loadLS() {    
+  function deepEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return a === b;
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) if (!deepEqual(a[i], b[i])) return false;
+      return true;
+    }
+    if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+    if (typeof a === 'object' && typeof b === 'object') {
+      const ak = Object.keys(a), bk = Object.keys(b);
+      if (ak.length !== bk.length) return false;
+      for (const k of ak) {
+        if (!bk.includes(k) || !deepEqual(a[k], b[k])) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function loadLS() {
     let dragGhost = null;
     let activeGap = null;
     let vId = -1;
@@ -431,33 +759,17 @@
         bl.buttons.length = bl.buttons.length > 25 ? 25 : bl.buttons.length;
         Promise.all(bl.buttons.map((b)=> new Promise((resolve, reject)=>{
           let tasks = {a:'required'}
+          let li = null;
           if (!b.name || !b.icon || !b.url ) {b.tagged = true;resolve();};
-          if (b.pid != undefined && typeof Number(b.pid) == "number" && vdefbl.all.filter(d=>d.pid==b.pid).length == 0) {b.tagged = true;resolve();} else if (b.pid != undefined && typeof Number(b.pid) == "number") {
-            let li = vdefbl.all.filter(d=>d.pid==b.pid)[0];
-            ['name', 'icon', 'url'].forEach(p => {
-              if (li[p] && (b[p] != li[p])) {b[p] = li[p];refReq = true;};
-            });
-            if (li.param && !b.param) {b.param = li.param;refReq = true;}
-            else if (!li.param && b.param) {delete b.param;refReq = true;}
-            else if (li.param && b.param && li.param !== b.param) {b.param = li.param;refReq = true;}
-            if (li.popup && !b.popup) {b.popup = structuredClone(li.popup);refReq = true;}
-            else if (!li.popup && b.popup) {delete b.popup;refReq = true;}
-            else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) {b.popup = structuredClone(li.popup);refReq = true;}
-            tasks.a = true;
-          } else if (b.cid != undefined && typeof Number(b.cid) == "number") {
-            let li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];
-            if (!li) {b.tagged = true;resolve();};
-            ['name', 'icon', 'url'].forEach(p => {
-              if (li[p] && (b[p] != li[p])) {b[p] = li[p];refReq = true;};
-            });
-            if (li.param && !b.param) {b.param = li.param;refReq = true;}
-            else if (!li.param && b.param) {delete b.param;refReq = true;}
-            else if (li.param && b.param && li.param !== b.param) {b.param = li.param;refReq = true;}
-            if (li.popup && !b.popup) {b.popup = structuredClone(li.popup);refReq = true;}
-            else if (!li.popup && b.popup) {delete b.popup;refReq = true;}
-            else if (li.popup && b.popup && JSON.stringify(li.popup) !== JSON.stringify(b.popup)) {b.popup = structuredClone(li.popup);refReq = true;}
-            tasks.a = true;
-          };
+          if (b.pid != undefined && typeof Number(b.pid) == "number" && vdefbl.all.filter(d=>d.pid==b.pid).length == 0) {b.tagged = true;resolve();}
+          else if (b.pid != undefined && typeof Number(b.pid) == "number") {li = vdefbl.all.filter(d=>d.pid==b.pid)[0];}
+          else if (b.cid != undefined && typeof Number(b.cid) == "number") {li = cbl.cButtons.filter(d=>d.cid==b.cid)[0];};
+          if (!li) {b.tagged = true;resolve();};
+
+          ['name', 'icon', 'url', 'param', 'popup'].forEach(p => {
+            if (!!li[p] && !deepEqual(b[p], li[p])) {b[p] = structuredClone(li[p]);refReq = true;};
+          });
+          tasks.a = true;
 
           let c = true;
           for (const [k, v] of Object.entries(tasks)) {
@@ -478,10 +790,10 @@
             bl.buttons.splice(bl.buttons.indexOf(b), 1);
           })
           let errmsg = "";
-          if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed due to formatting errors.`};
+          if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed.`};
           if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};
           if (errmsg) alertSystem.callAlert("Button Layout Updated", errmsg, {});
-          localStorage.setItem("buttonlayout", JSON.stringify(bl));
+          localStorageQueue.add("buttonlayout", JSON.stringify(bl));
           if (rm > 0 || len > 25 || refReq) {
             loadLS();
           }
@@ -505,7 +817,21 @@
       button.setAttribute("data-id", buttonData.id);
       button.setAttribute("data-index", index);
       button.setAttribute("draggable", "true");
-      button.innerHTML = `<img src="${buttonData.icon}" alt="${buttonData.name} Icon"><div class="overlay"><p>${buttonData.name}</p></div><div class="delete-overlay"><i class="fa-solid fa-trash"></i></div>`;
+      let resolvedIcon = buttonData.icon;
+      if (buttonData.icon && buttonData.icon.startsWith('idb:')) {
+        resolvedIcon = '/images/icons/Unknown.webp';
+      }
+      button.innerHTML = `<img src="${resolvedIcon}" alt="${buttonData.name} Icon" onerror="this.src='/images/icons/Unknown.webp'"><div class="overlay"><p>${buttonData.name}</p></div><div class="delete-overlay"><i class="fa-solid fa-trash"></i></div>`;
+      if (buttonData.icon && buttonData.icon.startsWith('idb:')) {
+        iconDB.get(buttonData.cid).then(idbIcon => {
+          if (idbIcon) {
+            try {
+              const imgEl = button.querySelector('img');
+              if (imgEl) imgEl.src = idbIcon;
+            } catch (e) {}
+          }
+        }).catch(() => {});
+      }
       button.fontSize = "";
       shrinkToFit(button.querySelector('.overlay p'), 14);
       let clickAllowed = true;
@@ -513,9 +839,12 @@
         if (e.button == 0) {
           clickAllowed = true;
         }
+        $mouseclick.el = button;
+        $mouseclick.x = e.clientX;
+        $mouseclick.y = e.clientY;
       });
       button.addEventListener('mouseup', (e) => {
-        if (e.button == 0 && clickAllowed && !(button.dragging || button.classList.contains("dragging"))) {
+        if (e.button == 0 && clickAllowed && !(button.dragging || button.classList.contains("dragging")) && !$drag.el && (Math.abs(e.clientX - $mouseclick.x) < 5 && Math.abs(e.clientY - $mouseclick.y) < 5)) {
           e.preventDefault();
           if (button.classList.contains('delete-mode')) {
             const id = buttonData.id;
@@ -559,145 +888,44 @@
 
     function createGap(index) {
       const gap = document.createElement('div');
-      gap.innerHTML = `<div><i class="fa-solid fa-plus"></i></div>`;
+      gap.innerHTML = `<div><i class="fa-solid fa-plus"></i><i class="fa-solid fa-arrows-up-down-left-right"></i></div>`;
       gap.classList.add('card-gap');
       gap.setAttribute('data-index', index);
       return gap;
     }
-
-    const existingCards = Array.from(cardsContainer.querySelectorAll('.card'));
-    const existingGaps = Array.from(cardsContainer.querySelectorAll('.card-gap'));
-
-    const cardsToKeep = new Set();
-    const gapsToKeep = new Set();
-
-    let needsRebuild = false;
     
-    if (existingCards.length !== bl.buttons.length || existingCards.length === 0) {
-      needsRebuild = true;
+    cardsContainer.innerHTML = '';
+
+    if (bl.buttons.length === 0) {
+      cardsContainer.appendChild(createGap(0));
     }
-    
-    if (needsRebuild) {
-      cardsContainer.innerHTML = '';
-      
-      if (bl.buttons.length == 0) {
-        cardsContainer.appendChild(createGap(0));
-      }
-      
-      bl.buttons.forEach((buttonData, index) => {
-        cardsContainer.appendChild(createGap(index));
-        
-        const card = createCard(buttonData, index);
-        cardsContainer.appendChild(card);
-        card.querySelector('.overlay p').style.fontSize = "";
-        shrinkToFit(card.querySelector('.overlay p'), 14);
-      });
 
-      if (bl.buttons.length > 0) {
-        cardsContainer.appendChild(createGap(bl.buttons.length));
-      }
-    } else {
-      const cardMap = new Map();
-      const positionUpdates = [];
+    bl.buttons.forEach((buttonData, index) => {
+      cardsContainer.appendChild(createGap(index));
 
-      existingCards.forEach(card => {
-        const cardId = parseInt(card.dataset.id);
-        cardMap.set(cardId, card);
-      });
+      const card = createCard(buttonData, index);
+      cardsContainer.appendChild(card);
+      card.querySelector('.overlay p').style.fontSize = "";
+      shrinkToFit(card.querySelector('.overlay p'), 14);
+    });
 
-      bl.buttons.forEach((buttonData, index) => {
-        const id = buttonData.id;
-        const card = cardMap.get(id);
-        
-        if (card) {
-          const currentIndex = parseInt(card.dataset.index);
-          
-          if (currentIndex !== index) {
-            positionUpdates.push({ card, newIndex: index, data: buttonData });
-          } else {
-            const currentHref = card.dataset.href;
-            const currentName = card.querySelector('.overlay p').textContent;
-            const currentIcon = card.querySelector('img').src;
-            
-            if (currentHref !== buttonData.url || currentName !== buttonData.name || currentIcon !== buttonData.icon) {
-              card.dataset.href = buttonData.url;
-              card.querySelector('.overlay p').textContent = buttonData.name;
-              card.querySelector('img').src = buttonData.icon;
-              card.querySelector('img').alt = buttonData.name + ' Icon';
-            }
-
-            cardsToKeep.add(card);
-          }
-          card.querySelector('.overlay p').style.fontSize = "";
-          shrinkToFit(card.querySelector('.overlay p'), 14);
-        } else {
-          needsRebuild = true;
-        }
-      });
-
-      if (positionUpdates.length > 0 && !needsRebuild) {
-        positionUpdates.sort((a, b) => {
-          const aDist = Math.abs(parseInt(a.card.getAttribute('data-index')) - a.newIndex);
-          const bDist = Math.abs(parseInt(b.card.getAttribute('data-index')) - b.newIndex);
-          return bDist - aDist;
-        });
-        
-        positionUpdates.forEach(update => {
-          const { card, newIndex, data } = update;
-
-          card.setAttribute('data-index', newIndex);
-
-          const elements = Array.from(cardsContainer.children);
-          let insertPosition = null;
-
-          for (let i = 0; i < elements.length; i++) {
-            const elem = elements[i];
-            if (elem.classList.contains('card-gap') && parseInt(elem.getAttribute('data-index')) === newIndex) {
-              insertPosition = elem;
-              break;
-            }
-          }
-
-          if (insertPosition && insertPosition.nextElementSibling !== card) {
-            insertPosition.after(card);
-          }
-          
-          cardsToKeep.add(card);
-        });
-
-        existingGaps.forEach(gap => {
-          gapsToKeep.add(gap);
-        });
-      }
-
-      if (needsRebuild) {
-        cardsContainer.innerHTML = '';
-
-        if (bl.buttons.length == 0) {
-          cardsContainer.appendChild(createGap(0));
-        }
-        
-        bl.buttons.forEach((buttonData, index) => {
-          cardsContainer.appendChild(createGap(index));
-          
-          const card = createCard(buttonData, index);
-          cardsContainer.appendChild(card);
-          card.querySelector('.overlay p').style.fontSize = "";
-          shrinkToFit(card.querySelector('.overlay p'), 14);
-        });
-
-        if (bl.buttons.length > 0) {
-          cardsContainer.appendChild(createGap(bl.buttons.length));
-        }
-      }
+    if (bl.buttons.length > 0) {
+      cardsContainer.appendChild(createGap(bl.buttons.length));
     }
-    
-    if (!needsRebuild && bl.buttons.length > 0) {
-      let lastGap = cardsContainer.querySelector(`.card-gap[data-index="${bl.buttons.length}"]`);
-      if (!lastGap) {
-        lastGap = createGap(bl.buttons.length);
-        cardsContainer.appendChild(lastGap);
+
+    if (lastMovedIndex !== null) {
+      const movedCard = cardsContainer.querySelector(`.card[data-index="${lastMovedIndex}"]`);
+      if (movedCard) {
+        movedCard.classList.remove('moved');
+        void movedCard.offsetWidth;
+        movedCard.classList.add('moved');
+        const handleAnimationEnd = () => {
+          movedCard.classList.remove('moved');
+          movedCard.removeEventListener('animationend', handleAnimationEnd);
+        };
+        movedCard.addEventListener('animationend', handleAnimationEnd);
       }
+      lastMovedIndex = null;
     }
     
     let isDragging = false;
@@ -707,7 +935,7 @@
       
       vId = index;
       
-      cardsContainer.classList.add('dragging-active');
+      cardsContainer.classList.add('dragging-active', 'move');
       
       dragGhost = button.cloneNode(true);
       dragGhost.classList.add('drag-ghost');
@@ -716,9 +944,6 @@
       document.body.appendChild(dragGhost);
       
       isDragging = true;
-      document.querySelectorAll('.card-gap i').forEach(icon => {
-        icon.className = 'fa-solid fa-arrows-up-down-left-right';
-      });
       
       updateGhostPosition(e);
       
@@ -833,15 +1058,12 @@
         card.classList.remove('dragging');
         card.dragging = false;
       });
-      cardsContainer.classList.remove('dragging-active');
+      cardsContainer.classList.remove('dragging-active', 'move');
       
       vId = -1;
       $drag.el = null;
       $drag.id = null;
       $drag.properties = {};
-      document.querySelectorAll('.card-gap i').forEach(icon => {
-        icon.className = 'fa-solid fa-plus';
-      });
       
       document.removeEventListener('dragover', onMouseMove);
       document.removeEventListener('drop', onMouseUp);
@@ -872,7 +1094,7 @@
           bl.buttons.length >= 25 ? presetElem.classList.add('locked') : null;
           presetElem.dataset.href = preset.url;
           presetElem.dataset.pid = preset.pid;
-          presetElem.innerHTML = `<img src="${preset.icon}" alt="${preset.name} Icon"><div class="overlay" style="padding: 5px;bottom: -8%;"><p>${preset.name}</p></div><div class="locked-overlay"><i class="fa-solid fa-lock"></i></div>`;
+          presetElem.innerHTML = `<img src="${preset.icon}" alt="${preset.name} Icon" onerror="this.src='/images/icons/Unknown.webp'"><div class="overlay" style="padding: 5px;bottom: -8%;"><p>${preset.name}</p></div><div class="locked-overlay"><i class="fa-solid fa-lock"></i></div>`;
           let clickAllowed = true;
 
           const presetData = {
@@ -888,9 +1110,12 @@
             if (e.button == 0 || e.button == 1) {
               clickAllowed = true;
             }
+            $mouseclick.el = presetElem;
+            $mouseclick.x = e.clientX;
+            $mouseclick.y = e.clientY;
           });
           presetElem.addEventListener('mouseup', (e) => {
-            if ((e.button == 0 || e.button == 1) && clickAllowed) {
+            if ((e.button == 0 || e.button == 1) && clickAllowed && !(presetElem.dragging || presetElem.classList.contains("dragging")) && !$drag.el && (Math.abs(e.clientX - $mouseclick.x) < 5 && Math.abs(e.clientY - $mouseclick.y) < 5)) {
               if (bl.buttons.length >= 25) {
                 drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
                   p.classList.add('locked');
@@ -902,11 +1127,7 @@
 
               updateLS(true, presetData);
 
-              if (bl.buttons.length >= 25) {
-                drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-                  p.classList.add('locked');
-                });
-              }
+              updateDrawerLockState();
 
               loadLS();
             }
@@ -945,7 +1166,7 @@
         return;
       }
       
-      cardsContainer.classList.add('dragging-active');
+      cardsContainer.classList.add('dragging-active', 'insert');
       
       dragGhost = presetEl.cloneNode(true);
       dragGhost.classList.add('drag-ghost');
@@ -1058,7 +1279,7 @@
         card.classList.remove('dragging');
         card.dragging = false;
       });
-      cardsContainer.classList.remove('dragging-active');
+      cardsContainer.classList.remove('dragging-active', 'insert');
       
       $drag.el = null;
       $drag.id = null;
@@ -1085,7 +1306,7 @@
     if (!jsonCheck(localStorage.getItem("buttonlayout"))) {
       consol.log("Failed to parse buttonlayout, resetting", "Buttons")
       alertSystem.callAlert("Button Layout Reset", "An error was detected in your button layout, causing it to be reset.")
-      localStorage.setItem("old-buttonlayout", localStorage.getItem("buttonlayout"))
+      localStorageQueue.add("old-buttonlayout", localStorage.getItem("buttonlayout"))
       localStorage.removeItem("buttonlayout")
       fetch("/def/def.json")
         .then(function (res) {
@@ -1094,8 +1315,8 @@
         .then(function (def) {
           let vdef = JSON.parse(def)
           delete vdef.all;
-          localStorage.setItem("buttonlayout", JSON.stringify(vdef))
-          bl = JSON.parse(localStorage.getItem("buttonlayout"))
+          localStorageQueue.add("buttonlayout", JSON.stringify(vdef))
+          bl = JSON.parse(JSON.stringify(vdef))
           loadLS()
         })
         .catch(function (e) {
@@ -1106,14 +1327,110 @@
     } else {
       bl = JSON.parse(localStorage.getItem("buttonlayout"))
       if (jsonCheck(localStorage.getItem("custombuttonlist")) && localStorage.getItem("custombuttonlist")) {
-        let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"))
-        preCBL.cButtons = preCBL.cButtons.filter((cButton, index, self) => {
-          return (typeof cButton.name === 'string' && cButton.name.length > 0 && cButton.name.length <= 15 && typeof cButton.icon === 'string' && cButton.icon.startsWith('data:image/') && typeof cButton.url === 'string' && isValidUrl(cButton.url) && self.findIndex(btn => btn.name === cButton.name || btn.url === cButton.url || btn.icon === cButton.icon || btn.cid === cButton.cid) === index);
-        });
-        cbl = preCBL;
+        let preCBL = JSON.parse(localStorage.getItem("custombuttonlist"));
+        (async () => {
+          const removed = [];
+          const migrated = [];
+          cbl.cButtons = Array.isArray(preCBL.cButtons) ? [...preCBL.cButtons] : [];
+          const tasks = cbl.cButtons.map(async (cb) => {
+            try {
+              if (!cb || typeof cb.cid !== 'number' || typeof cb.name !== 'string' || !cb.name || !isValidUrl(cb.url)) {
+                removed.push(cb?.name || 'Custom Button');
+                return null;
+              }
+              if (typeof cb.icon !== 'string') {
+                removed.push(cb.name);
+                return null;
+              }
+              if (cb.icon.startsWith('idb:') && cb.icon.slice(4) == cb.cid) {
+                return cb;
+              }
+              if (cb.icon.startsWith('data:image/')) {
+                const dataUrl = await (async () => {
+                  return await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                      let w = img.width, h = img.height;
+                      const minDim = 150, maxDim = 512;
+                      if (w > maxDim || h > maxDim) {
+                        const scale = Math.min(maxDim / w, maxDim / h);
+                        w = Math.floor(w * scale); h = Math.floor(h * scale);
+                      }
+                      if (w < minDim || h < minDim) {
+                        const scale = Math.max(minDim / w, minDim / h);
+                        w = Math.floor(w * scale); h = Math.floor(h * scale);
+                      }
+                      const canvas = document.createElement('canvas');
+                      canvas.width = w; canvas.height = h;
+                      const ctx = canvas.getContext('2d');
+                      ctx.imageSmoothingEnabled = true;
+                      ctx.imageSmoothingQuality = 'high';
+                      ctx.drawImage(img, 0, 0, w, h);
+                      try { resolve(canvas.toDataURL('image/webp')); } catch { resolve(canvas.toDataURL('image/png')); }
+                    };
+                    img.onerror = () => reject(new Error('Image load failed'));
+                    img.src = cb.icon;
+                  });
+                })();
+                await iconDB.set(cb.cid, dataUrl);
+                cb.icon = `idb:${cb.cid}`;
+                migrated.push(cb.name);
+                return cb;
+              }
+              if (isImageUrl(cb.icon)) {
+                try {
+                  await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    let settled = false;
+                    const timeout = setTimeout(() => {
+                      if (settled) return;
+                      settled = true;
+                      reject(new Error('Image load timeout'));
+                    }, 4000);
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                      if (settled) return;
+                      settled = true;
+                      clearTimeout(timeout);
+                      resolve();
+                    };
+                    img.onerror = () => {
+                      if (settled) return;
+                      settled = true;
+                      clearTimeout(timeout);
+                      reject(new Error('Image failed to load'));
+                    };
+                    img.src = cb.icon;
+                  });
+
+                  await iconDB.set(cb.cid, cb.icon);
+                  cb.icon = `idb:${cb.cid}`;
+                  migrated.push(cb.name);
+                  return cb;
+                } catch (err) {
+                  removed.push(cb.name);
+                  return null;
+                }
+              }
+              removed.push(cb.name);
+              return null;
+            } catch {
+              removed.push(cb?.name || 'Custom Button');
+              return null;
+            }
+          });
+          const results = await Promise.all(tasks);
+          cbl.cButtons = results.filter(Boolean).sort((a,b)=> (a.cid||0) - (b.cid||0));
+          const usedCids = cbl.cButtons.map(cb => cb.cid);
+          await iconDB.deleteUnused(usedCids);
+          localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
+
+          loadLS();
+          loadCLS();
+        })();
+      } else {
+        loadLS();
       }
-      loadLS();
-      loadCLS();
     }
   } else {
     fetch("/def/def.json")
@@ -1123,8 +1440,8 @@
       .then(function (def) {
         let vdef = JSON.parse(def);
         delete vdef.all;
-        localStorage.setItem("buttonlayout", JSON.stringify(vdef));
-        bl = JSON.parse(localStorage.getItem("buttonlayout"));
+        localStorageQueue.add("buttonlayout", JSON.stringify(vdef));
+        bl = JSON.parse(JSON.stringify(vdef));
         loadLS();
         loadCLS();
       })
@@ -1145,19 +1462,12 @@
           .then(function(def) {  
             let vdef = JSON.parse(def);
             delete vdef.all;
-            localStorage.setItem("buttonlayout", JSON.stringify(vdef));
-            bl = JSON.parse(localStorage.getItem("buttonlayout"));
+            localStorageQueue.add("buttonlayout", JSON.stringify(vdef));
+            bl = JSON.parse(JSON.stringify(vdef));
             loadLS();
             changes.length = 0;
-            if (bl.buttons.length >= 25) {
-              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-                p.classList.add('locked');
-              });
-            } else {
-              drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
-                p.classList.remove('locked');
-              });
-            }
+            updateDrawerLockState();
+            toastSystem.notify("Button Layout Reset", "Your button layout has been reset to default.", { type: 'success' });
           })
           .catch(function(e) {
             consol.error("Failed to fetch buttons", "Buttons")
@@ -1202,6 +1512,59 @@
   const alertContainer = document.querySelector('.alert-container');
   const alertOverlay = document.querySelector('.alert-overlay');
   const alertBackground = document.querySelector('.alert-background');
+  let toastContainer = document.querySelector('.toast-container');
+  function startToastTimer(toastData) {
+    if (!toastData) return;
+    const fill = toastData.progressFill;
+    toastData.start = Date.now();
+    fill.style.transition = 'none';
+    fill.style.width = `${(toastData.remaining / toastData.timeout) * 100}%`;
+    void fill.offsetWidth;
+    fill.style.transition = `width ${toastData.remaining}ms linear`;
+    fill.style.width = '0%';
+    toastData.timer = setTimeout(() => removeToast(toastData.el), toastData.remaining);
+  }
+
+  function pauseToast(toastData) {
+    if (!toastData) return;
+    if (toastData.timer) {
+      clearTimeout(toastData.timer);
+      toastData.timer = null;
+      const elapsed = Date.now() - (toastData.start || Date.now());
+      toastData.remaining = Math.max(0, toastData.remaining - elapsed);
+    }
+    const fill = toastData.progressFill;
+    const trackWidth = fill.parentElement ? fill.parentElement.clientWidth || 1 : 1;
+    const currentWidth = parseFloat(getComputedStyle(fill).width) || (toastData.remaining / toastData.timeout) * trackWidth;
+    const percent = Math.max(0, Math.min(100, (currentWidth / trackWidth) * 100));
+    fill.style.transition = 'none';
+    fill.style.width = `${percent}%`;
+  }
+
+  function resumeToast(toastData) {
+    if (!toastData) return;
+    if (toastData.remaining <= 25) {
+      removeToast(toastData.el);
+      return;
+    }
+    startToastTimer(toastData);
+  }
+
+  function removeToast(el) {
+    if (!el) return;
+    const idx = toastSystem.activeToasts.findIndex(t => t.el === el);
+    const data = idx !== -1 ? toastSystem.activeToasts[idx] : null;
+    if (data && data.timer) {
+      clearTimeout(data.timer);
+      data.timer = null;
+    }
+    el.classList.add('exit-up');
+    el.addEventListener('animationend', () => {
+      const removeIdx = toastSystem.activeToasts.findIndex(t => t.el === el);
+      if (removeIdx !== -1) toastSystem.activeToasts.splice(removeIdx, 1);
+      try { el.remove(); } catch {}
+    }, { once: true });
+  }
 
   function showAlert(title, message, {okBtn="OK", cancelBtn="Cancel"} = {okBtn: "OK", cancelBtn: "Cancel"}, showCancel=false) {
     return new Promise((resolve) => {
@@ -1217,13 +1580,13 @@
       alertBackground.classList.add('active');
       
       function closeAlert() {
-        document.removeEventListener('keydown', keyCloseA);
         alertOverlay.removeEventListener('click', resFalse);
         alertOk.removeEventListener('click', resTrue);
         showCancel ? alertCancel.removeEventListener('click', resFalse) : null;
         alertOverlay.style.opacity = 0;
         alertBackground.classList.remove('active');
         pageLayout.classList.remove('hide');
+        escapeStack.pop('alert');
         setTimeout(() => {
           alertContainer.style.display = 'none';
           alertTitle.innerText = "Alert";
@@ -1234,81 +1597,214 @@
         }, 300);
       }
       
-      function keyCloseA(e) {if (e.key == "Escape") {closeAlert();resolve(false);}}
       function resTrue() {closeAlert();resolve(true);}
       function resFalse() {closeAlert();resolve(false);}
       
       alertOverlay.addEventListener('click', resFalse);
       alertOk.addEventListener('click', resTrue);
       showCancel ? alertCancel.addEventListener('click', resFalse) : null;
-      document.addEventListener('keydown', keyCloseA);
+      escapeStack.push('alert', resFalse);
       showCancel ? alertCancel.style.display = '' : alertCancel.style.display = 'none';
       }, 10);
     });
   }
 
+  const toastSystem = {
+    notify: function(title, message, { timeout = 3500, type = 'info' } = {}) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.setAttribute('role', 'status');
+      const titleEl = document.createElement('div');
+      titleEl.className = 'toast-title';
+      titleEl.textContent = title || 'Notification';
+      const msgEl = document.createElement('div');
+      msgEl.className = 'toast-message';
+      msgEl.textContent = message || '';
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'toast-close';
+      closeBtn.setAttribute('aria-label', 'Close');
+      closeBtn.textContent = '×';
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeToast(toast);
+      });
+      const progress = document.createElement('div');
+      progress.className = 'toast-progress';
+      const progressFill = document.createElement('div');
+      progressFill.className = 'fill';
+      progress.appendChild(progressFill);
+
+      toast.appendChild(titleEl);
+      toast.appendChild(msgEl);
+      toast.appendChild(progress);
+      toast.appendChild(closeBtn);
+
+      toastContainer.appendChild(toast);
+      const dismissMs = Math.max(1500, timeout);
+      const toastData = { el: toast, timer: null, start: Date.now(), remaining: dismissMs, timeout: dismissMs, progressFill };
+      toastSystem.activeToasts.push(toastData);
+
+      toast.addEventListener('mouseenter', () => pauseToast(toastData));
+      toast.addEventListener('mouseleave', () => resumeToast(toastData));
+
+      startToastTimer(toastData);
+    },
+    activeToasts: []
+  };
+
   const customButtonEditor = document.querySelector('.custom-button-editor');
   const editorBackground = document.querySelector('.editor-background');
   const editorOverlay = customButtonEditor.querySelector('.alert-overlay');
+  const editorTitle = document.getElementById('editor-title');
   const uploadButton = document.getElementById('upload-btn');
+  const clearImageBtn = document.getElementById('clear-image-btn');
   const fileNameDisplay = document.getElementById('file-name');
   const fileInput = document.getElementById('button-icon-upload');
+  const urlInput = document.getElementById('button-image-url');
+  const imageToggle = document.querySelector('.image-input-toggle');
   const buttonTitleInput = document.getElementById('button-title');
   const buttonUrlInput = document.getElementById('button-url');
   const titleCharCount = document.getElementById('title-char-count');
+  const titleMessage = document.getElementById('title-message');
+  const urlMessage = document.getElementById('url-message');
   const previewImg = document.getElementById('preview-img');
   const previewTitle = document.getElementById('preview-title');
-  const editorCreate = document.getElementById('editor-create');
+  const editorApply = document.getElementById('editor-apply');
   const editorCancel = document.getElementById('editor-cancel');
-  const buttonContent = {image: "", title: "", url: ""};
+  const editorDelete = document.getElementById('editor-delete');
+  const sameTabCheckbox = document.getElementById('same-tab');
+  const buttonContent = {image: "", title: "", url: "", param: undefined};
+  let originalContent = {image: "", title: "", url: "", param: undefined};
+  let imageValidated = false;
+  let urlValidated = false;
+  let editingCid = null;
+  let deleteConfirmMode = false;
+
+  function setImageToggle(mode) {
+    const isUpload = mode === 'upload';
+    const isUrl = mode === 'url';
+    imageToggle.classList.toggle('expanded-upload', isUpload);
+    imageToggle.classList.toggle('expanded-url', isUrl);
+    uploadButton.innerText = (isUpload || isUrl) ? 'Change Image' : 'Upload Image';
+    clearImageBtn.classList.toggle('hide', mode === 'none');
+  }
+
+  function applyStatus(el, state) {
+    if (!el) return;
+    el.classList.remove('valid', 'error', 'warning');
+    if (state === 'valid') el.classList.add('valid');
+    else if (state === 'error') el.classList.add('error');
+    else if (state === 'warning') el.classList.add('warning');
+  }
+
+  function updateDrawerLockState() {
+    const lock = bl && bl.buttons && bl.buttons.length >= 25;
+    drawerBackground.querySelectorAll('.drawer-card').forEach(p => {
+      lock ? p.classList.add('locked') : p.classList.remove('locked');
+    });
+  }
 
   const addNewButton = document.querySelector('#custom-btns-container .drawer-custom-btn');
   
   addNewButton.addEventListener('click', () => {
-    openCustomButtonEditor();
+    openCBE();
   });
 
-  function openCustomButtonEditor() {
-    if (cbl.cButtons.length >= 10) {
-      alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of custom buttons (10).\nPlease remove some before adding new ones.");
+  function openCBE(cButton) {
+    const isEdit = !!cButton;
+
+    if (!isEdit && cbl.cButtons.length >= 10) {
+      alertSystem.callAlert(
+        "Button Limit Reached",
+        "You have reached the maximum amount of custom buttons (10).\nPlease remove some before adding new ones."
+      );
       return;
     }
-    fileNameDisplay.textContent = 'No file chosen';
-    buttonTitleInput.value = '';
-    buttonUrlInput.value = '';
-    titleCharCount.textContent = '0';
-    previewImg.src = '/images/icons/VBCLogo.webp';
-    previewTitle.textContent = 'Custom Button';
-    editorCreate.disabled = true;
-    
-    customButtonEditor.style.display = '';
-    setTimeout(() => {
-      document.addEventListener('keydown', keyCloseEditor);
-      editorBackground.classList.add('active');
-      editorOverlay.style.opacity = '1';
-      pageLayout.classList.add('hide');
-    }, 10);
+
+    editingCid = isEdit ? cButton.cid : null;
+    deleteConfirmMode = false;
+    editorTitle.textContent = isEdit ? 'Edit Custom Button' : 'Create Custom Button';
+    editorDelete.style.display = isEdit ? '' : 'none';
+    editorDelete.classList.remove('delete-mode');
+    editorApply.textContent = isEdit ? 'Apply' : 'Create';
+
+    fileInput.value = '';
+    buttonTitleInput.value = isEdit ? cButton.name : '';
+    buttonUrlInput.value = isEdit ? cButton.url : '';
+    titleCharCount.textContent = isEdit ? cButton.name.length : '0';
+
+    titleMessage.textContent = isEdit ? '✓ Valid title' : 'No title';
+    applyStatus(titleMessage, isEdit ? 'valid' : 'none');
+
+    urlMessage.textContent = isEdit ? '✓ Valid URL' : 'No URL';
+    applyStatus(urlMessage, isEdit ? 'valid' : 'none');
+
+    (async () => {
+      let resolvedIcon = isEdit ? cButton.icon : '';
+      if (isEdit && cButton.icon.startsWith('idb:')) {
+        const idbIcon = await iconDB.get(cButton.cid);
+        if (idbIcon) resolvedIcon = idbIcon;
+      }
+
+      const isDataImg = isEdit ? resolvedIcon.startsWith('data:image/') : false;
+      fileNameDisplay.textContent = isEdit ? (isDataImg ? '✓ Image loaded' : '✓ Image loaded from URL') : 'No file chosen';
+      applyStatus(fileNameDisplay, isEdit ? 'valid' : 'none');
+      setImageToggle(isEdit ? (isDataImg ? 'upload' : 'url') : 'none');
+
+      urlInput.value = isEdit && !isDataImg ? resolvedIcon : '';
+
+      previewImg.src = isEdit ? resolvedIcon : '/images/icons/Unknown.webp';
+      previewTitle.textContent = isEdit ? cButton.name : 'Custom Button';
+      editorApply.disabled = true;
+
+      imageValidated = !!isEdit;
+      urlValidated = !!isEdit;
+      buttonContent.image = isEdit ? resolvedIcon : '';
+      buttonContent.title = isEdit ? cButton.name : '';
+      buttonContent.url = isEdit ? cButton.url : '';
+      buttonContent.param = isEdit && cButton.param === 'self' ? 'self' : undefined;
+      originalContent = isEdit
+        ? { image: resolvedIcon, title: cButton.name, url: cButton.url, param: cButton.param === 'self' ? 'self' : undefined }
+        : { image: "", title: "", url: "", param: undefined };
+
+      if (sameTabCheckbox) sameTabCheckbox.checked = isEdit ? cButton.param === 'self' : false;
+      if (advancedSection) advancedSection.classList.remove('open');
+
+      customButtonEditor.style.display = '';
+      setTimeout(() => {
+        editorBackground.classList.add('active');
+        editorOverlay.style.opacity = '1';
+        pageLayout.classList.add('hide');
+        escapeStack.push('editor', closeCBE);
+      }, 10);
+    })();
   }
 
-  function closeCustomButtonEditor() {
-    document.removeEventListener('keydown', keyCloseEditor);
+  function closeCBE() {
     editorBackground.classList.remove('active');
     editorOverlay.style.opacity = '0';
     pageLayout.classList.remove('hide');
+    escapeStack.pop('editor');
     
     setTimeout(() => {
       customButtonEditor.style.display = 'none';
     }, 500);
   }
 
-  function keyCloseEditor(e) {
-    if (e.key === "Escape") {
-      closeCustomButtonEditor();
-    }
-  }
-
   uploadButton.addEventListener('click', () => {
     fileInput.click();
+  });
+
+  clearImageBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    urlInput.value = '';
+    previewImg.src = '/images/icons/Unknown.webp';
+    fileNameDisplay.textContent = 'No file chosen';
+    applyStatus(fileNameDisplay, 'none');
+    setImageToggle('none');
+    buttonContent.image = "";
+    imageValidated = false;
+    validateForm();
   });
 
   fileInput.addEventListener('change', (e) => {
@@ -1316,11 +1812,32 @@
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      fileNameDisplay.textContent = 'Invalid file type';
+      fileNameDisplay.textContent = 'Error: Invalid file type. Please upload an image.';
+      applyStatus(fileNameDisplay, 'error');
+      imageValidated = false;
+      buttonContent.image = "";
+      imageToggle.classList.remove('expanded-upload', 'expanded-url');
+      uploadButton.innerText = 'Upload Image';
+      clearImageBtn.classList.add('hide');
+      validateForm();
+      return;
+    }
+
+    if (file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif')) {
+      fileNameDisplay.textContent = 'Error: Animated images (GIFs) are not allowed.';
+      applyStatus(fileNameDisplay, 'error');
+      imageValidated = false;
+      buttonContent.image = "";
+      imageToggle.classList.remove('expanded-upload', 'expanded-url');
+      uploadButton.innerText = 'Upload Image';
+      clearImageBtn.classList.add('hide');
+      validateForm();
       return;
     }
 
     fileNameDisplay.textContent = file.name;
+    applyStatus(fileNameDisplay, 'none');
+    setImageToggle('upload');
 
     const reader = new FileReader();
     reader.onload = function(event) {
@@ -1332,23 +1849,39 @@
         let w = img.width;
         let h = img.height;
 
-        if (w > 150 || h > 150) {
-          if (w > h) {
-            h *= 150 / w;
-            w = 150;
-          } else {
-            w *= 150 / h;
-            h = 150;
-          }
+        const minDim = 150;
+        const maxDim = 512;
+        if (w > maxDim || h > maxDim) {
+          const scale = Math.min(maxDim / w, maxDim / h);
+          w = Math.floor(w * scale);
+          h = Math.floor(h * scale);
+        }
+        if (w < minDim || h < minDim) {
+          const scale = Math.max(minDim / w, minDim / h);
+          w = Math.floor(w * scale);
+          h = Math.floor(h * scale);
         }
 
         canvas.width = w;
         canvas.height = h;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, w, h);
 
-        const compressedDataUrl = canvas.toDataURL('image/png');
-        previewImg.src = compressedDataUrl;
-        buttonContent.image = compressedDataUrl;
+        const dataUrl = canvas.toDataURL('image/webp');
+        previewImg.src = dataUrl;
+        buttonContent.image = dataUrl;
+        imageValidated = true;
+        fileNameDisplay.textContent = `✓ ${file.name}`;
+        applyStatus(fileNameDisplay, 'valid');
+        validateForm();
+      };
+      img.onerror = function() {
+        fileNameDisplay.textContent = 'Error: Unable to load image. Please try a different file.';
+        applyStatus(fileNameDisplay, 'error');
+        imageValidated = false;
+        buttonContent.image = "";
+        setImageToggle('none');
         validateForm();
       };
       img.src = event.target.result;
@@ -1357,12 +1890,105 @@
     reader.readAsDataURL(file);
   });
 
+  urlInput.addEventListener('input', () => {
+    if (!urlInput.value.trim()) {
+      previewImg.src = '/images/icons/Unknown.webp';
+      fileNameDisplay.textContent = 'No file chosen';
+      applyStatus(fileNameDisplay, 'none');
+      imageToggle.classList.remove('expanded-url');
+      clearImageBtn.classList.add('hide');
+    } else {
+      imageToggle.classList.add('expanded-url');
+      imageToggle.classList.remove('expanded-upload');
+    }
+  });
+
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      urlInput.blur();
+    }
+  });
+
+  urlInput.addEventListener('blur', async () => {
+    const url = urlInput.value.trim();
+    imageValidated = false;
+    validateForm();
+    if (!url) {
+      if (!buttonContent.image) {
+        imageToggle.classList.remove('expanded-url');
+      }
+      previewImg.src = '/images/icons/Unknown.webp';
+      fileNameDisplay.textContent = 'No file chosen';
+      fileNameDisplay.classList.remove('error', 'valid');
+      return;
+    }
+
+    setImageToggle('url');
+
+    if (!isValidUrl(url)) {
+      fileNameDisplay.textContent = 'Error: Invalid URL format.';
+      applyStatus(fileNameDisplay, 'error');
+      previewImg.src = '/images/icons/Unknown.webp';
+      buttonContent.image = "";
+      return;
+    }
+
+    fileNameDisplay.textContent = 'Validating image...';
+    applyStatus(fileNameDisplay, 'none');
+
+    const isImage = await isImageUrlCT(url);
+    if (!isImage) {
+      fileNameDisplay.textContent = 'Error: URL does not point to a valid image.';
+      applyStatus(fileNameDisplay, 'error');
+      previewImg.src = '/images/icons/Unknown.webp';
+      buttonContent.image = "";
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      previewImg.src = url;
+      buttonContent.image = url;
+      imageValidated = true;
+      fileNameDisplay.textContent = '✓ Image loaded from URL';
+      applyStatus(fileNameDisplay, 'valid');
+      validateForm();
+    };
+    img.onerror = function() {
+      fileNameDisplay.textContent = 'Error: Unable to load image from URL. Check image availability. Otherwise, save it and try uploading the image directly.';
+      applyStatus(fileNameDisplay, 'error');
+      imageValidated = false;
+      previewImg.src = '/images/icons/Unknown.webp';
+      buttonContent.image = "";
+      validateForm();
+    };
+    img.src = url;
+  });
+
   buttonTitleInput.addEventListener('input', (e) => {
     let value = e.target.value;
     buttonTitleInput.value = value.substring(0, 15);
     value = buttonTitleInput.value;
     titleCharCount.textContent = value.length;
     buttonContent.title = value.trim();
+
+    if (value.trim().length > 0 && value.trim().length <= 15) {
+      const isDuplicate = cbl.cButtons.some(cButton => 
+        cButton.cid !== editingCid && cButton.name === value.trim()
+      );
+      if (isDuplicate) {
+        titleMessage.textContent = '✗ Name already used';
+        applyStatus(titleMessage, 'error');
+      } else {
+        titleMessage.textContent = '✓ Valid title';
+        applyStatus(titleMessage, 'valid');
+      }
+    } else {
+      titleMessage.textContent = 'No title';
+      applyStatus(titleMessage, 'none');
+    }
 
     previewTitle.textContent = value || 'Custom Button';
 
@@ -1373,15 +1999,97 @@
 
   buttonUrlInput.addEventListener('input', () => {
     buttonContent.url = buttonUrlInput.value.trim();
+    
+    if (!buttonContent.url) {
+      urlMessage.textContent = 'No URL';
+      applyStatus(urlMessage, 'none');
+    } else {
+      const isDuplicate = cbl.cButtons.some(cButton => 
+        cButton.cid !== editingCid && cButton.url === buttonContent.url
+      );
+      if (isDuplicate) {
+        urlMessage.textContent = '✗ URL already used';
+        applyStatus(urlMessage, 'error');
+      }
+    }
+    urlValidated = false;
     validateForm();
   });
 
-  function validateForm() {
-    const hasImage = buttonContent.image.length > 0 && buttonContent.image.startsWith('data:image/');
-    const hasTitle = buttonContent.title.length > 0 && buttonContent.title.length <= 15;
-    const hasValidUrl = isValidUrl(buttonContent.url);
+  buttonUrlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      buttonUrlInput.blur();
+    }
+  });
+
+  buttonUrlInput.addEventListener('blur', async () => {
+    urlValidated = false;
+    const url = buttonUrlInput.value.trim();
+    validateForm();
+
+    if (!url) {
+      urlMessage.textContent = 'No URL';
+      applyStatus(urlMessage, 'none');
+      return;
+    }
+
+    const isDuplicate = cbl.cButtons.some(cButton => 
+      cButton.cid !== editingCid && cButton.url === url
+    );
+    if (isDuplicate) {
+      urlMessage.textContent = '✗ URL already used';
+      applyStatus(urlMessage, 'error');
+      return;
+    }
+
+    if (!isValidUrl(url)) {
+      urlMessage.textContent = '✗ Invalid URL';
+      applyStatus(urlMessage, 'error');
+      return;
+    }
+
+    urlMessage.textContent = 'Checking URL...';
+    applyStatus(urlMessage, 'none');
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+      clearTimeout(timeout);
+      urlMessage.textContent = '✓ Valid URL';
+      applyStatus(urlMessage, 'valid');
+      urlValidated = true;
+    } catch (error) {
+      urlMessage.textContent = '⚠ URL unreachable';
+      applyStatus(urlMessage, 'warning');
+      urlValidated = true;
+    }
     
-    editorCreate.disabled = !(hasImage && hasTitle && hasValidUrl);
+    validateForm();
+  });
+
+  sameTabCheckbox && sameTabCheckbox.addEventListener('change', () => {
+    buttonContent.param = sameTabCheckbox.checked ? 'self' : undefined;
+    validateForm();
+  });
+
+  async function validateForm() {
+    const hasImage = imageValidated && buttonContent.image.length > 0 && (buttonContent.image.startsWith('data:image/') || await isImageUrlCT(buttonContent.image));
+    const hasTitle = buttonContent.title.length > 0 && buttonContent.title.length <= 15;
+    const hasValidUrl = urlValidated && buttonContent.url.length > 0;
+    
+    const hasDuplicateName = cbl.cButtons.some(cButton => 
+      cButton.cid !== editingCid && cButton.name === buttonContent.title
+    );
+    const hasDuplicateUrl = cbl.cButtons.some(cButton => 
+      cButton.cid !== editingCid && cButton.url === buttonContent.url
+    );
+    
+    let hasChanges = true;
+    if (editingCid !== null) {hasChanges = buttonContent.image !== originalContent.image || buttonContent.title !== originalContent.title || buttonContent.url !== originalContent.url || buttonContent.param !== originalContent.param;}
+    
+    editorApply.disabled = !(hasImage && hasTitle && hasValidUrl && hasChanges && !hasDuplicateName && !hasDuplicateUrl);
   }
 
   function isValidUrl(url) {
@@ -1398,27 +2106,116 @@
     }
   }
 
-  editorCancel.addEventListener('click', closeCustomButtonEditor);
+  function isImageUrl(url) {
+    const urlPath = url.split('?')[0];
+    return(urlPath.match(/\.(jpeg|jpg|png|svg|webp|bmp|tiff|ico|avif)$/i) != null) && isValidUrl(url);
+  }
 
-  editorCreate.addEventListener('click', () => {
-    const hasImage = buttonContent.image.length > 0 && buttonContent.image.startsWith('data:image/');
-    const hasTitle = buttonContent.title.length > 0 && buttonContent.title.length <= 15;
-    const hasValidUrl = isValidUrl(buttonContent.url);
-    if (editorCreate.disabled || !(hasImage && hasTitle && hasValidUrl)) return;
-    const newButton = {
-      name: buttonContent.title,
-      icon: buttonContent.image,
-      url: buttonContent.url
-    };
+  async function isImageUrlCT(url) {
+    if (!isValidUrl(url)) return false;
+    if (url.startsWith('data:image/')) {return !url.startsWith('data:image/gif');}
+    if (url.startsWith('/')) {return isImageUrl(url);}
     
-    updateCLS(true, newButton);
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      const contentType = response.headers.get('content-type');
+      if (!contentType) {return isImageUrl(url);}
+      return contentType.startsWith('image/') && !contentType.startsWith('image/gif');
+    } catch (error) {
+      return isImageUrl(url);
+    }
+  }
 
-    closeCustomButtonEditor();
+  editorCancel.addEventListener('click', closeCBE);
+
+  editorDelete.addEventListener('click', () => {
+    if (!deleteConfirmMode) {
+      deleteConfirmMode = true;
+      editorDelete.classList.add('delete-mode');
+      setTimeout(() => {
+        document.addEventListener('mousedown', cancelDelete);
+      }, 0);
+    } else {
+      deleteConfirmMode = false;
+      updateCLS(false, { cid: editingCid });
+      closeCBE();
+    }
   });
 
-  function updateCLS(add, { cid, name, icon, url }) {
+  function cancelDelete(e) {
+    if (!editorDelete.contains(e.target)) {
+      deleteConfirmMode = false;
+      editorDelete.classList.remove('delete-mode');
+      document.removeEventListener('mousedown', cancelDelete);
+    }
+  }
+
+  editorApply.addEventListener('click', async () => {
+    const hasImage = imageValidated && buttonContent.image.length > 0 && (buttonContent.image.startsWith('data:image/') || await isImageUrlCT(buttonContent.image));
+    const hasTitle = buttonContent.title.length > 0 && buttonContent.title.length <= 15;
+    const hasValidUrl = isValidUrl(buttonContent.url);
+    if (editorApply.disabled || !(hasImage && hasTitle && hasValidUrl)) {
+      if (!imageValidated) {
+        fileNameDisplay.textContent = 'Error: Please upload an image or provide a valid image URL.';
+        fileNameDisplay.classList.add('error');
+      }
+      return;
+    }
+
+    if (editingCid !== null) {
+      const updatedButton = {
+        cid: editingCid,
+        name: buttonContent.title,
+        icon: buttonContent.image,
+        url: buttonContent.url,
+        param: buttonContent.param
+      };
+      updateCLS('update', updatedButton);
+    } else {
+      const newButton = {
+        name: buttonContent.title,
+        icon: buttonContent.image,
+        url: buttonContent.url,
+        param: buttonContent.param
+      };
+      updateCLS(true, newButton);
+    }
+
+    closeCBE();
+  });
+
+  async function updateCLS(add, { cid, name, icon, url, param }, silent = false) {
     if (!cbl.cButtons) cbl.cButtons = [];
-    if (add) {
+    if (add === 'update') {
+      if (cid == undefined || typeof Number(cid) != "number") return;
+      if (!name || !icon || !url) return;
+      const idx = cbl.cButtons.findIndex(cButton => cButton.cid === cid);
+      if (idx === -1) return;
+
+      const nE = cbl.cButtons.some(cButton => cButton.cid !== cid && cButton.name === name);
+      const uE = cbl.cButtons.some(cButton => cButton.cid !== cid && cButton.url === url);
+      const iE = cbl.cButtons.some(cButton => cButton.cid !== cid && cButton.icon === icon);
+      if (nE || uE || iE) {
+        const prop = nE ? "name" : uE ? "url" : "icon";
+        alertSystem.callAlert(`Duplicate Button ${prop.charAt(0).toUpperCase()+prop.slice(1)}`, `A button with this ${prop} already exists.\nPlease choose a different ${prop}.`);
+        return;
+      }
+
+      const updated = { ...cbl.cButtons[idx], name, icon, url };
+      if (param === 'self') updated.param = 'self'; else delete updated.param;
+      cbl.cButtons[idx] = updated;
+      
+      if (icon.startsWith('data:image/') || await isImageUrlCT(icon)) {
+        iconDB.set(cid, icon);
+        updated.icon = `idb:${cid}`;
+      }
+      
+      localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
+
+      loadCLS();
+      loadLS();
+      if (!silent) toastSystem.notify('Custom Button Updated', `Changes to "${name}" have been applied.`, { type: 'success', timeout: 2500 });
+    } else if (add) {
       if (!name || !icon || !url) return;
       if (cbl.cButtons.length >= 10) {
         alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of custom buttons (10).\nPlease remove some before adding new ones.");
@@ -1432,51 +2229,133 @@
         alertSystem.callAlert(`Duplicate Button ${prop.charAt(0).toUpperCase()+prop.slice(1)}`, `A button with this ${prop} already exists.\nPlease choose a different ${prop}.`);
         return;
       }
+      
+      const newCid = cbl.cButtons.reduce((max, cButton) => Math.max(max, cButton.cid || 0), -1) + 1;
       let buttonData = {
         name,
         icon,
         url,
-        cid: cbl.cButtons.reduce((max, cButton) => Math.max(max, cButton.cid || 0), -1) + 1
+        cid: newCid
       };
+      if (param === 'self') buttonData.param = 'self';
+
+      if (icon.startsWith('data:image/') || await isImageUrlCT(icon)) {
+        iconDB.set(newCid, icon);
+        buttonData.icon = `idb:${newCid}`;
+      }
 
       cbl.cButtons.push(buttonData);
-      localStorage.setItem("custombuttonlist", JSON.stringify(cbl));
+      localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
+
+      try {
+        const changeRecord = { cbl: true, created: true, cid: newCid, name, icon: buttonData.icon, url, param: buttonData.param };
+        changes.push(changeRecord);
+      } catch {}
+
       loadCLS();
+      if (!silent) toastSystem.notify('Custom Button Created', `A new custom button "${name}" has been added.`, { type: 'success', timeout: 2500 });
     } else {
       if (cid == undefined || typeof Number(cid) != "number") return;
+      const deletedDef = cbl.cButtons.find(cButton => cButton.cid === cid);
+      const removedFromLayout = [];
+      const toRemoveDetailed = bl.buttons
+        .filter(btn => btn.cid === cid)
+        .map(btn => ({ id: btn.id, name: btn.name, icon: btn.icon, url: btn.url, param: btn.param, pid: btn.pid, cid: btn.cid, popup: btn.popup }))
+        .sort((a, b) => b.id - a.id);
+      toRemoveDetailed.forEach(item => {
+        removedFromLayout.push(item.name || "Custom Button");
+        updateLS(false, { id: item.id }, true);
+      });
+
+      let idbIcon = null;
+      if (deletedDef && typeof deletedDef.icon === 'string' && deletedDef.icon.startsWith('idb:')) {
+        try { idbIcon = await iconDB.get(cid); } catch {}
+      }
       cbl.cButtons = cbl.cButtons.filter(cButton => cButton.cid !== cid);
-      changes = changes.filter(change => change.cid !== cid);
-      localStorage.setItem("custombuttonlist", JSON.stringify(cbl));
+
+      const affected = cbl.cButtons.filter(cb => cb.cid > cid).sort((a,b)=> a.cid - b.cid);
+      for (const cb of affected) {
+        const oldCid = cb.cid;
+        const newCid = oldCid - 1;
+        cb.cid = newCid;
+        if (typeof cb.icon === 'string' && cb.icon.startsWith('idb:')) {
+          cb.icon = `idb:${newCid}`;
+        }
+        try { await iconDB.move(oldCid, newCid); } catch {}
+      }
+
+      bl.buttons.forEach(btn => {
+        if (typeof btn.cid === 'number' && btn.cid > cid) {
+          btn.cid = btn.cid - 1;
+          if (typeof btn.icon === 'string' && btn.icon.startsWith('idb:')) {
+            try {
+              const oldCid = parseInt(btn.icon.slice(4), 10);
+              if (!Number.isNaN(oldCid) && oldCid > cid) btn.icon = `idb:${oldCid - 1}`;
+            } catch {}
+          }
+        }
+      });
+      localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
+      localStorageQueue.add("buttonlayout", JSON.stringify(bl));
+
+      if (!silent && deletedDef) {
+        const changeRecord = { cbl: true, a: false, cid: deletedDef.cid, name: deletedDef.name, icon: deletedDef.icon, url: deletedDef.url, param: deletedDef.param, removedLayout: toRemoveDetailed.map(r=>({ ...r })) };
+        if (idbIcon) changeRecord.idbIcon = idbIcon;
+        changes.push(changeRecord);
+      }
+      localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
+
+      if (removedFromLayout.length) {
+        const uniqueNames = [...new Set(removedFromLayout)].slice(0, 3);
+        const more = removedFromLayout.length - uniqueNames.length;
+        const listText = uniqueNames.join(', ') + (more > 0 ? ` +${more} more` : '');
+        toastSystem.notify(
+          'Buttons Removed from Layout',
+          `A custom button was removed. ${removedFromLayout.length === 1 ? 'Its layout instance has' : `${removedFromLayout.length} layout instances (${listText}) have`} been removed.`,
+          { type: 'warning', timeout: 5000 }
+        );
+      }
+
       loadCLS();
       loadLS();
+      if (!silent) toastSystem.notify('Custom Button Removed', `The custom button "${deletedDef.name}" has been removed.`, { type: 'success', timeout: 2500 });
     }
   };
 
-  function loadCLS() {
+  async function loadCLS() {
     if (!cbl || !cbl.cButtons) return;
     let cButtons = cbl.cButtons;
     if (cButtons.length >= 10) cButtons.length = 10;
-    cButtons.forEach((cButton) => {
-      if (typeof cButton.cid !== 'number' || typeof cButton.name !== 'string' || cButton.name.length === 0 || cButton.name.length > 15 || !isValidUrl(cButton.url) || !cButton.icon.startsWith('data:image/')) {
+    await Promise.all(cButtons.map(async (cButton) => {
+      const isValidIcon = (cButton.icon.startsWith('idb:') && cButton.icon.slice(4) == cButton.cid) || cButton.icon.startsWith('data:image/') || await isImageUrlCT(cButton.icon);
+      if (typeof cButton.cid !== 'number' || typeof cButton.name !== 'string' || cButton.name.length === 0 || cButton.name.length > 15 || !isValidUrl(cButton.url) || !isValidIcon) {
         cButton.tagged = true;
       }
-    });
+    }));
     cButtons = cButtons.filter(cButton => !cButton.tagged);
+    const usedCids = cButtons.map(cb => cb.cid);
+    iconDB.deleteUnused(usedCids);
     cbl.cButtons = cButtons;
-    localStorage.setItem("custombuttonlist", JSON.stringify(cbl));
+    localStorageQueue.add("custombuttonlist", JSON.stringify(cbl));
 
     const customBtn = cButtonContainer.querySelector('.drawer-custom-btn');
     cButtonContainer.innerHTML = '';
     cButtonContainer.appendChild(customBtn);
-    
-    cButtons.forEach((cButton) => {
+    Promise.all(cButtons.map((cButton)=> new Promise(async (resolve, reject)=>{
       const cBtnElem = document.createElement('div');
       cBtnElem.classList.add("drawer-card");
       cBtnElem.setAttribute("draggable", "true");
       bl.buttons.length >= 25 ? cBtnElem.classList.add('locked') : null;
       cBtnElem.dataset.href = cButton.url;
       cBtnElem.dataset.cid = cButton.cid;
-      cBtnElem.innerHTML = `<img src="${cButton.icon}" alt="${cButton.name} Icon"><div class="overlay" style="padding: 5px;bottom: -8%;"><p>${cButton.name}</p></div><div class="locked-overlay"><i class="fa-solid fa-lock"></i></div>`;
+
+      let resolvedIcon = cButton.icon;
+      if (cButton.icon.startsWith('idb:')) {
+        const idbIcon = await iconDB.get(cButton.cid);
+        if (idbIcon) resolvedIcon = idbIcon;
+      }
+      
+      cBtnElem.innerHTML = `<img src="${resolvedIcon}" alt="${cButton.name} Icon" onerror="this.src='/images/icons/Unknown.webp'"><div class="overlay" style="padding: 5px;bottom: -8%;"><p>${cButton.name}</p></div><div class="locked-overlay"><i class="fa-solid fa-lock"></i></div>`;
       let clickAllowed = true;
 
       const presetData = {
@@ -1485,6 +2364,7 @@
         url: cButton.url,
         cid: cButton.cid
       };
+      if (cButton.param != undefined) presetData.param = cButton.param;
 
       cBtnElem.addEventListener('mousedown', (e) => {
         if (e.button == 0 || e.button == 1) {
@@ -1494,41 +2374,20 @@
       cBtnElem.addEventListener('mouseup', (e) => {
         if ((e.button == 0 || e.button == 1) && clickAllowed && !(cBtnElem.dragging || cBtnElem.classList.contains("dragging"))) {
           e.preventDefault();
-          if (cBtnElem.classList.contains('delete-mode')) {
-            const cid = cButton.cid;
-            updateCLS(false, { cid });
-            loadCLS();
-          } else {
-            document.querySelectorAll('.drawer-card.delete-mode').forEach(card => {
-              card.classList.remove('delete-mode');
-              setTimeout(() => {
-                if (card.classList.contains("delete-mode")) return;
-                card.querySelector('.locked-overlay i').classList.remove('fa-trash');
-                card.querySelector('.locked-overlay i').classList.add('fa-lock');
-              }, card.classList.contains("locked") ? 0 : 400);
-            });
-            
-            cBtnElem.classList.add('delete-mode');
-            cBtnElem.querySelector('.locked-overlay i').classList.add('fa-trash');
-            cBtnElem.querySelector('.locked-overlay i').classList.remove('fa-lock');
-            setTimeout(() => {
-              document.addEventListener('mousedown', removeDeleteMode);
-            }, 0);
+          if (e.ctrlKey || e.metaKey) {
+            e.stopPropagation();
+            openCBE(cButton);
+            return false;
           }
+          if (bl.buttons.length >= 25) {
+            alertSystem.callAlert("Button Limit Reached", "You have reached the maximum amount of buttons (25).\nPlease remove some before adding new ones.");
+            return;
+          }
+          updateLS(true, presetData);
+          
+          loadLS();
         }
       });
-
-      function removeDeleteMode(e) {
-        if (!cBtnElem.contains(e.target)) {
-          cBtnElem.classList.remove('delete-mode');
-          setTimeout(() => {
-            if (cBtnElem.classList.contains("delete-mode")) return;
-            cBtnElem.querySelector('.locked-overlay i').classList.remove('fa-trash');
-            cBtnElem.querySelector('.locked-overlay i').classList.add('fa-lock');
-          }, cBtnElem.classList.contains("locked") ? 0 : 400);
-          document.removeEventListener('mousedown', removeDeleteMode);
-        }
-      }
       
       cBtnElem.addEventListener('dragstart', (e) => {
         if (cBtnElem.classList.contains('locked') || cBtnElem.classList.contains('delete-mode')) {
@@ -1543,9 +2402,12 @@
       });
       
       cButtonContainer.appendChild(cBtnElem);
+      resolve();
+    }))).then(() => {
+      cButtonContainer.appendChild(customBtn);
     });
 
-    cButtonContainer.appendChild(customBtn);
+    
 
     let isDragging = false;
     let dragGhost = null;
@@ -1561,7 +2423,7 @@
         return;
       }
       
-      cardsContainer.classList.add('dragging-active');
+      cardsContainer.classList.add('dragging-active', 'insert');
       
       dragGhost = presetEl.cloneNode(true);
       dragGhost.classList.add('drag-ghost');
@@ -1675,7 +2537,7 @@
         card.classList.remove('dragging');
         card.dragging = false;
       });
-      cardsContainer.classList.remove('dragging-active');
+      cardsContainer.classList.remove('dragging-active', 'insert');
       
       $drag.el = null;
       $drag.id = null;
