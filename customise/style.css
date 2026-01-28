@@ -87,11 +87,15 @@ a {
   100% { transform: translateY(0) scale(1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); filter: brightness(1); }
 }
 .card img {
-  width: 100%;
-  height: 100%;
+  width: 75%;
+  height: 75%;
   object-fit: cover;
-  border-radius: 20px;
-  transform: scale(0.8) translateY(-20px);
+  border-radius: 8px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: top left;
+  transform: scale(0.8) translate(-50%, calc(-50% - 20px));
   pointer-events: none;
 }
 .card.clicked {
@@ -184,8 +188,8 @@ h1 {
   margin: 0;
 }
 .header-img {
-  width: 100px;
-  height: 100px;
+  width: 75px;
+  height: 75px;
   object-fit: cover;
   border-radius: 50%;
 }
@@ -473,10 +477,10 @@ h1 {
   box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.4);
 }
 .drawer-card img, .drawer-custom-btn img {
-  width: 65%;
-  height: 65%;
+  width: 48.75%;
+  height: 48.75%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 4px;
   pointer-events: none;
   transform: translateY(-10px);
 }
@@ -1216,10 +1220,15 @@ h1 {
   background-size: 20px 20px;
 }
 .preview-card img {
-  width: 100%;
-  height: 100%;
+  width: 75%;
+  height: 75%;
   object-fit: cover;
-  border-radius: 20px;
+  border-radius: 8px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: top left;
+  transform: translate(-50%, -50%);
   transition: transform 0.4s ease, filter 0.4s ease;
 }
 .preview-card:hover, .preview-card:focus {
@@ -1227,7 +1236,7 @@ h1 {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
 }
 .preview-card:hover img, .preview-card:focus img {
-  transform: scale(0.8) translateY(-20px);
+  transform: scale(0.8) translate(-50%, calc(-50% - 20px));
   filter: brightness(1.1);
 }
 .preview-card:hover .overlay, .preview-card:focus .overlay {

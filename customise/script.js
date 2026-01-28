@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.2.0";
+  const version = "v2.3.0";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -1091,6 +1091,7 @@
           const presetElem = document.createElement('div');
           presetElem.classList.add("drawer-card");
           presetElem.setAttribute("draggable", "true");
+          presetElem.setAttribute("title", preset.name);
           bl.buttons.length >= 25 ? presetElem.classList.add('locked') : null;
           presetElem.dataset.href = preset.url;
           presetElem.dataset.pid = preset.pid;
@@ -1680,6 +1681,22 @@
   let editingCid = null;
   let deleteConfirmMode = false;
 
+  function setFieldEnabled(el, enabled) {
+    if (!el) return;
+    try {
+      if ('disabled' in el) el.disabled = !enabled;
+      if (enabled) {
+        el.removeAttribute('aria-disabled');
+        if (el.getAttribute('tabindex') === '-1') el.removeAttribute('tabindex');
+        delete el.dataset.disabled;
+      } else {
+        el.setAttribute('aria-disabled', 'true');
+        el.setAttribute('tabindex', '-1');
+        el.dataset.disabled = 'true';
+      }
+      if (el.style) el.style.pointerEvents = enabled ? '' : 'none';
+    } catch (e) {}
+  }
   function setImageToggle(mode) {
     const isUpload = mode === 'upload';
     const isUrl = mode === 'url';
@@ -1687,6 +1704,20 @@
     imageToggle.classList.toggle('expanded-url', isUrl);
     uploadButton.innerText = (isUpload || isUrl) ? 'Change Image' : 'Upload Image';
     clearImageBtn.classList.toggle('hide', mode === 'none');
+
+    if (mode === 'none') {
+      setFieldEnabled(fileInput, true);
+      setFieldEnabled(uploadButton, true);
+      setFieldEnabled(urlInput, true);
+      setFieldEnabled(clearImageBtn, false);
+      return;
+    }
+
+    setFieldEnabled(fileInput, isUpload);
+    setFieldEnabled(uploadButton, isUpload);
+
+    setFieldEnabled(urlInput, isUrl);
+    setFieldEnabled(clearImageBtn, mode !== 'none');
   }
 
   function applyStatus(el, state) {
@@ -1792,10 +1823,12 @@
   }
 
   uploadButton.addEventListener('click', () => {
+    if (uploadButton.dataset.disabled === 'true' || uploadButton.disabled) return;
     fileInput.click();
   });
 
   clearImageBtn.addEventListener('click', () => {
+    if (clearImageBtn.dataset.disabled === 'true' || clearImageBtn.disabled) return;
     fileInput.value = '';
     urlInput.value = '';
     previewImg.src = '/images/icons/Unknown.webp';
@@ -1808,6 +1841,7 @@
   });
 
   fileInput.addEventListener('change', (e) => {
+    if (fileInput.dataset.disabled === 'true' || fileInput.disabled) return;
     const file = e.target.files[0];
     if (!file) return;
 
@@ -1891,6 +1925,7 @@
   });
 
   urlInput.addEventListener('input', () => {
+    if (urlInput.dataset.disabled === 'true' || urlInput.disabled) return;
     if (!urlInput.value.trim()) {
       previewImg.src = '/images/icons/Unknown.webp';
       fileNameDisplay.textContent = 'No file chosen';
@@ -1904,6 +1939,7 @@
   });
 
   urlInput.addEventListener('keydown', (e) => {
+    if (urlInput.dataset.disabled === 'true' || urlInput.disabled) return;
     if (e.key === 'Enter') {
       e.preventDefault();
       urlInput.blur();
@@ -1911,6 +1947,7 @@
   });
 
   urlInput.addEventListener('blur', async () => {
+    if (urlInput.dataset.disabled === 'true' || urlInput.disabled) return;
     const url = urlInput.value.trim();
     imageValidated = false;
     validateForm();

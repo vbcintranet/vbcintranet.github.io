@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.2.0";
+  const version = "v2.3.0";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -290,7 +290,7 @@
     isOnline = false;
     document.getElementById('no-internet').style.display = 'flex';
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-caret-right"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+      document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-arrow-right-to-line"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
       last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
       document.getElementById('sp-err').style.display = 'flex';
       document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
@@ -488,7 +488,7 @@
       }
 
       if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-caret-right"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
+        document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-arrow-right-to-line"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDate(last_events.timeChecked)}</p>`;
         last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
         document.getElementById('sp-err').style.display = 'flex';
         document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDate(last_events.timeChecked)}.</div>`;
@@ -501,7 +501,7 @@
         })
         events.joined.forEach(e=>{
           var sp_class = document.createElement('div')
-          sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-caret-right" style="margin-left: 14.39px;"></i>` : `<i style="margin-left: 24px;"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
+          sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-arrow-right-to-line"></i>` : `<i class="fa-solid fa-arrow-right-to-dotted-line"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
           sp_class.classList.add('sneakpeek-card');
           document.getElementById('sp-c').appendChild(sp_class);
         })
@@ -690,7 +690,7 @@
         }
         
         if ((events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime())) {
-          document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-caret-right"></i> ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`;
+          document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-arrow-right-to-line"></i> ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`;
           document.getElementById("classSync").parentElement.classList.remove('cs-icon');
           document.getElementById('sp-err').style.display = 'none';
           document.getElementById('sp-nc').style.display = 'none';
@@ -701,7 +701,7 @@
           })
           events.joined.forEach(e=>{
             var sp_class = document.createElement('div')
-            sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-caret-right" style="margin-left: 14.39px;"></i>` : `<i style="margin-left: 24px;"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
+            sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-arrow-right-to-line"></i>` : `<i class="fa-solid fa-arrow-right-to-dotted-line"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
             sp_class.classList.add('sneakpeek-card');
             document.getElementById('sp-c').appendChild(sp_class);
           })
@@ -718,7 +718,7 @@
           })
           events.joined.forEach(e=>{
             var sp_class = document.createElement('div')
-            sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-caret-right" style="margin-left: 14.39px;"></i>` : `<i style="margin-left: 24px;"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
+            sp_class.innerHTML = `<div class="spt">${e.now ? `<i class="fa-solid fa-chalkboard-user"></i>` : e.next ? `<i class="fa-solid fa-arrow-right-to-line"></i>` : `<i class="fa-solid fa-arrow-right-to-dotted-line"></i>`} ${e.summary}</div><div class="sptl">${e.location?`<i class="fa-solid fa-location-dot"></i> ${e.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}${e.split ? ` (split at ${parseDate(e.splitTime)})` : ``}</div>`;
             sp_class.classList.add('sneakpeek-card');
             document.getElementById('sp-c').appendChild(sp_class);
           })

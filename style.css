@@ -54,10 +54,15 @@ a {
   background-size: 20px 20px;
 }
 .card img {
-  width: 100%;
-  height: 100%;
+  width: 75%;
+  height: 75%;
   object-fit: cover;
-  border-radius: 20px;
+  border-radius: 8px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: top left;
+  transform: translate(-50%, -50%);
   transition: transform 0.4s ease, filter 0.4s ease;
 }
 .card:hover, .card:focus {
@@ -65,7 +70,7 @@ a {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
 }
 .card:hover img, .card:focus img {
-  transform: scale(0.8) translateY(-20px);
+  transform: scale(0.8) translate(-50%, calc(-50% - 20px));
   filter: brightness(1.1);
 }
 .card.clicked {
@@ -136,8 +141,8 @@ h1 {
   margin: 0;
 }
 .header-img {
-  width: 100px;
-  height: 100px;
+  width: 75px;
+  height: 75px;
   object-fit: cover;
   border-radius: 50%;
 }
@@ -691,7 +696,6 @@ button:hover {
   position: relative;
   margin: 5px;
   width: 90%;
-  overflow: hidden;
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
   backdrop-filter: blur(10px);
@@ -701,13 +705,14 @@ button:hover {
   background-image: var(--bkg);
   background-size: 20px 20px;
   text-align: left;
-  padding-left: 15px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  padding-right: 15px;
+  padding: 12px 15px;
   min-height: 40px;
-  align-items: center;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 
+    "title title"
+    "time location";
+  gap: 8px 12px;
 }
 #sp-err {
   filter: sepia(1);
@@ -715,18 +720,29 @@ button:hover {
 .sneakpeek-card .spt, #sp-nc .spt, #sp-err .spt {
   font-size: larger;
   font-weight: bold;
+  grid-area: title;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-wrap: break-word;
+  line-height: 1.3;
 }
 .sneakpeek-card .sptl {
-  font-size: large;
-  position: absolute;
-  right: 10px;
-  top: 10px;
+  font-size: medium;
+  grid-area: location;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  justify-self: end;
+  text-align: right;
 }
 .sneakpeek-card .spti, #sp-nc .spti, #sp-err .spti {
   font-size: small;
-  position: absolute;
-  right: 10px;
-  bottom: 5px;
+  grid-area: time;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .sneakpeek-close {
   cursor: pointer;
@@ -745,6 +761,9 @@ button:hover {
 }
 #header-classSync p {
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 #header-classSync:not(.cs-icon) {
   min-width: 120px;
