@@ -16,8 +16,7 @@
         {"name":"Trello","icon":"/images/icons/Trello.webp","url":"https://trello.com/login?returnUrl=%2F/","pid":2},
         {"name":"On Demand Testing","icon":"/images/icons/OnDemand.webp","url":"http://10.166.65.23/","pid":12},
         {"name":"Teams","icon":"/images/icons/MicrosoftTeams.webp","url":"msteams://open","param":"self","pid":14},
-        {"name":"Guides","icon":"/images/icons/Guides.webp","url":"/guides","pid":20},
-        {"name":"OneDrive (Legacy)","icon":"/images/icons/OneDrive_Legacy.webp","url":"https://viewbankcollege-my.sharepoint.com/","popup":{"show":true,"title":"This service is being retired","msg":"Please migrate to the EduVic OneDrive by the 16th of February, 2026. Use the non-legacy OneDrive button and sign in with your eduPass (@schools.vic.edu.au) credentials."},"pid":23}
+        {"name":"Guides","icon":"/images/icons/Guides.webp","url":"/guides","pid":20}
     ],
     "all":[
         {"name":"Compass","icon":"/images/icons/Compass.webp","url":"http://viewbank-vic.compass.education/","pid":0},
@@ -41,7 +40,6 @@
         {"name":"Guides","icon":"/images/icons/Guides.webp","url":"/guides","pid":20},
         {"name":"Blooket","icon":"/images/icons/Blooket.webp","url":"https://play.blooket.com/play","pid":21},
         {"name":"Gale OneFile","icon":"/images/icons/GaleOneFile.webp","url":"https://link.gale.com/apps/EANZ?u=61viewbank","pid":22},
-        {"name":"OneDrive (Legacy)","icon":"/images/icons/OneDrive_Legacy.webp","url":"https://viewbankcollege-my.sharepoint.com/","popup":{"show":true,"title":"This service is being retired","msg":"Please migrate to the EduVic OneDrive by the 16th of February, 2026. Use the non-legacy OneDrive button and sign in with your eduPass (@schools.vic.edu.au) credentials."},"pid":23},
         {"name":"JacPLUS","icon":"/images/icons/JacPLUS.webp","url":"https://api.jacplus.com.au/ui/bookshelf","pid":24}
     ]
 }
