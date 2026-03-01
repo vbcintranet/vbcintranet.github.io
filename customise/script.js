@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.3.0";
+  const version = "v2.4.0";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -147,8 +147,8 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-      pageLayout.classList.remove('hide');
-      document.querySelector('.content-blur').classList.remove('show');
+      document.documentElement.removeAttribute('data-anim-enter');
+      location.hash = '';
       setTimeout(() => { document.querySelector('.content-blur').remove(); }, 500);
       try {
         const isMac = /Mac/i.test(navigator.platform) || /Mac/i.test(navigator.userAgent);
@@ -163,6 +163,19 @@
       }
     }, 200)
   });
+
+  const ni = document.getElementById('no-internet');
+  function showOfflineIndicator() {
+    ni.style.display = 'flex';
+    setTimeout(() => ni.classList.add('visible'), 10);
+  }
+  if (!navigator.onLine) showOfflineIndicator();
+  window.addEventListener('online', () => {
+    ni.classList.add('reconnected');
+    const steps = [[2000, () => ni.classList.add('hide')], [400, () => { ni.classList.remove('hide', 'reconnected', 'visible'); ni.style.display = ''; }]];
+    steps.reduce((p, [wait, fn]) => p.then(() => new Promise(res => setTimeout(() => { fn(); res(); }, wait))), Promise.resolve());
+  });
+  window.addEventListener('offline', () => { showOfflineIndicator(); });
 
   accept.addEventListener('click', (event) => {
     window.open('/', '_self');

@@ -40,6 +40,7 @@
         {"name":"Guides","icon":"/images/icons/Guides.webp","url":"/guides","pid":20},
         {"name":"Blooket","icon":"/images/icons/Blooket.webp","url":"https://play.blooket.com/play","pid":21},
         {"name":"Gale OneFile","icon":"/images/icons/GaleOneFile.webp","url":"https://link.gale.com/apps/EANZ?u=61viewbank","pid":22},
-        {"name":"JacPLUS","icon":"/images/icons/JacPLUS.webp","url":"https://api.jacplus.com.au/ui/bookshelf","pid":24}
+        {"name":"JacPLUS","icon":"/images/icons/JacPLUS.webp","url":"https://api.jacplus.com.au/ui/bookshelf","pid":24},
+        {"name":"Canva","icon":"/images/icons/Canva.webp","url":"https://www.canva.com/","pid":25}
     ]
 }

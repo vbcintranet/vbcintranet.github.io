@@ -11,16 +11,25 @@ permalink: /customise
   <link href="/customise/style.css" rel="stylesheet" type="text/css" />
   <link href='https://fonts.googleapis.com/css?family=Varela Round' as="style" rel="preload" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="icon" href="/images/Favicon.ico">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css"/>
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css"/>
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css">
+  </noscript>
+  <script>if (location.hash === '#anim') document.documentElement.dataset.animEnter = '';</script>
 </head>
 
 <body>
-  <div class="page-layout hide">
+  <div class="page-layout">
     <div class="drawer-container">
       <div class="drawer-pullout" id="drawer-pullout"><i class="fa-solid fa-arrow-right-to-line"></i></div>
       <div class="drawer-background">
@@ -84,7 +93,7 @@ permalink: /customise
       <div id="cards-error"></div>
     </div>
   </div>
-  <div class="content-blur show"></div>
+  <div class="content-blur"></div>
   <div class="alert-container" style="display: none;">
     <div class="alert-overlay"></div>
     <div class="alert-background">
@@ -141,13 +150,13 @@ permalink: /customise
               <button type="button" class="advanced-toggle"><i class="fa-solid fa-chevron-right"></i><span>Advanced</span></button>
               <div class="advanced-content">
                 <div class="checkbox-row">
-                  <label for="same-tab" class="checkbox-button" title="Useful for application URL protocols (e.g., msteams://, zoommtg://).">
+                  <label for="same-tab" class="checkbox-button" title="Useful for application URL protocols (e.g., msteams://, ms-word://).">
                     <input type="checkbox" id="same-tab" />
                     <span class="checkbox-ui"></span>
                     <span class="checkbox-label">Do not open in a new tab</span>
                   </label>
                 </div>
-                <div class="helper-text">Useful for application URL protocols (e.g., msteams://, zoommtg://)</div>
+                <div class="helper-text">Useful for application URL protocols (e.g., msteams://, ms-word://)</div>
               </div>
             </div>
           </div>
@@ -179,7 +188,16 @@ permalink: /customise
     </div>
   </div>
   <div class="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <div id="no-internet">
+    <div class="ni-offline"><i class="fa-solid fa-wifi-exclamation"></i><span class="ni-label">Offline</span></div>
+    <div class="ni-online"><i class="fa-solid fa-check"></i><span class="ni-label">Back online</span></div>
+  </div>
   <script src="/customise/script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js');
+    }
+  </script>
 </body>
 
 </html>

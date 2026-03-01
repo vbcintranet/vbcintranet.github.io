@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width">
   <title>Viewbank College Intranet</title>
   <meta name="description" content="Welcome to the new Viewbank College Intranet. This intranet page has been completely remade from the ground up, with a new visually appealing design, several new features, and the ability to customise the page. Give it a try!">
+  <meta content="Viewbank College Intranet" property="og:title"/>
   <meta content="Viewbank College Intranet" property="og:site_name"/>
   <meta content="Viewbank College Intranet" property="og:description"/>
   <meta content="https://vbcintranet.github.io/" property="og:url"/>
@@ -29,12 +30,20 @@
   <link href="./style.css" rel="stylesheet" type="text/css" />
   <link href='https://fonts.googleapis.com/css?family=Varela Round' as="style" rel="preload" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="icon" href="./images/Favicon.ico">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css">
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css"/>
-  <link defer rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css"/>
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css">
+  </noscript>
 </head>
 
 <body data-nosnippet>
@@ -63,8 +72,14 @@
     <i class="fa-solid fa-gear"></i>
   </div>
   <div id="no-internet">
-    <i class="no-internet fa-solid fa-wifi-exclamation"></i>
-    <i class="internet-tick fa-solid fa-check"></i>
+    <div class="ni-offline">
+      <i class="fa-solid fa-wifi-exclamation"></i>
+      <span class="ni-label">Offline</span>
+    </div>
+    <div class="ni-online">
+      <i class="fa-solid fa-check"></i>
+      <span class="ni-label">Back online</span>
+    </div>
   </div>
   <div class="search-container" style="display: none;">
     <div class="search-overlay"></div>
@@ -77,8 +92,8 @@
     <div class="alert-background">
       <div class="alert">
         <h1 id="alert-title">Alert</h1>
+        <p id="alert-message">Message</p>
       </div>
-      <p id="alert-message">Message</p>
       <div class="alert-buttons">
         <button id="alert-ok">OK</button>
         <button id="alert-cancel">Cancel</button>
@@ -87,33 +102,58 @@
   </div>
   <div class="sneakpeek-container" style="display: none;">
     <div class="sneakpeek-overlay"></div>
-    <div class="sneakpeek-background">
-      <div class="sneakpeek-content">
-        <h3 id="sneakpeek-close" class="sneakpeek-close">X</h3>
-        <h1>SneakPeek</h1>
-        <div class="sneakpeek-cards" id="sp-c">
-          <div id="sp-err"></div>
-          <div id="sp-nc"></div>
+    <div class="sneakpeek-stage">
+      <div class="sneakpeek-map-panel" aria-label="School map">
+        <div id="sp-map" class="sneakpeek-map"></div>
+        <div class="room-popover" id="sp-room-popover" data-open="false">
+          <div class="room-popover-arrow"></div>
+          <div class="room-popover-content">
+            <div class="room-popover-title" id="sp-room-title">Select a room</div>
+            <div class="room-popover-classes" id="sp-room-classes">
+              <div class="room-empty">No classes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sneakpeek-background">
+        <div class="sneakpeek-content">
+          <div class="sneakpeek-header">
+            <h1>SneakPeek</h1>
+            <div class="sneakpeek-header-actions">
+              <button id="sp-filter-btn" class="sp-filter-btn" title="Show only today's classes" style="display: none;">
+                <i class="fa-solid fa-map"></i>
+              </button>
+              <button id="sneakpeek-close" class="sneakpeek-close modal-close-btn" type="button" aria-label="Close SneakPeek" title="Close SneakPeek">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+          <div class="sneakpeek-cards" id="sp-c">
+            <div id="sp-err"></div>
+            <div id="sp-nc"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
   <div class="settings-container" style="display: none;">
     <div class="settings-overlay"></div>
-    <div class="settings-background">
-      <h3 id="settings-close" class="settings-close">X</h3>
+    <div class="settings-background" data-nosnippet>
+      <button id="settings-close" class="settings-close modal-close-btn" type="button" aria-label="Close settings" title="Close settings">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
       <h1>Settings</h1>
-      <div class="settings-group">
-        <h3>ClassSync</h3>
+      <div class="settings-group" data-nosnippet>
+        <h2>ClassSync</h2>
         <div class="settings-active" id="classSyncActive">✗ Not Active</div>
-        <p data-nosnippet>Introducing <em>ClassSync</em>, the system that seamlessly integrates your class schedule into the <em>redesigned</em> Viewbank College Intranet.<br><br>When enabled, your next class will be displayed at the top of the page. Clicking on it brings up <em>SneakPeek</em>, where you can see all current and upcoming classes throughout the day.<br>All done without having to leave the intranet page.<br><br>For detailed instructions, please visit the <u><b><a href="/tutorials/ClassSync.pdf" target="_blank">ClassSync guide</a></b></u>.</p>
+        <p data-nosnippet><em>ClassSync</em> seamlessly integrates your class schedule with the <em>redesigned</em> Viewbank College Intranet. When enabled, your next class will be displayed at the top of the page. Click it to open <span class="sp-qmark"><em>SneakPeek</em> <i class="fa-regular fa-circle-question"></i><span class="sp-tooltip" data-nosnippet><em>SneakPeek</em> is a view consisting of the school map and your class list side by side. The class list shows you all current and upcoming classes for that day. Click a class in the list to highlight its room(s) on the map, or click a room on the map to see your classes there. There is also a button at the top to highlight all of your classes for that day on the map.</span></span> for a full overview of the day.<br><br>For detailed instructions, see the <u><b><a href="/tutorials/ClassSync.pdf" target="_blank">ClassSync guide</a></b></u>.</p>
         <input type="text" autocomplete="off" autocapitalize="off" id="cal-input" placeholder="https://viewbank-vic.compass.education/download/sharedCalendar.aspx?uid=..."></input>
         <button type="submit" id="cal-submit">Submit</button>
         <button type="submit" id="cal-deactivate">Deactivate</button>
         <p id="cal-incorrect"></p>
       </div>
       <div class="settings-group">
-        <h3>Customise</h3>
+        <h2>Customise</h2>
         <p data-nosnippet>Customise the way the <em>redesigned</em> Viewbank College Intranet looks. Add, move, and delete buttons to personalise the page.</p>
         <button type="submit" id="customise-page">Visit Customisation Centre</button>
       </div>
@@ -124,13 +164,20 @@
     <div class="nb-background">
       <div class="alert">
         <h1 id="nb-title">New Buttons Available</h1>
+        <div class="nb-cards"></div>
+        <p id="nb-message"></p>
       </div>
-      <div class="nb-cards"></div>
-      <p id="nb-message"></p>
-      <button id="nb-ok">OK</button>
+      <div class="alert-buttons">
+        <button id="nb-ok">OK</button>
+      </div>
     </div>
   </div>
   <script src="./script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js');
+    }
+  </script>
 </body>
 
 </html>
