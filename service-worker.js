@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vbc-intranet-v2.4.1';
+const CACHE_NAME = 'vbc-intranet-v2.4.2';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -69,7 +69,7 @@ function cacheKey(url) {
   return u.href;
 }
 
-// On fetch: stale-while-revalidate for def, cache-first for same-origin, network-first for cross-origin
+// On fetch: stale-while-revalidate for same-origin, network-first for cross-origin
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
@@ -78,32 +78,19 @@ self.addEventListener('fetch', event => {
 
   if (url.hostname === 'viewbank-vic.compass.education' && url.pathname.startsWith('/download/sharedCalendar.aspx')) return;
 
-  if (url.origin === self.location.origin && url.pathname === '/def/def.json') {
+  if (url.origin === self.location.origin) {
+    const key = cacheKey(request.url);
     event.respondWith(
       caches.open(CACHE_NAME).then(cache => {
-        return cache.match(request).then(cached => {
+        return cache.match(key).then(cached => {
           const fetchPromise = fetch(request).then(response => {
             if (response.ok) {
-              cache.put(request, response.clone());
+              cache.put(key, response.clone());
             }
             return response;
           });
           
           return cached || fetchPromise;
-        });
-      })
-    );
-  } else if (url.origin === self.location.origin) {
-    const key = cacheKey(request.url);
-    event.respondWith(
-      caches.match(key).then(cached => {
-        if (cached) return cached;
-        return fetch(request).then(response => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(key, clone));
-          }
-          return response;
         });
       })
     );
