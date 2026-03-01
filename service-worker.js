@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vbc-intranet-v2.4.0';
+const CACHE_NAME = 'vbc-intranet-v2.4.1';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -6,7 +6,7 @@ const PRECACHE_ASSETS = [
   '/style.css',
   '/script.js',
   '/def/def.json',
-  '/def/map.html',
+  '/def/map.svg',
   '/images/Favicon.ico',
   '/images/Favicon.webp',
   '/fonts/arialroundedmtbold.ttf',

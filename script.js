@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.0";
+  const version = "v2.4.1";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -1303,7 +1303,7 @@
     }
     
     try {
-      const res = await fetch('./def/map.html');
+      const res = await fetch('./def/map.svg');
       if (!res.ok) throw new Error('Map failed to load');
       mapContainer.innerHTML = (await res.text()).replace(/<\?xml[^>]*\?>\s*/i, '');
       const svg = state.svg = mapContainer.querySelector('svg');
