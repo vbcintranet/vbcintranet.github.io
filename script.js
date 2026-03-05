@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.3";
+  const version = "v2.4.4";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -1271,9 +1271,8 @@
       state.panY = clamp(state.panY, h - sh, 0);
     }
     
-    const updateMap = (smooth = false) => {
+    const updateMap = () => {
       if (state.svg) {
-        state.svg.classList.toggle('smooth', smooth);
         state.svg.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
         state.svg.style.transformOrigin = '0 0';
       }
@@ -1281,8 +1280,7 @@
     
     const reset = () => {
       state.zoom = 1; state.panX = 0; state.panY = 0;
-      updateMap(true);
-      setTimeout(() => state.svg?.classList.remove('smooth'), 300);
+      updateMap();
     };
     spMapReset = reset;
     

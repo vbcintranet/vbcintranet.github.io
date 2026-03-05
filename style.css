@@ -832,9 +832,6 @@ button:hover {
   width: 100%;
   height: 100%;
   display: block;
-  transition: none;
-}
-.sneakpeek-map svg.smooth {
   transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .sp-map-controls {
