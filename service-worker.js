@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vbc-intranet-v2.4.4';
+const CACHE_NAME = 'vbc-intranet-v2.4.5';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -75,6 +75,8 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') return;
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
   if (url.hostname === 'viewbank-vic.compass.education' && url.pathname.startsWith('/download/sharedCalendar.aspx')) return;
 

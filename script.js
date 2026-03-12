@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.4";
+  const version = "v2.4.5";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -886,7 +886,7 @@
   let spHighlightedRooms = new Set();
   let spRoomToClasses = {};
   let spMapReset = null;
-  const spKnownRooms = ['LIB', 'WBC', 'VCEC', 'GYM', 'A09', 'A08', 'A07', 'A05', 'A04', 'A03', 'A02', 'A01', 'C07', 'C06', 'C05', 'C04', 'C03', 'C02', 'C01', 'G13', 'G12', 'G11', 'G10', 'G09', 'G08', 'G07', 'G06', 'G05', 'G04', 'G03', 'G02', 'G01', 'GM7', 'GM6', 'GM5', 'GM4', 'GM3', 'GM2', 'GM1', 'J12', 'J11', 'J10', 'J09', 'J08', 'J07', 'J06', 'J05', 'J04', 'J03', 'J02', 'J01', 'PAC', 'MPR', 'THT', 'R26', 'R25', 'R24', 'R23', 'R22', 'R21', 'R20', 'R19', 'R18', 'R17', 'R16', 'R15', 'R14', 'R13', 'R12', 'R11', 'R10', 'R09', 'R08', 'R07', 'R06', 'R05', 'R04', 'R03', 'R02', 'R01'];
+  const spKnownRooms = ['LIB', 'WBC', 'VCEC', 'GYM', 'A09', 'A08', 'A06', 'A05', 'A04', 'A03', 'A02', 'A01', 'C07', 'C06', 'C05', 'C04', 'C03', 'C02', 'C01', 'G13', 'G12', 'G11', 'G10', 'G09', 'G08', 'G07', 'G06', 'G05', 'G04', 'G03', 'G02', 'G01', 'GM7', 'GM6', 'GM5', 'GM4', 'GM3', 'GM2', 'GM1', 'J12', 'J11', 'J10', 'J09', 'J08', 'J07', 'J06', 'J05', 'J04', 'J03', 'J02', 'J01', 'PAC', 'MPR', 'THT', 'R26', 'R25', 'R24', 'R23', 'R22', 'R21', 'R20', 'R19', 'R18', 'R17', 'R16', 'R15', 'R14', 'R13', 'R12', 'R11', 'R10', 'R09', 'R08', 'R07', 'R06', 'R05', 'R04', 'R03', 'R02', 'R01'];
   const spBlockAccentRgb = {
     A: '3, 253, 72',
     C: '130, 214, 180',
