@@ -28,21 +28,14 @@
     }
   </script>
   <link href="./style.css" rel="stylesheet" type="text/css" />
-  <link href='https://fonts.googleapis.com/css?family=Varela Round' as="style" rel="preload" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="icon" href="./images/Favicon.ico">
-  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/fonts/css/fontawesome.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/fonts/css/solid.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/fonts/css/regular.css" media="print" onload="this.media='all'">
   <noscript>
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css">
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css">
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/regular.css">
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/light.css">
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/duotone.css">
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/brands.css">
+    <link rel="stylesheet" href="/fonts/css/fontawesome.css">
+    <link rel="stylesheet" href="/fonts/css/solid.css">
+    <link rel="stylesheet" href="/fonts/css/regular.css">
   </noscript>
 </head>
 
@@ -73,7 +66,7 @@
   </div>
   <div id="no-internet">
     <div class="ni-offline">
-      <i class="fa-solid fa-wifi-exclamation"></i>
+      <i class="fa-solid fa-wifi-slash"></i>
       <span class="ni-label">Offline</span>
     </div>
     <div class="ni-online">
@@ -145,7 +138,7 @@
       <h1>Settings</h1>
       <div class="settings-group" data-nosnippet>
         <h2>ClassSync</h2>
-        <div class="settings-active" id="classSyncActive">✗ Not Active</div>
+        <div class="settings-active" id="classSyncActive"><i class="fa-solid fa-xmark"></i> Not Active</div>
         <p data-nosnippet><em>ClassSync</em> seamlessly integrates your class schedule with the <em>redesigned</em> Viewbank College Intranet. When enabled, your next class will be displayed at the top of the page. Click it to open <span class="sp-qmark"><em>SneakPeek</em> <i class="fa-regular fa-circle-question"></i><span class="sp-tooltip" data-nosnippet><em>SneakPeek</em> is a view consisting of the school map and your class list side by side. The class list shows you all current and upcoming classes for that day. Click a class in the list to highlight its room(s) on the map, or click a room on the map to see your classes there. There is also a button at the top to highlight all of your classes for that day on the map.</span></span> for a full overview of the day.<br><br>For detailed instructions, see the <u><b><a href="/tutorials/ClassSync.pdf" target="_blank">ClassSync guide</a></b></u>.</p>
         <input type="text" autocomplete="off" autocapitalize="off" id="cal-input" placeholder="https://viewbank-vic.compass.education/download/sharedCalendar.aspx?uid=..."></input>
         <button type="submit" id="cal-submit">Submit</button>

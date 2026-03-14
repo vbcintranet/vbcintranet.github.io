@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.5";
+  const version = "v2.4.6";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -1733,12 +1733,37 @@
     setFieldEnabled(clearImageBtn, mode !== 'none');
   }
 
-  function applyStatus(el, state) {
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function setStatusMessage(el, text, state = 'none') {
     if (!el) return;
     el.classList.remove('valid', 'error', 'warning');
     if (state === 'valid') el.classList.add('valid');
     else if (state === 'error') el.classList.add('error');
     else if (state === 'warning') el.classList.add('warning');
+    else if (state === 'validating') el.classList.add('warning');
+
+    if (state === 'none') {
+      el.textContent = text;
+      return;
+    }
+
+    const iconMap = {
+      valid: 'fa-circle-check',
+      error: 'fa-circle-xmark',
+      warning: 'fa-triangle-exclamation',
+      validating: 'fa-spinner-third fa-spin',
+      info: 'fa-circle-info'
+    };
+    const icon = iconMap[state] || iconMap.info;
+    el.innerHTML = `<i class="fa-solid ${icon}"></i> ${escapeHtml(text)}`;
   }
 
   function updateDrawerLockState() {
@@ -1777,11 +1802,9 @@
     buttonUrlInput.value = isEdit ? cButton.url : '';
     titleCharCount.textContent = isEdit ? cButton.name.length : '0';
 
-    titleMessage.textContent = isEdit ? '✓ Valid title' : 'No title';
-    applyStatus(titleMessage, isEdit ? 'valid' : 'none');
+    setStatusMessage(titleMessage, isEdit ? 'Valid title' : 'No title', isEdit ? 'valid' : 'none');
 
-    urlMessage.textContent = isEdit ? '✓ Valid URL' : 'No URL';
-    applyStatus(urlMessage, isEdit ? 'valid' : 'none');
+    setStatusMessage(urlMessage, isEdit ? 'Valid URL' : 'No URL', isEdit ? 'valid' : 'none');
 
     (async () => {
       let resolvedIcon = isEdit ? cButton.icon : '';
@@ -1791,8 +1814,7 @@
       }
 
       const isDataImg = isEdit ? resolvedIcon.startsWith('data:image/') : false;
-      fileNameDisplay.textContent = isEdit ? (isDataImg ? '✓ Image loaded' : '✓ Image loaded from URL') : 'No file chosen';
-      applyStatus(fileNameDisplay, isEdit ? 'valid' : 'none');
+      setStatusMessage(fileNameDisplay, isEdit ? (isDataImg ? 'Image loaded' : 'Image loaded from URL') : 'No file chosen', isEdit ? 'valid' : 'none');
       setImageToggle(isEdit ? (isDataImg ? 'upload' : 'url') : 'none');
 
       urlInput.value = isEdit && !isDataImg ? resolvedIcon : '';
@@ -1845,8 +1867,7 @@
     fileInput.value = '';
     urlInput.value = '';
     previewImg.src = '/images/icons/Unknown.webp';
-    fileNameDisplay.textContent = 'No file chosen';
-    applyStatus(fileNameDisplay, 'none');
+    setStatusMessage(fileNameDisplay, 'No file chosen', 'none');
     setImageToggle('none');
     buttonContent.image = "";
     imageValidated = false;
@@ -1859,8 +1880,7 @@
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      fileNameDisplay.textContent = 'Error: Invalid file type. Please upload an image.';
-      applyStatus(fileNameDisplay, 'error');
+      setStatusMessage(fileNameDisplay, 'Invalid file type. Please upload an image.', 'error');
       imageValidated = false;
       buttonContent.image = "";
       imageToggle.classList.remove('expanded-upload', 'expanded-url');
@@ -1871,8 +1891,7 @@
     }
 
     if (file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif')) {
-      fileNameDisplay.textContent = 'Error: Animated images (GIFs) are not allowed.';
-      applyStatus(fileNameDisplay, 'error');
+      setStatusMessage(fileNameDisplay, 'Animated images (GIFs) are not allowed.', 'error');
       imageValidated = false;
       buttonContent.image = "";
       imageToggle.classList.remove('expanded-upload', 'expanded-url');
@@ -1882,8 +1901,7 @@
       return;
     }
 
-    fileNameDisplay.textContent = file.name;
-    applyStatus(fileNameDisplay, 'none');
+    setStatusMessage(fileNameDisplay, file.name, 'valid');
     setImageToggle('upload');
 
     const reader = new FileReader();
@@ -1919,13 +1937,11 @@
         previewImg.src = dataUrl;
         buttonContent.image = dataUrl;
         imageValidated = true;
-        fileNameDisplay.textContent = `✓ ${file.name}`;
-        applyStatus(fileNameDisplay, 'valid');
+        setStatusMessage(fileNameDisplay, file.name, 'valid');
         validateForm();
       };
       img.onerror = function() {
-        fileNameDisplay.textContent = 'Error: Unable to load image. Please try a different file.';
-        applyStatus(fileNameDisplay, 'error');
+        setStatusMessage(fileNameDisplay, 'Unable to load image. Please try a different file.', 'error');
         imageValidated = false;
         buttonContent.image = "";
         setImageToggle('none');
@@ -1941,8 +1957,7 @@
     if (urlInput.dataset.disabled === 'true' || urlInput.disabled) return;
     if (!urlInput.value.trim()) {
       previewImg.src = '/images/icons/Unknown.webp';
-      fileNameDisplay.textContent = 'No file chosen';
-      applyStatus(fileNameDisplay, 'none');
+      setStatusMessage(fileNameDisplay, 'No file chosen', 'none');
       imageToggle.classList.remove('expanded-url');
       clearImageBtn.classList.add('hide');
     } else {
@@ -1962,6 +1977,7 @@
   urlInput.addEventListener('blur', async () => {
     if (urlInput.dataset.disabled === 'true' || urlInput.disabled) return;
     const url = urlInput.value.trim();
+    const urlLoadStart = performance.now();
     imageValidated = false;
     validateForm();
     if (!url) {
@@ -1969,28 +1985,24 @@
         imageToggle.classList.remove('expanded-url');
       }
       previewImg.src = '/images/icons/Unknown.webp';
-      fileNameDisplay.textContent = 'No file chosen';
-      fileNameDisplay.classList.remove('error', 'valid');
+      setStatusMessage(fileNameDisplay, 'No file chosen', 'none');
       return;
     }
 
     setImageToggle('url');
 
     if (!isValidUrl(url)) {
-      fileNameDisplay.textContent = 'Error: Invalid URL format.';
-      applyStatus(fileNameDisplay, 'error');
+      setStatusMessage(fileNameDisplay, 'Invalid URL format.', 'error');
       previewImg.src = '/images/icons/Unknown.webp';
       buttonContent.image = "";
       return;
     }
 
-    fileNameDisplay.textContent = 'Validating image...';
-    applyStatus(fileNameDisplay, 'none');
+    setStatusMessage(fileNameDisplay, 'Validating image...', 'validating');
 
     const isImage = await isImageUrlCT(url);
     if (!isImage) {
-      fileNameDisplay.textContent = 'Error: URL does not point to a valid image.';
-      applyStatus(fileNameDisplay, 'error');
+      setStatusMessage(fileNameDisplay, 'URL does not point to a valid image.', 'error');
       previewImg.src = '/images/icons/Unknown.webp';
       buttonContent.image = "";
       return;
@@ -1999,16 +2011,28 @@
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function() {
+      const elapsedMs = performance.now() - urlLoadStart;
+      const warnings = [];
+      if (img.naturalWidth > 512 || img.naturalHeight > 512) {
+        warnings.push(`This image is large (${img.naturalWidth}x${img.naturalHeight}px).`);
+      }
+      if (elapsedMs > 500) {
+        warnings.push(`Image load took ${(elapsedMs / 1000).toFixed(1)}s; this may impact performance.`);
+      }
+      warnings.length != 0 ? warnings.push('For better performance, download it and upload it directly.') : null;
+
       previewImg.src = url;
       buttonContent.image = url;
       imageValidated = true;
-      fileNameDisplay.textContent = '✓ Image loaded from URL';
-      applyStatus(fileNameDisplay, 'valid');
+      setStatusMessage(
+        fileNameDisplay,
+        warnings.length ? `Image loaded from URL. ${warnings.join(' ')}` : 'Image loaded from URL',
+        warnings.length ? 'warning' : 'valid'
+      );
       validateForm();
     };
     img.onerror = function() {
-      fileNameDisplay.textContent = 'Error: Unable to load image from URL. Check image availability. Otherwise, save it and try uploading the image directly.';
-      applyStatus(fileNameDisplay, 'error');
+      setStatusMessage(fileNameDisplay, 'Unable to load image from URL. Check image availability. Otherwise, save it and try uploading the image directly.', 'error');
       imageValidated = false;
       previewImg.src = '/images/icons/Unknown.webp';
       buttonContent.image = "";
@@ -2029,15 +2053,12 @@
         cButton.cid !== editingCid && cButton.name === value.trim()
       );
       if (isDuplicate) {
-        titleMessage.textContent = '✗ Name already used';
-        applyStatus(titleMessage, 'error');
+        setStatusMessage(titleMessage, 'Name already used', 'error');
       } else {
-        titleMessage.textContent = '✓ Valid title';
-        applyStatus(titleMessage, 'valid');
+        setStatusMessage(titleMessage, 'Valid title', 'valid');
       }
     } else {
-      titleMessage.textContent = 'No title';
-      applyStatus(titleMessage, 'none');
+      setStatusMessage(titleMessage, 'No title', 'none');
     }
 
     previewTitle.textContent = value || 'Custom Button';
@@ -2051,15 +2072,13 @@
     buttonContent.url = buttonUrlInput.value.trim();
     
     if (!buttonContent.url) {
-      urlMessage.textContent = 'No URL';
-      applyStatus(urlMessage, 'none');
+      setStatusMessage(urlMessage, 'No URL', 'none');
     } else {
       const isDuplicate = cbl.cButtons.some(cButton => 
         cButton.cid !== editingCid && cButton.url === buttonContent.url
       );
       if (isDuplicate) {
-        urlMessage.textContent = '✗ URL already used';
-        applyStatus(urlMessage, 'error');
+        setStatusMessage(urlMessage, 'URL already used', 'error');
       }
     }
     urlValidated = false;
@@ -2079,8 +2098,7 @@
     validateForm();
 
     if (!url) {
-      urlMessage.textContent = 'No URL';
-      applyStatus(urlMessage, 'none');
+      setStatusMessage(urlMessage, 'No URL', 'none');
       return;
     }
 
@@ -2088,31 +2106,26 @@
       cButton.cid !== editingCid && cButton.url === url
     );
     if (isDuplicate) {
-      urlMessage.textContent = '✗ URL already used';
-      applyStatus(urlMessage, 'error');
+      setStatusMessage(urlMessage, 'URL already used', 'error');
       return;
     }
 
     if (!isValidUrl(url)) {
-      urlMessage.textContent = '✗ Invalid URL';
-      applyStatus(urlMessage, 'error');
+      setStatusMessage(urlMessage, 'Invalid URL', 'error');
       return;
     }
 
-    urlMessage.textContent = 'Checking URL...';
-    applyStatus(urlMessage, 'none');
+    setStatusMessage(urlMessage, 'Validating URL...', 'validating');
 
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
       await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
       clearTimeout(timeout);
-      urlMessage.textContent = '✓ Valid URL';
-      applyStatus(urlMessage, 'valid');
+      setStatusMessage(urlMessage, 'Valid URL', 'valid');
       urlValidated = true;
     } catch (error) {
-      urlMessage.textContent = '⚠ URL unreachable';
-      applyStatus(urlMessage, 'warning');
+      setStatusMessage(urlMessage, 'URL unreachable', 'warning');
       urlValidated = true;
     }
     
@@ -2206,8 +2219,7 @@
     const hasValidUrl = isValidUrl(buttonContent.url);
     if (editorApply.disabled || !(hasImage && hasTitle && hasValidUrl)) {
       if (!imageValidated) {
-        fileNameDisplay.textContent = 'Error: Please upload an image or provide a valid image URL.';
-        fileNameDisplay.classList.add('error');
+        setStatusMessage(fileNameDisplay, 'Please upload an image or provide a valid image URL.', 'error');
       }
       return;
     }

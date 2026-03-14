@@ -3,7 +3,14 @@
 }
 @font-face {
   font-family: ArialRoundedMT;
-  src: url('./fonts/arialroundedmtbold.ttf') format('truetype');
+  src: url('./fonts/ArialRoundedMTBold-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Varela Round';
+  src: url('./fonts/VarelaRound-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 body {
   background-color: #121212;
@@ -496,6 +503,10 @@ button {
   margin: 0 auto;
   padding: 10px 30px;
 }
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 #cal-deactivate {
   display: flex;
   justify-content: center;
@@ -518,6 +529,7 @@ button:hover {
 }
 .settings-active {
   font-size: 0.83em;
+  font-weight: bold;
   transition: color 1s ease;
 }
 .settings-active[active] {

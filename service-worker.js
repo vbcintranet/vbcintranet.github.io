@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vbc-intranet-v2.4.5';
+const CACHE_NAME = 'vbc-intranet-v2.4.6';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -9,7 +9,13 @@ const PRECACHE_ASSETS = [
   '/def/map.svg',
   '/images/Favicon.ico',
   '/images/Favicon.webp',
-  '/fonts/arialroundedmtbold.ttf',
+  '/fonts/css/fontawesome.css',
+  '/fonts/css/regular.css',
+  '/fonts/css/solid.css',
+  '/fonts/webfonts/fa-regular-400.woff2',
+  '/fonts/webfonts/fa-solid-900.woff2',
+  '/fonts/ArialRoundedMTBold-Regular.ttf',
+  '/fonts/VarelaRound-Regular.ttf',
   '/images/icons/ACERLogo.webp',
   '/images/icons/AddPrinters.webp',
   '/images/icons/Blooket.webp',

@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.5";
+  const version = "v2.4.6";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -252,17 +252,14 @@
     steps.reduce((delay, [wait, fn]) => delay.then(() => new Promise(res => setTimeout(() => { fn(); res(); }, wait))), Promise.resolve());
 
     if (calActive) {
-      document.getElementById("classSync").innerHTML = '<i class="fa-solid fa-magnifying-glass-arrows-rotate"></i><p style="font-size:8px;">Fetching...</p>';
+      document.getElementById("classSync").innerHTML = `${classSyncIcon('displayFetch')}<p style="font-size:8px;">Fetching...</p>`;
       document.getElementById("classSync").parentElement.classList.add('cs-icon');
       document.getElementById('sp-nc').style.display = 'none';
-      document.getElementById('sp-err').style.display = 'grid';
-      document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-magnifying-glass-arrows-rotate"></i> Fetching class data...</div>`;
+      setClassSyncError(1, 'fetch', 'Fetching class data...');
       clearTimeout(t);
       classSyncLock = false;
       ClassSync();
-      calActiveText.textContent = "✓ Active";
-      calActiveText.setAttribute("active", "");
-      calActiveText.removeAttribute("error");
+      setClassSyncStatus("active", "Active");
     }
   });
   window.addEventListener('offline', () => {
@@ -270,15 +267,12 @@
     isOnline = false;
     showOfflineIndicator();
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-arrow-right-to-line"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split && !last_events.next.locationSplit ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDatetime(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDatetime(last_events.timeChecked)}</p>`;
+      document.getElementById("classSync").innerHTML = last_events.next ? `${classSyncIcon('displayNext')} ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;">${classSyncIcon('displayLocation')} ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split && !last_events.next.locationSplit ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>` : `${classSyncIcon('displayEmpty')}<p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>`;
       last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
-      document.getElementById('sp-err').style.display = 'grid';
-      document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDatetime(last_events.timeChecked)}.</div>`;
+      setClassSyncError(2, 'network', 'Network disconnected.', `Class data last updated at ${parseDatetime(last_events.timeChecked)}.`);
       document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
-      document.getElementById('sp-nc').innerHTML = `<div class="spt"><i class="fa-regular fa-calendar-minus"></i> ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
-      calActiveText.textContent = "⚠ Network disconnected";
-      calActiveText.setAttribute("error", "");
-      calActiveText.removeAttribute("active");
+      document.getElementById('sp-nc').innerHTML = `<div class="spt">${classSyncIcon('displayEmpty')} ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
+      setClassSyncStatus("offline", "Network disconnected");
     }
   });
   let calActive = false;
@@ -288,9 +282,82 @@
   const devButton = document.getElementById("cal-deactivate");
   const incorrectText = document.getElementById("cal-incorrect");
   const calActiveText = document.getElementById("classSyncActive");
+  let classSyncSetupPending = false;
+
+  function classSyncIcon(key) {
+    const icons = {
+      statusActive: { style: 'solid', name: 'fa-check' },
+      statusInactive: { style: 'solid', name: 'fa-xmark' },
+      statusWarning: { style: 'solid', name: 'fa-triangle-exclamation' },
+      statusValidating: { style: 'solid', name: 'fa-spinner-third fa-spin' },
+      statusOffline: { style: 'solid', name: 'fa-cloud-slash' },
+      statusError: { style: 'solid', name: 'fa-triangle-exclamation' },
+      statusInfo: { style: 'solid', name: 'fa-circle-info' },
+      displayFetch: { style: 'solid', name: 'fa-spinner-third fa-spin' },
+      displayNext: { style: 'solid', name: 'fa-arrow-right-to-line' },
+      displayEmpty: { style: 'regular', name: 'fa-calendar-minus' },
+      displayLocation: { style: 'solid', name: 'fa-location-dot' },
+      displayChecked: { style: 'solid', name: 'fa-cloud-question' },
+      displayOffline: { style: 'solid', name: 'fa-cloud-slash' },
+      displayLinkError: { style: 'solid', name: 'fa-cloud-xmark' },
+      displayRetry: { style: 'solid', name: 'fa-cloud-exclamation' },
+      cardNow: { style: 'solid', name: 'fa-chalkboard-user' },
+      cardNext: { style: 'solid', name: 'fa-arrow-right-to-line' },
+      cardLater: { style: 'solid', name: 'fa-arrow-right-to-dotted-line' },
+      cardSplit: { style: 'solid', name: 'fa-split' },
+      cardLocation: { style: 'solid', name: 'fa-location-dot' },
+      cardTime: { style: 'solid', name: 'fa-clock' },
+      roomTransition: { style: 'solid', name: 'fa-arrow-right' }
+    };
+    const icon = icons[key] || icons.statusInfo;
+    return `<i class="fa-${icon.style} ${icon.name}"></i>`;
+  }
+
+  function setClassSyncStatus(icon = 'info', label = 'Unknown') {
+    const statusIconKey = {
+      active: 'statusActive',
+      inactive: 'statusInactive',
+      warning: 'statusWarning',
+      validating: 'statusValidating',
+      offline: 'statusOffline',
+      error: 'statusError',
+      info: 'statusInfo'
+    };
+    calActiveText.innerHTML = `${classSyncIcon(statusIconKey[icon] || 'statusInfo')} ${label}`;
+
+    const activeStates = new Set(['active']);
+    const errorStates = new Set(['warning', 'validating', 'offline', 'error']);
+    calActiveText.toggleAttribute('active', activeStates.has(icon));
+    calActiveText.toggleAttribute('error', errorStates.has(icon));
+  }
+
+  function setClassSyncSetupPending(pending) {
+    classSyncSetupPending = pending;
+    subButton.disabled = pending;
+    inputText.disabled = pending;
+    subButton.toggleAttribute('aria-busy', pending);
+  }
+
+
+  function setClassSyncError(mode, icon = 'info', line1 = 'Error.', line2 = '') {
+    const spErr = document.getElementById('sp-err');
+    if (!spErr) return;
+    const errorIconKey = {
+      fetch: 'displayFetch',
+      network: 'displayChecked',
+      offline: 'displayOffline',
+      link: 'displayLinkError',
+      error: 'displayRetry',
+      info: 'statusInfo'
+    };
+    const firstLine = `<div class="spt">${classSyncIcon(errorIconKey[icon] || 'statusInfo')} ${line1}</div>`;
+    spErr.style.display = mode === 2 ? 'grid' : mode === 1 ? 'flex' : 'none';
+    spErr.innerHTML = mode === 2 ? `${firstLine}<div class="spti">${line2}</div>` : firstLine;
+  }
   
   subButton.addEventListener('click', (event) => {
     event.preventDefault();
+    if (classSyncSetupPending) return;
     if (!isOnline) {
       incorrectText.innerHTML = "Network disconnected. Please reconnect and try again.";
       return;
@@ -302,36 +369,40 @@
         incorrectText.innerHTML = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
         return;
       }
+      setClassSyncSetupPending(true);
+      setClassSyncStatus("validating", "Validating");
       fetch(formatCalLink(inputText.value))
         .then(response => {
           if (!response.ok) {
             incorrectText.textContent = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
             throw new Error(`Failed to fetch calendar. Status: ${response.status}`);
           } else {
+            setClassSyncSetupPending(false);
             calActive = true;
             incorrectText.textContent = "";
-            calActiveText.textContent = "✓ Active";
-            calActiveText.setAttribute("active", "");
-            calActiveText.removeAttribute("error");
+            setClassSyncStatus("active", "Active");
             devButton.setAttribute("visible", "");
             subButton.setAttribute("hidden", "");
             inputText.setAttribute("hidden", "");
             const existing = jsonCheck(localStorage.getItem('ClassSync')) ? JSON.parse(localStorage.getItem('ClassSync')) : {};
             localStorage.setItem('ClassSync', JSON.stringify({...existing, cal: formatCalLink(inputText.value)}));
             document.getElementById("header-classSync").style.display = 'block';
-            document.getElementById("classSync").innerHTML = '<i class="fa-solid fa-magnifying-glass-arrows-rotate"></i><p style="font-size:8px;">Fetching...</p>';
+            document.getElementById("classSync").innerHTML = `${classSyncIcon('displayFetch')}<p style="font-size:8px;">Fetching...</p>`;
             document.getElementById("classSync").parentElement.classList.add('cs-icon');
             document.getElementById('sp-nc').style.display = 'none';
-            document.getElementById('sp-err').style.display = 'grid';
-            document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-magnifying-glass-arrows-rotate"></i> Fetching class data...</div>`;
-            ClassSync();
-            initSneakPeekMap();
+            setClassSyncError(1, 'fetch', 'Fetching class data...');
+            setTimeout(() => {
+              ClassSync();
+              initSneakPeekMap();
+            }, 100);
           }
           return response.text();
         })
         .catch(error => {
+          setClassSyncSetupPending(false);
           errors.new({error: JSON.stringify(error, Object.getOwnPropertyNames(error)), url: inputText.value.trim()}, "ClassSync-Setup");
           consol.error("Link error", "ClassSync-Setup");
+          setClassSyncStatus("inactive", "Not Active");
           incorrectText.innerHTML = "Did you input the correct link? Visit the guide for help <b><a href='/tutorials/ClassSync.pdf' target='_blank' style='color: #c94545;'>here</a></b>.";
         });
     } else {
@@ -345,15 +416,20 @@
   
   devButton.addEventListener('click', (event) => {
     event.preventDefault();
+    setClassSyncSetupPending(false);
     calActive = false;
     localStorage.removeItem('ClassSync');
     last_events = {};
-    calActiveText.textContent = "✗ Not Active";
-    calActiveText.removeAttribute("active");
-    calActiveText.removeAttribute("error");
+    setClassSyncStatus("inactive", "Not Active");
+    clearTimeout(t);
+    classSyncLock = false;
     devButton.removeAttribute("visible");
     subButton.removeAttribute("hidden");
     inputText.removeAttribute("hidden");
+    document.getElementById("classSync").innerText = "";
+    document.getElementById("classSync").parentElement.classList.remove('cs-icon');
+    document.getElementById('sp-nc').style.display = 'none';
+    setClassSyncError(3);
     document.getElementById("header-classSync").style.display = 'none';
   });
   
@@ -442,14 +518,11 @@
     }
     if (!isOnline) {
       if (!last_events.joined) {
-        document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-cloud-slash"></i><p style="font-size:8px;">Offline</p>`;
+        document.getElementById("classSync").innerHTML = `${classSyncIcon('displayOffline')}<p style="font-size:8px;">Offline</p>`;
         document.getElementById("classSync").parentElement.classList.add('cs-icon');
-        document.getElementById('sp-err').style.display = 'grid';
-        document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-slash"></i> Offline</div><div class="spti">No cached data available.</div>`;
+        setClassSyncError(2, 'offline', 'Offline', 'No cached data available.');
         document.getElementById('sp-nc').style.display = 'none';
-        calActiveText.textContent = "\u26A0 Network disconnected";
-        calActiveText.setAttribute("error", "");
-        calActiveText.removeAttribute("active");
+        setClassSyncStatus("offline", "Network disconnected");
         t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
         return;
       }
@@ -475,12 +548,11 @@
       if (events.next) events.next.next = true;
 
       if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = last_events.next ? `<i class="fa-solid fa-arrow-right-to-line"></i> ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split && !last_events.next.locationSplit ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDatetime(last_events.timeChecked)}</p>` : `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDatetime(last_events.timeChecked)}</p>`;
+        document.getElementById("classSync").innerHTML = last_events.next ? `${classSyncIcon('displayNext')} ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;">${classSyncIcon('displayLocation')} ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split && !last_events.next.locationSplit ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>` : `${classSyncIcon('displayEmpty')}<p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>`;
         last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
-        document.getElementById('sp-err').style.display = 'grid';
-        document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDatetime(last_events.timeChecked)}.</div>`;
+        setClassSyncError(2, 'network', 'Network disconnected.', `Class data last updated at ${parseDatetime(last_events.timeChecked)}.`);
         document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
-        document.getElementById('sp-nc').innerHTML = `<div class="spt"><i class="fa-regular fa-calendar-minus"></i> ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
+        document.getElementById('sp-nc').innerHTML = `<div class="spt">${classSyncIcon('displayEmpty')} ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
           if (!['sp-nc','sp-err'].includes(c.id)) {
             c.remove();
@@ -491,12 +563,11 @@
         });
         reapplyCardSelection();
       } else {
-        document.getElementById("classSync").innerHTML = `<i class="fa-regular fa-calendar-minus"></i><p style="font-size:8px;margin-top:5px !important;color:#ff746c;"><i class="fa-solid fa-cloud-question"></i> ${parseDatetime(last_events.timeChecked)}</p>`;
+        document.getElementById("classSync").innerHTML = `${classSyncIcon('displayEmpty')}<p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>`;
         document.getElementById("classSync").parentElement.classList.add('cs-icon');
-        document.getElementById('sp-err').style.display = 'grid';
-        document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-question"></i> Network disconnected.</div><div class="spti">Class data last updated at ${parseDatetime(last_events.timeChecked)}.</div>`;
+        setClassSyncError(2, 'network', 'Network disconnected.', `Class data last updated at ${parseDatetime(last_events.timeChecked)}.`);
         document.getElementById('sp-nc').style.display = 'flex';
-        document.getElementById('sp-nc').innerHTML = `<div class="spt"><i class="fa-regular fa-calendar-minus"></i> ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
+        document.getElementById('sp-nc').innerHTML = `<div class="spt">${classSyncIcon('displayEmpty')} ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
         Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
           if (!['sp-nc','sp-err'].includes(c.id)) {
             c.remove();
@@ -509,14 +580,11 @@
     if (!formatCalLink(getCalUrl(), true).startsWith('viewbank-vic.compass.education/download/sharedCalendar.aspx')) {
       errors.new({error: "Link failed test", url: getCalUrl()}, "ClassSync");
       consol.error("Link failed test", "ClassSync");
-      document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-cloud-xmark"></i><p style="font-size:8px;">Link Error</p>`;
+      document.getElementById("classSync").innerHTML = `${classSyncIcon('displayLinkError')}<p style="font-size:8px;">Link Error</p>`;
       document.getElementById("classSync").parentElement.classList.add('cs-icon');
       document.getElementById('sp-nc').style.display = 'none';
-      document.getElementById('sp-err').style.display = 'grid';
-      document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-xmark"></i> The link provided did not work.</div><div class="spti">Please check your link and try again.</div>`;
-      calActiveText.textContent = "⚠ Error";
-      calActiveText.setAttribute("error", "");
-      calActiveText.removeAttribute("active");
+      setClassSyncError(2, 'link', 'The link provided did not work.', 'Please check your link and try again.');
+      setClassSyncStatus("error", "Error");
       classSyncLock = false;
       return null;
     }
@@ -530,9 +598,7 @@
         return response.text();
       })
       .then(fileContents => {
-        calActiveText.textContent = "✓ Active";
-        calActiveText.setAttribute("active", "");
-        calActiveText.removeAttribute("error");
+        setClassSyncStatus("active", "Active");
         const lines = fileContents.split('\n');
         var endTime = new Date();
         endTime.setHours(23, 59, 59, 0);
@@ -588,7 +654,7 @@
                   prev.splitTime = e.startraw;
                   prev.split = true;
                   prev.locationSplit = true;
-                  prev.location += ` <i class="fa-solid fa-arrow-right"></i> ${e.location}`;
+                  prev.location += ` ${classSyncIcon('roomTransition')} ${e.location}`;
                 }
                 prev.endraw = e.endraw;
                 prev.end = parseDate(e.endraw);
@@ -604,7 +670,7 @@
                   prev.splitTime = e.endraw;
                   prev.split = true;
                   prev.locationSplit = true;
-                  prev.location += ` <i class="fa-solid fa-arrow-right"></i> ${e.location}`;
+                  prev.location += ` ${classSyncIcon('roomTransition')} ${e.location}`;
                 }
                 prev.startraw = e.startraw;
                 prev.start = parseDate(e.startraw);
@@ -621,7 +687,7 @@
                     prev.summary = `${prev.summary} and ${e.summary}`;
                     prev.locationA = prev.location;
                     prev.locationB = e.location;
-                    prev.location = `${prev.location} <i class="fa-solid fa-arrow-right"></i> ${e.location}`;
+                    prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
                   } else {
                     prev.summary = `${prev.summary} and ${e.summary}`;
                   }
@@ -642,7 +708,7 @@
                   prev.summary = `${prev.summary} and ${e.summary}`;
                   prev.locationA = e.location;
                   prev.locationB = prev.location;
-                  prev.location = `${prev.location} <i class="fa-solid fa-arrow-right"></i> ${e.location}`;
+                  prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
                 } else {
                   prev.summary = `${prev.summary} and ${e.summary}`;
                 }
@@ -681,9 +747,9 @@
         if (events.next) events.next.next = true;
         
         if ((events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime())) {
-          document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-arrow-right-to-line"></i> ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;"><i class="fa-solid fa-location-dot"></i> ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split && !events.next.locationSplit ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`;
+          document.getElementById("classSync").innerHTML = `${classSyncIcon('displayNext')} ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;">${classSyncIcon('displayLocation')} ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split && !events.next.locationSplit ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`;
           document.getElementById("classSync").parentElement.classList.remove('cs-icon');
-          document.getElementById('sp-err').style.display = 'none';
+          setClassSyncError();
           document.getElementById('sp-nc').style.display = 'none';
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
             if (!['sp-nc','sp-err'].includes(c.id)) {
@@ -695,9 +761,9 @@
           });
           reapplyCardSelection();
         } else {
-          document.getElementById("classSync").innerHTML = '<i class="fa-regular fa-calendar-minus"></i>';
+          document.getElementById("classSync").innerHTML = classSyncIcon('displayEmpty');
           document.getElementById('classSync').parentElement.classList.add('cs-icon');
-          document.getElementById('sp-err').style.display = 'none';
+          setClassSyncError();
           document.getElementById('sp-nc').style.display = events.joined.find(e=>e.now) ? 'none' : 'flex';
           Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
             if (!['sp-nc','sp-err'].includes(c.id)) {
@@ -708,7 +774,7 @@
             document.getElementById('sp-c').appendChild(createSneakPeekCard(e));
           });
           reapplyCardSelection();
-          document.getElementById('sp-nc').innerHTML = events.joined.find(e=>e.now) ? '' : `<div class="spt"><i class="fa-regular fa-calendar-minus"></i> ${events.today.length ? 'No more classes for today' : 'No classes today'}</div>`;
+          document.getElementById('sp-nc').innerHTML = events.joined.find(e=>e.now) ? '' : `<div class="spt">${classSyncIcon('displayEmpty')} ${events.today.length ? 'No more classes for today' : 'No classes today'}</div>`;
         }
         last_events = events;
         saveClassSyncData(events);
@@ -719,14 +785,11 @@
       .catch(error => {
         errors.new(JSON.stringify(error, Object.getOwnPropertyNames(error)), "ClassSync");
         consol.error(error, "ClassSync");
-        document.getElementById("classSync").innerHTML = `<i class="fa-solid ${sts != 404 ? 'fa-cloud-exclamation' : 'fa-cloud-xmark'}"></i><p style="font-size:8px;">${sts != 404 ? `Retrying...` : `Link Error`}</p>`;
+        document.getElementById("classSync").innerHTML = `${classSyncIcon(sts != 404 ? 'displayRetry' : 'displayLinkError')}<p style="font-size:8px;">${sts != 404 ? `Retrying...` : `Link Error`}</p>`;
         document.getElementById("classSync").parentElement.classList.add('cs-icon');
         document.getElementById('sp-nc').style.display = 'none';
-        document.getElementById('sp-err').style.display = 'grid';
-        document.getElementById('sp-err').innerHTML = `<div class="spt">${sts != 404 ? `<i class="fa-solid fa-cloud-exclamation"></i> An error has occured` : `<i class="fa-solid fa-cloud-xmark"></i> Link did not work.`}</div><div class="spti">${sts != 404 ? `Retrying...` : `Please check your link and try again.`}</div>`;
-        calActiveText.textContent = "⚠ Error";
-        calActiveText.setAttribute("error", "");
-        calActiveText.removeAttribute("active");
+        setClassSyncError(2, sts != 404 ? 'error' : 'link', sts != 404 ? 'An error has occured' : 'Link did not work.', sts != 404 ? 'Retrying...' : 'Please check your link and try again.');
+        setClassSyncStatus("error", "Error");
         if (errors.countOfType("ClassSync") < 5) {
           consol.error("ClassSync running again", "ClassSync");
           setTimeout(() => { classSyncLock = false; ClassSync(); }, 100);
@@ -742,17 +805,16 @@
   
   function updateErrorTimer(time, ft = true, thread = -1, ts = false) {
     if (etActive && thread !== etThread) return;
-    if (!ft && document.getElementById("classSync").innerHTML != `<i class="fa-solid fa-cloud-exclamation"></i><p style="font-size:8px;">Retry: ${time + 1}s</p>`) {
+    if (!ft && document.getElementById("classSync").innerHTML != `${classSyncIcon('displayRetry')}<p style="font-size:8px;">Retry: ${time + 1}s</p>`) {
       etThread++;
       etActive = false;
       return;
     }
     thread = ts ? thread : etThread;
     ts, etActive = true;
-    document.getElementById("classSync").innerHTML = `<i class="fa-solid fa-cloud-exclamation"></i><p style="font-size:8px;">Retry: ${time}s</p>`;
+    document.getElementById("classSync").innerHTML = `${classSyncIcon('displayRetry')}<p style="font-size:8px;">Retry: ${time}s</p>`;
     document.getElementById("classSync").parentElement.classList.add('cs-icon');
-    document.getElementById('sp-err').style.display = 'grid';
-    document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-cloud-exclamation"></i> An error occured.</div><div class="spti">Retrying in ${time}s...</div>`;
+    setClassSyncError(2, 'error', 'An error occured.', `Retrying in ${time}s...`);
     document.getElementById('sp-nc').style.display = 'none';
 
     if (time > 0) {
@@ -939,17 +1001,15 @@
   
   if (getCalUrl()) {
     calActive = true;
-    calActiveText.textContent = "✓ Active";
-    calActiveText.setAttribute("active", "");
+    setClassSyncStatus("active", "Active");
     devButton.setAttribute("visible", "");
     subButton.setAttribute("hidden", "");
     inputText.setAttribute("hidden", "");
     document.getElementById("header-classSync").style.display = 'block';
-    document.getElementById("classSync").innerHTML = '<i class="fa-solid fa-magnifying-glass-arrows-rotate"></i><p style="font-size:8px;">Fetching...</p>';
+    document.getElementById("classSync").innerHTML = `${classSyncIcon('displayFetch')}<p style="font-size:8px;">Fetching...</p>`;
     document.getElementById("classSync").parentElement.classList.add('cs-icon');
     document.getElementById('sp-nc').style.display = 'none';
-    document.getElementById('sp-err').style.display = 'grid';
-    document.getElementById('sp-err').innerHTML = `<div class="spt"><i class="fa-solid fa-magnifying-glass-arrows-rotate"></i> Fetching class data...</div>`;
+    setClassSyncError(1, 'fetch', 'Fetching class data...');
     const cachedEvents = loadClassSyncData();
     if (cachedEvents) last_events = cachedEvents;
     ClassSync();
@@ -1141,12 +1201,12 @@
       const roomId = extractRoomId(eventData.location);
       if (roomId) roomIds.push(roomId);
     }
-    const ico = eventData.now ? 'fa-chalkboard-user' : eventData.next ? 'fa-arrow-right-to-line' : 'fa-arrow-right-to-dotted-line';
+    const ico = eventData.now ? 'cardNow' : eventData.next ? 'cardNext' : 'cardLater';
     const el = document.createElement('div');
     el.className = 'sneakpeek-card';
-    const splitAtHtml = eventData.split && !eventData.locationSplit ? `<div class="sptsplit"><i class="fa-solid fa-split"></i> split at ${parseDate(eventData.splitTime)}</div>` : '';
+    const splitAtHtml = eventData.split && !eventData.locationSplit ? `<div class="sptsplit">${classSyncIcon('cardSplit')} split at ${parseDate(eventData.splitTime)}</div>` : '';
     if (splitAtHtml) el.classList.add('has-split');
-    el.innerHTML = `<div class="spt"><i class="fa-solid ${ico}"></i> ${eventData.summary}</div><div class="sptl" title="${eventData.locationSplit ? `${eventData.locationA} -> ${eventData.locationB}` : eventData.location}">${eventData.location?`<i class="fa-solid fa-location-dot"></i> ${eventData.location}`:''}</div><div class="spti"><i class="fa-solid fa-clock"></i> ${eventData.start.slice(-2) == eventData.end.slice(-2) ? eventData.start.slice(0, -3) : eventData.start}-${eventData.end}</div>${splitAtHtml}`;
+    el.innerHTML = `<div class="spt">${classSyncIcon(ico)} ${eventData.summary}</div><div class="sptl" title="${eventData.locationA && eventData.locationB && eventData.splitTime ? `${eventData.locationA} -> ${eventData.locationB}` : eventData.location}">${eventData.location?`${classSyncIcon('cardLocation')} ${eventData.location}`:''}</div><div class="spti">${classSyncIcon('cardTime')} ${eventData.start.slice(-2) == eventData.end.slice(-2) ? eventData.start.slice(0, -3) : eventData.start}-${eventData.end}</div>${splitAtHtml}`;
     if (roomIds.length > 0) {
       el.dataset.room = roomIds[0];
       el.dataset.rooms = roomIds.join(',');
@@ -1570,7 +1630,7 @@
       if (v.icon && (v.icon.startsWith('idb:') && v.icon.slice(4) == v.cid)) {
         resolvedIcon = '/images/icons/Unknown.webp';
       }
-      button.innerHTML = `<img src="${resolvedIcon}" alt="${v.name} Icon" onerror="this.src='/images/icons/Unknown.webp'"><div class="overlay"><p>${v.name}${v.cid != undefined && typeof Number(v.cid) == "number" ? ` <i class="fa-solid fa-circle-user" style="color:#b5004b;"></i>` : ``}</p></div>`;
+      button.innerHTML = `<img src="${resolvedIcon}" alt="${v.name} Icon" onerror="this.src='/images/icons/Unknown.webp'"><div class="overlay"><p>${v.name}${v.cid != undefined && typeof Number(v.cid) == "number" ? ` <i class="fa-solid fa-user-pen" style="color:#b5004b;"></i>` : ``}</p></div>`;
       if (v.icon && (v.icon.startsWith('idb:') && v.icon.slice(4) == v.cid)) {
         const cid = parseInt(v.icon.split(':')[1], 10);
         iconDB.get(cid).then(idbIcon => {
@@ -1619,7 +1679,7 @@
       cbl.cButtons = Array.isArray(preCBL.cButtons) ? [...preCBL.cButtons] : [];
       const tasks = cbl.cButtons.map(async (cb) => {
         try {
-          if (!cb || typeof cb.cid !== 'number' || typeof cb.name !== 'string' || !cb.name || !isValidUrl(cb.url)) {
+          if (!cb || typeof cb.cid !== 'number' || typeof cb.name !== 'string' || !cb.name || cb.name.length > 15 || !isValidUrl(cb.url)) {
             removed.push(cb?.name || 'Custom Button');
             return null;
           }
