@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vbc-intranet-v2.4.6';
+const CACHE_NAME = 'vbc-intranet-v2.4.7';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -91,14 +91,27 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       caches.open(CACHE_NAME).then(cache => {
         return cache.match(key).then(cached => {
-          const fetchPromise = fetch(request).then(response => {
-            if (response.ok) {
-              cache.put(key, response.clone());
-            }
-            return response;
+          const fetchPromise = fetch(request)
+            .then(response => {
+              if (response.ok) {
+                cache.put(key, response.clone());
+              }
+              return response;
+            })
+            .catch(() => null);
+
+          if (cached) {
+            event.waitUntil(fetchPromise);
+            return cached;
+          }
+
+          return fetchPromise.then(response => {
+            if (response) return response;
+            return new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+            });
           });
-          
-          return cached || fetchPromise;
         });
       })
     );
@@ -112,7 +125,10 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request).then(cached => cached || new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+        })))
     );
   }
 });
