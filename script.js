@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.7";
+  const version = "v2.4.8";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -7,9 +7,26 @@
     error: (message, title="Core") => { console.error(`%c(${title}) %c${message}`, `color:#FFB3B3;font-weight:bold`, "") }
   }
 
+  const appDB = {
+    name: 'vbcIntranet',
+    version: 2,
+    stores: {
+      customButtonIcons: 'customButtonIcons',
+      classSync: 'classSync'
+    },
+    ensureStores(db) {
+      if (!db.objectStoreNames.contains(this.stores.customButtonIcons)) {
+        db.createObjectStore(this.stores.customButtonIcons, { keyPath: 'cid' });
+      }
+      if (!db.objectStoreNames.contains(this.stores.classSync)) {
+        db.createObjectStore(this.stores.classSync, { keyPath: 'id' });
+      }
+    }
+  };
+
   const iconDB = {
-    dbName: 'vbcIntranet',
-    storeName: 'customButtonIcons',
+    dbName: appDB.name,
+    storeName: appDB.stores.customButtonIcons,
     db: null,
     initPromise: null,
     init: async function() {
@@ -17,7 +34,7 @@
       if (this.initPromise) return this.initPromise;
       
       this.initPromise = new Promise((resolve, reject) => {
-        const req = indexedDB.open(this.dbName, 1);
+        const req = indexedDB.open(this.dbName, appDB.version);
         req.onerror = () => reject(req.error);
         req.onsuccess = () => { 
           this.db = req.result; 
@@ -26,9 +43,7 @@
         };
         req.onupgradeneeded = (e) => {
           const db = e.target.result;
-          if (!db.objectStoreNames.contains(this.storeName)) {
-            db.createObjectStore(this.storeName, { keyPath: 'cid' });
-          }
+          appDB.ensureStores(db);
         };
       });
       
@@ -108,6 +123,85 @@
       } catch (e) { 
         consol.error(`Failed to delete unused icons`, 'IndexedDB');
         throw e;
+      }
+    }
+  };
+
+  const classSyncDB = {
+    dbName: appDB.name,
+    storeName: appDB.stores.classSync,
+    cacheKey: 'cache',
+    db: null,
+    initPromise: null,
+    init: async function() {
+      if (this.db) return this.db;
+      if (this.initPromise) return this.initPromise;
+
+      this.initPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(this.dbName, appDB.version);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => {
+          this.db = req.result;
+          this.initPromise = null;
+          resolve(this.db);
+        };
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          appDB.ensureStores(db);
+        };
+      });
+
+      try {
+        await this.initPromise;
+        return this.db;
+      } catch (e) {
+        this.initPromise = null;
+        throw e;
+      }
+    },
+    set: async function(data) {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.put({ id: this.cacheKey, data, timestamp: Date.now() });
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve(req.result);
+        });
+      } catch (e) {
+        consol.error('Failed to store ClassSync cache', 'IndexedDB');
+        return null;
+      }
+    },
+    get: async function() {
+      try {
+        const db = await this.init();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readonly');
+          const store = tx.objectStore(this.storeName);
+          const req = store.get(this.cacheKey);
+          req.onerror = () => resolve(null);
+          req.onsuccess = () => resolve(req.result?.data || null);
+        });
+      } catch (e) {
+        consol.error('Failed to retrieve ClassSync cache', 'IndexedDB');
+        return null;
+      }
+    },
+    clear: async function() {
+      try {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          const req = store.delete(this.cacheKey);
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve();
+        });
+      } catch (e) {
+        consol.error('Failed to clear ClassSync cache', 'IndexedDB');
+        return null;
       }
     }
   };
@@ -262,17 +356,14 @@
       setClassSyncStatus("active", "Active");
     }
   });
-  window.addEventListener('offline', () => {
+  window.addEventListener('offline', async () => {
     consol.warn("Running in offline mode", "Network");
     isOnline = false;
     showOfflineIndicator();
     if (calActive) {
-      document.getElementById("classSync").innerHTML = last_events.next ? `${classSyncIcon('displayNext')} ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;">${classSyncIcon('displayLocation')} ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split && !last_events.next.locationSplit ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>` : `${classSyncIcon('displayEmpty')}<p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>`;
-      last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
-      setClassSyncError(2, 'network', 'Network disconnected.', `Class data last updated at ${parseDatetime(last_events.timeChecked)}.`);
-      document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
-      document.getElementById('sp-nc').innerHTML = `<div class="spt">${classSyncIcon('displayEmpty')} ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
-      setClassSyncStatus("offline", "Network disconnected");
+      clearTimeout(t);
+      classSyncLock = false;
+      ClassSync();
     }
   });
   let calActive = false;
@@ -304,6 +395,7 @@
       cardNow: { style: 'solid', name: 'fa-chalkboard-user' },
       cardNext: { style: 'solid', name: 'fa-arrow-right-to-line' },
       cardLater: { style: 'solid', name: 'fa-arrow-right-to-dotted-line' },
+      cardArchived: { style: 'solid', name: 'fa-clock-rotate-left' },
       cardSplit: { style: 'solid', name: 'fa-split' },
       cardLocation: { style: 'solid', name: 'fa-location-dot' },
       cardTime: { style: 'solid', name: 'fa-clock' },
@@ -384,8 +476,8 @@
             devButton.setAttribute("visible", "");
             subButton.setAttribute("hidden", "");
             inputText.setAttribute("hidden", "");
-            const existing = jsonCheck(localStorage.getItem('ClassSync')) ? JSON.parse(localStorage.getItem('ClassSync')) : {};
-            localStorage.setItem('ClassSync', JSON.stringify({...existing, cal: formatCalLink(inputText.value)}));
+            setCalUrl(formatCalLink(inputText.value));
+            classSyncDB.clear();
             document.getElementById("header-classSync").style.display = 'block';
             document.getElementById("classSync").innerHTML = `${classSyncIcon('displayFetch')}<p style="font-size:8px;">Fetching...</p>`;
             document.getElementById("classSync").parentElement.classList.add('cs-icon');
@@ -419,7 +511,7 @@
     setClassSyncSetupPending(false);
     calActive = false;
     localStorage.removeItem('ClassSync');
-    last_events = {};
+    classSyncDB.clear();
     setClassSyncStatus("inactive", "Not Active");
     clearTimeout(t);
     classSyncLock = false;
@@ -433,7 +525,6 @@
     document.getElementById("header-classSync").style.display = 'none';
   });
   
-  let last_events = {};
   let errors = {
     _t: 0, _l: [],
     new(error, type) {
@@ -464,9 +555,12 @@
     saveSessionOfType(type) {
       if (!type) return new Error('Missing information');
       let l = [];
-      let tagged = [];
-      this._l.forEach(e=>{if (e.type == type) {l.push(e);tagged.push(e)}});
-      tagged.forEach(e=>{this._l.splice(this._l.indexOf(e), 1)});
+      const kept = [];
+      this._l.forEach(e=>{
+        if (e.type == type) l.push(e);
+        else kept.push(e);
+      });
+      this._l = kept;
       if (!l.length) return;
       if (jsonCheck(localStorage.getItem("session-error"))) {
         s_e = JSON.parse(localStorage.getItem("session-error"));
@@ -508,76 +602,123 @@
 
   let classSyncLock = false;
 
-  function ClassSync() {
+  async function ClassSync() {
     if (classSyncLock) return;
     classSyncLock = true;
     if (!getCalUrl()) {
       document.getElementById("classSync").innerText = "";
       classSyncLock = false;
+      clearTimeout(t);
       return null;
     }
-    if (!isOnline) {
-      if (!last_events.joined) {
-        document.getElementById("classSync").innerHTML = `${classSyncIcon('displayOffline')}<p style="font-size:8px;">Offline</p>`;
-        document.getElementById("classSync").parentElement.classList.add('cs-icon');
-        setClassSyncError(2, 'offline', 'Offline', 'No cached data available.');
-        document.getElementById('sp-nc').style.display = 'none';
-        setClassSyncStatus("offline", "Network disconnected");
-        t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
-        return;
-      }
-      let events = last_events;
-      let endTime = new Date();
-      endTime.setHours(23, 59, 59, 0);
-      let startTime = new Date();
-      startTime.setHours(0, 0, 0, 0);
-      let tagged = [];
-      events.joined.forEach(e=>{
-        if (e.endraw.getTime() <= new Date().getTime()) {
-          tagged.push(e);
-        } else if (e.startraw.getTime() <= new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
-          e.now = true;
+    let endTime = new Date();
+    endTime.setHours(23, 59, 59, 0);
+    let startTime = new Date();
+    startTime.setHours(0, 0, 0, 0);
+    function joinEvents(events) {
+      let working = [];
+      events.joined = [];
+
+      structuredClone(events.today).forEach(e=>{
+        let matched = false;
+        for (let i = working.length - 1; i >= 0; i--) {
+          const prev = working[i];
+          if (prev.combined) continue;
+          if (prev.endraw.getTime() == e.startraw.getTime() && prev.summary == e.summary) {
+            if (e.location != prev.location) {
+              prev.locationA = prev.location;
+              prev.locationB = e.location;
+              prev.splitTime = e.startraw;
+              prev.split = true;
+              prev.locationSplit = true;
+              prev.location += ` ${classSyncIcon('roomTransition')} ${e.location}`;
+            }
+            prev.endraw = e.endraw;
+            prev.end = parseDate(e.endraw);
+            prev.endDate = e.endraw.toLocaleString();
+            prev.uid = [...prev.uid, ...e.uid];
+            prev.combined = true;
+            e.tagged = true;
+            matched = true;
+            break;
+          } else if (prev.startraw.getTime() == e.endraw.getTime() && prev.summary == e.summary) {
+            if (e.location != prev.location) {
+              prev.locationA = e.location;
+              prev.locationB = prev.location;
+              prev.splitTime = e.endraw;
+              prev.split = true;
+              prev.locationSplit = true;
+              prev.location += ` ${classSyncIcon('roomTransition')} ${e.location}`;
+            }
+            prev.startraw = e.startraw;
+            prev.start = parseDate(e.startraw);
+            prev.startDate = e.startraw.toLocaleString();
+            prev.uid = [...prev.uid, ...e.uid];
+            prev.combined = true;
+            e.tagged = true;
+            matched = true;
+            break;
+          } else if (prev.endraw.getTime() == e.startraw.getTime()) {
+            if (e.location != prev.location) {
+              prev.summaryA = prev.summary;
+              prev.summaryB = e.summary;
+              prev.summary = `${prev.summary} and ${e.summary}`;
+              prev.locationA = prev.location;
+              prev.locationB = e.location;
+              prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
+            } else {
+              prev.summary = `${prev.summary} and ${e.summary}`;
+            }
+            prev.endraw = e.endraw;
+            prev.end = parseDate(e.endraw);
+            prev.endDate = e.endraw.toLocaleString();
+            prev.split = true;
+            prev.splitTime = e.startraw;
+            prev.uid = [...prev.uid, ...e.uid];
+            prev.combined = true;
+            e.tagged = true;
+            matched = true;
+            break;
+          } else if (prev.startraw.getTime() == e.endraw.getTime()) {
+            if (e.location != prev.location) {
+              prev.summaryA = e.summary;
+              prev.summaryB = prev.summary;
+              prev.summary = `${prev.summary} and ${e.summary}`;
+              prev.locationA = e.location;
+              prev.locationB = prev.location;
+              prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
+            } else {
+              prev.summary = `${prev.summary} and ${e.summary}`;
+            }
+            prev.startraw = e.startraw;
+            prev.start = parseDate(e.startraw);
+            prev.startDate = e.startraw.toLocaleString();
+            prev.split = true;
+            prev.splitTime = e.endraw;
+            prev.uid = [...prev.uid, ...e.uid];
+            prev.combined = true;
+            e.tagged = true;
+            matched = true;
+            break;
+          }
         }
+        if (!matched) working.push(e);
       });
-      tagged.forEach(e=>{
-        events.joined.splice(events.joined.indexOf(e), 1);
+      working.forEach(e => events.joined.push(e));
+
+      events.joined = events.joined.filter(v => {
+        if (v.endraw.getTime() <= startTime.getTime() || v.tagged) {
+          return false;
+        } else if (v.endraw.getTime() <= new Date().getTime()) {
+          v.archived = true;
+        } else if (v.startraw.getTime() <= new Date().getTime() && v.endraw.getTime() > new Date().getTime()) {
+          v.now = true;
+        }
+        return true;
       });
+    }
 
-      events.joined.forEach(e => { e.next = false; });
-      events.next = events.joined.find(e => e.startraw.getTime() > new Date().getTime()) ?? null;
-      if (events.next) events.next.next = true;
-
-      if (events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime()) {
-        document.getElementById("classSync").innerHTML = last_events.next ? `${classSyncIcon('displayNext')} ${last_events.next.summary}${last_events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;">${classSyncIcon('displayLocation')} ${last_events.next.location}</p>` : ''}<p style="font-size:8px;">${last_events.next.start.slice(-2) == last_events.next.end.slice(-2) ? last_events.next.start.slice(0, -3) : last_events.next.start}-${last_events.next.end}${last_events.next.split && !last_events.next.locationSplit ? ` (split at ${parseDate(last_events.next.splitTime)})` : ``}</p><p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>` : `${classSyncIcon('displayEmpty')}<p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>`;
-        last_events.next ? document.getElementById("classSync").parentElement.classList.remove('cs-icon') : document.getElementById("classSync").parentElement.classList.add('cs-icon');
-        setClassSyncError(2, 'network', 'Network disconnected.', `Class data last updated at ${parseDatetime(last_events.timeChecked)}.`);
-        document.getElementById('sp-nc').style.display = last_events.next ? 'none' : 'flex';
-        document.getElementById('sp-nc').innerHTML = `<div class="spt">${classSyncIcon('displayEmpty')} ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
-        Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-          if (!['sp-nc','sp-err'].includes(c.id)) {
-            c.remove();
-          }
-        });
-        events.joined.forEach(e=>{
-          document.getElementById('sp-c').appendChild(createSneakPeekCard(e));
-        });
-        reapplyCardSelection();
-      } else {
-        document.getElementById("classSync").innerHTML = `${classSyncIcon('displayEmpty')}<p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(last_events.timeChecked)}</p>`;
-        document.getElementById("classSync").parentElement.classList.add('cs-icon');
-        setClassSyncError(2, 'network', 'Network disconnected.', `Class data last updated at ${parseDatetime(last_events.timeChecked)}.`);
-        document.getElementById('sp-nc').style.display = 'flex';
-        document.getElementById('sp-nc').innerHTML = `<div class="spt">${classSyncIcon('displayEmpty')} ${last_events.today.length ? `No more classes today` : `No classes today`}</div>`;
-        Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-          if (!['sp-nc','sp-err'].includes(c.id)) {
-            c.remove();
-          }
-        });
-      }
-      t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
-      return;
-    };
-    if (!formatCalLink(getCalUrl(), true).startsWith('viewbank-vic.compass.education/download/sharedCalendar.aspx')) {
+    if (!formatCalLink(getCalUrl(), true).startsWith('viewbank-vic.compass.education/download/sharedCalendar.aspx') && isOnline) {
       errors.new({error: "Link failed test", url: getCalUrl()}, "ClassSync");
       consol.error("Link failed test", "ClassSync");
       document.getElementById("classSync").innerHTML = `${classSyncIcon('displayLinkError')}<p style="font-size:8px;">Link Error</p>`;
@@ -589,200 +730,68 @@
       return null;
     }
     let sts = '';
-    fetch(getCalUrl())
-      .then(response => {
+    let events = await loadClassSyncData() || {next: null, all: [], today: [], joined: [], timeChecked: new Date()}
+    if (!isOnline && !(events.all.length || events.today.length)) {
+      document.getElementById("classSync").innerHTML = `${classSyncIcon('displayOffline')}<p style="font-size:8px;">Offline</p>`;
+      document.getElementById("classSync").parentElement.classList.add('cs-icon');
+      setClassSyncError(2, 'offline', 'Offline', 'No cached data available.');
+      document.getElementById('sp-nc').style.display = 'none';
+      setClassSyncStatus("offline", "Network disconnected");
+      t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
+      return;
+    } else if (!isOnline) setClassSyncStatus("offline", "Network disconnected"); else if (isOnline) setClassSyncStatus("active", "Active");
+
+    if (isOnline) {
+      try {
+        const response = await fetch(getCalUrl());
         if (!response.ok) {
           sts = response.status;
           throw new Error(`Failed to fetch calendar. Status: ${response.status}`);
         }
-        return response.text();
-      })
-      .then(fileContents => {
-        setClassSyncStatus("active", "Active");
-        const lines = fileContents.split('\n');
-        var endTime = new Date();
-        endTime.setHours(23, 59, 59, 0);
-        var startTime = new Date();
-        startTime.setHours(0, 0, 0, 0);
-        let events = {next: null, all: [], today: [], joined: [], timeChecked: new Date()};
+        const res = await response.text();
+        const lines = res.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
 
-        function getEvents() {
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-  
-            if (line.startsWith('BEGIN:VEVENT')) {
-              eventData = {};
-            } else if (line.startsWith('END:VEVENT')) {
-              events.all.push(eventData);
-              if (eventData.startraw.getTime() >= startTime.getTime() && eventData.startraw.getTime() <= endTime.getTime()) events.today.push(eventData);
-            } else if (line.startsWith('SUMMARY:')) {
-              const summary = line.substring(8);
-              eventData.summary = summary.trim();
-            } else if (line.startsWith('DTSTART:')) {
-              const startDateString = line.substring(8);
-              const startDate = parseICSDateTimeString(startDateString);
-              eventDate = startDate;
-              eventData.start = parseDate(startDate);
-              eventData.startraw = startDate;
-              eventData.startDate = startDate.toLocaleString();
-            } else if (line.startsWith('DTEND:')) {
-              const endDateString = line.substring(6);
-              const endDate = parseICSDateTimeString(endDateString);
-              eventData.end = parseDate(endDate);
-              eventData.endraw = endDate;
-              eventData.endDate = endDate.toLocaleString();
-              eventData.split = false;
-            } else if (line.startsWith('LOCATION:')) {
-              const location = line.substring(9);
-              eventData.location = location.trim();
-            }
+          if (line.startsWith('BEGIN:VEVENT')) {
+            eventData = {};
+          } else if (line.startsWith('END:VEVENT')) {
+            if (!eventData.startraw || !eventData.endraw || !eventData.uid) {consol.warn(`Invalid event data: ${JSON.stringify(eventData)}`, "ClassSync"); continue};
+            const eventUids = Array.isArray(eventData.uid) ? eventData.uid : [eventData.uid];
+            const duplicateEvent = events.all.find(e => Array.isArray(e.uid) && e.uid.some(uid => eventUids.includes(uid)));
+            if (duplicateEvent) {
+              if (duplicateEvent.location != eventData.location) duplicateEvent.location = eventData.location;
+              if (duplicateEvent.summary != eventData.summary) duplicateEvent.summary = eventData.summary;
+              continue;
+            };
+            events.all.push(eventData);
+          } else if (line.startsWith('SUMMARY:')) {
+            const summary = line.substring(8);
+            eventData.summary = summary.trim();
+          } else if (line.startsWith('DTSTART:')) {
+            const startDateString = line.substring(8);
+            const startDate = parseICSDateTimeString(startDateString);
+            eventDate = startDate;
+            eventData.start = parseDate(startDate);
+            eventData.startraw = startDate;
+            eventData.startDate = startDate.toLocaleString();
+          } else if (line.startsWith('DTEND:')) {
+            const endDateString = line.substring(6);
+            const endDate = parseICSDateTimeString(endDateString);
+            eventData.end = parseDate(endDate);
+            eventData.endraw = endDate;
+            eventData.endDate = endDate.toLocaleString();
+            eventData.split = false;
+          } else if (line.startsWith('UID:')) {
+            const uid = line.substring(4);
+            eventData.uid = [uid.trim()];
+          } else if (line.startsWith('LOCATION:')) {
+            const location = line.substring(9);
+            eventData.location = location.trim();
           }
-          events.today.sort((a, b) => a.startraw - b.startraw);
         }
-
-        function joinEvents() {
-          let working = [];
-          events.today.forEach(e=>{
-            let matched = false;
-            for (let i = working.length - 1; i >= 0; i--) {
-              const prev = working[i];
-              if (prev.combined) continue;
-              if (prev.endraw.getTime() == e.startraw.getTime() && prev.summary == e.summary) {
-                if (e.location != prev.location) {
-                  prev.locationA = prev.location;
-                  prev.locationB = e.location;
-                  prev.splitTime = e.startraw;
-                  prev.split = true;
-                  prev.locationSplit = true;
-                  prev.location += ` ${classSyncIcon('roomTransition')} ${e.location}`;
-                }
-                prev.endraw = e.endraw;
-                prev.end = parseDate(e.endraw);
-                prev.endDate = e.endraw.toLocaleString();
-                prev.combined = true;
-                e.tagged = true;
-                matched = true;
-                break;
-              } else if (prev.startraw.getTime() == e.endraw.getTime() && prev.summary == e.summary) {
-                if (e.location != prev.location) {
-                  prev.locationA = e.location;
-                  prev.locationB = prev.location;
-                  prev.splitTime = e.endraw;
-                  prev.split = true;
-                  prev.locationSplit = true;
-                  prev.location += ` ${classSyncIcon('roomTransition')} ${e.location}`;
-                }
-                prev.startraw = e.startraw;
-                prev.start = parseDate(e.startraw);
-                prev.startDate = e.startraw.toLocaleString();
-                prev.combined = true;
-                e.tagged = true;
-                matched = true;
-                break;
-              } else if (prev.endraw.getTime() == e.startraw.getTime()) {
-                if (!(prev.startraw.getTime() < new Date().getTime() && e.startraw.getTime() < new Date().getTime())) {
-                  if (e.location != prev.location) {
-                    prev.summaryA = prev.summary;
-                    prev.summaryB = e.summary;
-                    prev.summary = `${prev.summary} and ${e.summary}`;
-                    prev.locationA = prev.location;
-                    prev.locationB = e.location;
-                    prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
-                  } else {
-                    prev.summary = `${prev.summary} and ${e.summary}`;
-                  }
-                  prev.endraw = e.endraw;
-                  prev.end = parseDate(e.endraw);
-                  prev.endDate = e.endraw.toLocaleString();
-                  prev.split = true;
-                  prev.splitTime = e.startraw;
-                  prev.combined = true;
-                  e.tagged = true;
-                  matched = true;
-                }
-                break;
-              } else if (prev.startraw.getTime() == e.endraw.getTime()) {
-                if (e.location != prev.location) {
-                  prev.summaryA = e.summary;
-                  prev.summaryB = prev.summary;
-                  prev.summary = `${prev.summary} and ${e.summary}`;
-                  prev.locationA = e.location;
-                  prev.locationB = prev.location;
-                  prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
-                } else {
-                  prev.summary = `${prev.summary} and ${e.summary}`;
-                }
-                prev.startraw = e.startraw;
-                prev.start = parseDate(e.startraw);
-                prev.startDate = e.startraw.toLocaleString();
-                prev.split = true;
-                prev.splitTime = e.endraw;
-                prev.combined = true;
-                e.tagged = true;
-                matched = true;
-                break;
-              }
-            }
-            if (!matched) working.push(e);
-          });
-          working.forEach(e => events.joined.push(e));
-
-          let tagged = [];
-          events.joined.forEach(e=>{
-            if (e.endraw.getTime() <= new Date().getTime()) {
-              tagged.push(e);
-            } else if (e.startraw.getTime() <= new Date().getTime() && e.endraw.getTime() > new Date().getTime()) {
-              e.now = true;
-            }
-          });
-          tagged.forEach(e=>{
-            events.joined.splice(events.joined.indexOf(e), 1);
-          });
-        }
-
-        getEvents();
-        joinEvents();
-        events.joined.forEach(e => { e.next = false; });
-        events.next = events.joined.find(e => e.startraw.getTime() > new Date().getTime()) ?? null;
-        if (events.next) events.next.next = true;
-        
-        if ((events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime())) {
-          document.getElementById("classSync").innerHTML = `${classSyncIcon('displayNext')} ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;">${classSyncIcon('displayLocation')} ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split && !events.next.locationSplit ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>`;
-          document.getElementById("classSync").parentElement.classList.remove('cs-icon');
-          setClassSyncError();
-          document.getElementById('sp-nc').style.display = 'none';
-          Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-            if (!['sp-nc','sp-err'].includes(c.id)) {
-              c.remove();
-            }
-          });
-          events.joined.forEach(e=>{
-            document.getElementById('sp-c').appendChild(createSneakPeekCard(e));
-          });
-          reapplyCardSelection();
-        } else {
-          document.getElementById("classSync").innerHTML = classSyncIcon('displayEmpty');
-          document.getElementById('classSync').parentElement.classList.add('cs-icon');
-          setClassSyncError();
-          document.getElementById('sp-nc').style.display = events.joined.find(e=>e.now) ? 'none' : 'flex';
-          Array.prototype.slice.call(document.getElementById('sp-c').children).forEach(c=>{
-            if (!['sp-nc','sp-err'].includes(c.id)) {
-              c.remove();
-            }
-          });
-          events.joined.forEach(e=>{
-            document.getElementById('sp-c').appendChild(createSneakPeekCard(e));
-          });
-          reapplyCardSelection();
-          document.getElementById('sp-nc').innerHTML = events.joined.find(e=>e.now) ? '' : `<div class="spt">${classSyncIcon('displayEmpty')} ${events.today.length ? 'No more classes for today' : 'No classes today'}</div>`;
-        }
-        last_events = events;
-        saveClassSyncData(events);
-        updateRoomClasses(events.joined);
-        errors.saveSessionOfType("ClassSync");
-        t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
-      })
-      .catch(error => {
+        events.timeChecked = new Date();
+      } catch (error) {
         errors.new(JSON.stringify(error, Object.getOwnPropertyNames(error)), "ClassSync");
         consol.error(error, "ClassSync");
         document.getElementById("classSync").innerHTML = `${classSyncIcon(sts != 404 ? 'displayRetry' : 'displayLinkError')}<p style="font-size:8px;">${sts != 404 ? `Retrying...` : `Link Error`}</p>`;
@@ -798,7 +807,58 @@
           updateErrorTimer(60 - new Date().getSeconds());
           t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
         }
-      });
+        return;
+      }
+    }
+
+    events.all = events.all.filter(e => e.endraw.getTime() > startTime.getTime()).sort((a, b) => a.startraw - b.startraw);
+    events.today = events.all.filter(e => e.startraw.getTime() >= startTime.getTime() && e.startraw.getTime() <= endTime.getTime()).sort((a, b) => a.startraw - b.startraw);
+    joinEvents(events);
+    events.joined.forEach(e => { e.next = false; });
+    events.next = events.joined.find(e => e.startraw.getTime() > new Date().getTime()) ?? null;
+    if (events.next) events.next.next = true;
+    
+    const hasUpcomingClass = events.next && events.next.start && events.next.startraw.getTime() <= endTime.getTime();
+    const hasCurrentClass = events.joined.some(e => e.now);
+    const classSyncEl = document.getElementById("classSync");
+    const spContainer = document.getElementById('sp-c');
+    const spNcEl = document.getElementById('sp-nc');
+    const offlineCheckedMarkup = !isOnline ? `<p style="font-size:8px;margin-top:5px !important;color:#ff746c;">${classSyncIcon('displayChecked')} ${parseDatetime(events.timeChecked)}</p>` : '';
+
+    if (hasUpcomingClass) {
+      classSyncEl.innerHTML = `${classSyncIcon('displayNext')} ${events.next.summary}${events.next.location ? `<p style="font-size:12px;margin: 5px 0 !important;">${classSyncIcon('displayLocation')} ${events.next.location}</p>` : ''}<p style="font-size:8px;">${events.next.start.slice(-2) == events.next.end.slice(-2) ? events.next.start.slice(0, -3) : events.next.start}-${events.next.end}${events.next.split && !events.next.locationSplit ? ` (split at ${parseDate(events.next.splitTime)})` : ``}</p>${offlineCheckedMarkup}`;
+      classSyncEl.parentElement.classList.remove('cs-icon');
+      spNcEl.style.display = 'none';
+    } else {
+      classSyncEl.innerHTML = `${classSyncIcon('displayEmpty')}${offlineCheckedMarkup}`;
+      classSyncEl.parentElement.classList.add('cs-icon');
+      spNcEl.style.display = hasCurrentClass ? 'none' : 'flex';
+      spNcEl.innerHTML = hasCurrentClass ? '' : `<div class="spt">${classSyncIcon('displayEmpty')} ${events.today.length ? 'No more classes for today' : 'No classes today'}</div>`;
+    }
+
+    isOnline ? setClassSyncError() : setClassSyncError(2, 'network', 'Network disconnected.', `Class data last updated at ${parseDatetime(events.timeChecked)}.`);
+    Array.prototype.slice.call(spContainer.children).forEach(c=>{
+      if (!['sp-nc','sp-err'].includes(c.id)) {
+        c.remove();
+      }
+    });
+    spCurrentEvents = events.joined;
+    events.joined.forEach(e=>{
+      if (!spShowArchived && e.archived) return;
+      const card = createSneakPeekCard(e);
+      const spNcAnchor = document.getElementById('sp-nc');
+      if (spNcAnchor && spNcAnchor.parentElement === spContainer) {
+        spContainer.insertBefore(card, spNcAnchor);
+      } else {
+        spContainer.appendChild(card);
+      }
+    });
+    updateRoomClasses(events.joined);
+    reapplyRoomPopoverClasses();
+    reapplyCardSelection();
+    saveClassSyncData(events);
+    errors.saveSessionOfType("ClassSync");
+    t = setTimeout(() => { classSyncLock = false; ClassSync(); }, (60 - new Date().getSeconds()) * 1000);
   }
   let etThread = 0;
   let etActive = false;
@@ -878,8 +938,10 @@
       return s;
     }
     return {
-      joined: (events.joined || []).map(ser),
+      next: events.next ? ser(events.next) : null,
+      all: (events.all || []).map(ser),
       today: (events.today || []).map(ser),
+      joined: (events.joined || []).map(ser),
       timeChecked: events.timeChecked instanceof Date ? events.timeChecked.toISOString() : null
     };
   }
@@ -893,8 +955,8 @@
       return d;
     }
     return {
-      next: null,
-      all: [],
+      next: data.next ? deser(data.next) : null,
+      all: (data.all || []).map(deser),
       joined: (data.joined || []).map(deser),
       today: (data.today || []).map(deser),
       timeChecked: data.timeChecked ? new Date(data.timeChecked) : new Date()
@@ -905,25 +967,55 @@
     const cal = getCalUrl();
     if (!cal) return;
     try {
-      localStorage.setItem('ClassSync', JSON.stringify({cal, data: serializeCSEvents(events)}));
+      classSyncDB.set(serializeCSEvents(events));
     } catch(e) {
       consol.error('Failed to save ClassSync cache', 'ClassSync');
     }
   }
 
-  function loadClassSyncData() {
-    if (!jsonCheck(localStorage.getItem('ClassSync'))) return null;
+  async function loadClassSyncData() {
+    if (!getCalUrl()) return null;
     try {
-      const saved = JSON.parse(localStorage.getItem('ClassSync'));
-      if (!saved.data || !saved.data.timeChecked) return null;
-      const savedDate = new Date(saved.data.timeChecked);
+      const savedData = await classSyncDB.get();
+      if (!savedData || !savedData.timeChecked) return null;
+      const savedDate = new Date(savedData.timeChecked);
       const today = new Date();
       if (savedDate.getFullYear() !== today.getFullYear() ||
           savedDate.getMonth() !== today.getMonth() ||
           savedDate.getDate() !== today.getDate()) return null;
-      return deserializeCSEvents(saved.data);
+      return deserializeCSEvents(savedData);
     } catch(e) {
       return null;
+    }
+  }
+
+  function setCalUrl(calUrl) {
+    if (!calUrl) {
+      localStorage.removeItem('ClassSync');
+      return;
+    }
+    localStorage.setItem('ClassSync', JSON.stringify({ cal: calUrl }));
+  }
+
+  function normalizeClassSyncStorage() {
+    if (!jsonCheck(localStorage.getItem('ClassSync'))) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem('ClassSync'));
+      if (!saved || typeof saved !== 'object') {
+        localStorage.removeItem('ClassSync');
+        return;
+      }
+      const cal = typeof saved.cal === 'string' ? saved.cal : null;
+      const shouldNormalize = Object.keys(saved).some(key => key !== 'cal');
+      if (!cal) {
+        localStorage.removeItem('ClassSync');
+        return;
+      }
+      if (shouldNormalize) {
+        setCalUrl(cal);
+      }
+    } catch {
+      localStorage.removeItem('ClassSync');
     }
   }
 
@@ -935,19 +1027,22 @@
   // legacy
   if (localStorage.getItem('compass-cal')) {
     const legacyUrl = localStorage.getItem('compass-cal');
-    const existing = jsonCheck(localStorage.getItem('ClassSync')) ? JSON.parse(localStorage.getItem('ClassSync')) : {};
-    localStorage.setItem('ClassSync', JSON.stringify({...existing, cal: legacyUrl}));
+    setCalUrl(legacyUrl);
     localStorage.removeItem('compass-cal');
   }
+
+  normalizeClassSyncStorage();
   
   let spMapReady = false;
   let spActiveRoom = null;
   let spPopoverOpen = false;
   let spPopoverDisabled = false;
   let spFilterActive = false;
+  let spShowArchived = false;
   let spHighlightedRooms = new Set();
   let spRoomToClasses = {};
   let spMapReset = null;
+  let spCurrentEvents = [];
   const spKnownRooms = ['LIB', 'WBC', 'VCEC', 'GYM', 'A09', 'A08', 'A06', 'A05', 'A04', 'A03', 'A02', 'A01', 'C07', 'C06', 'C05', 'C04', 'C03', 'C02', 'C01', 'G13', 'G12', 'G11', 'G10', 'G09', 'G08', 'G07', 'G06', 'G05', 'G04', 'G03', 'G02', 'G01', 'GM7', 'GM6', 'GM5', 'GM4', 'GM3', 'GM2', 'GM1', 'J12', 'J11', 'J10', 'J09', 'J08', 'J07', 'J06', 'J05', 'J04', 'J03', 'J02', 'J01', 'PAC', 'MPR', 'THT', 'R26', 'R25', 'R24', 'R23', 'R22', 'R21', 'R20', 'R19', 'R18', 'R17', 'R16', 'R15', 'R14', 'R13', 'R12', 'R11', 'R10', 'R09', 'R08', 'R07', 'R06', 'R05', 'R04', 'R03', 'R02', 'R01'];
   const spBlockAccentRgb = {
     A: '3, 253, 72',
@@ -960,6 +1055,25 @@
     G: '1, 197, 245',
     J: '218, 137, 213'
   };
+
+  const SP_STATUS = Object.freeze({
+    NOW: 'Now',
+    NEXT: 'Next',
+    LATER: 'Later',
+    ARCHIVED: 'Archived'
+  });
+
+  function getEventStatus(eventData) {
+    return eventData.archived ? SP_STATUS.ARCHIVED : eventData.now ? SP_STATUS.NOW : eventData.next ? SP_STATUS.NEXT : SP_STATUS.LATER;
+  }
+
+  function pickRoomStatus(statuses) {
+    if (statuses.has(SP_STATUS.NOW)) return SP_STATUS.NOW;
+    if (statuses.has(SP_STATUS.NEXT)) return SP_STATUS.NEXT;
+    if (statuses.has(SP_STATUS.LATER)) return SP_STATUS.LATER;
+    if (statuses.has(SP_STATUS.ARCHIVED)) return SP_STATUS.ARCHIVED;
+    return '';
+  }
 
   function getBlockKeyForRoom(roomId) {
     if (!roomId) return null;
@@ -1010,8 +1124,6 @@
     document.getElementById("classSync").parentElement.classList.add('cs-icon');
     document.getElementById('sp-nc').style.display = 'none';
     setClassSyncError(1, 'fetch', 'Fetching class data...');
-    const cachedEvents = loadClassSyncData();
-    if (cachedEvents) last_events = cachedEvents;
     ClassSync();
     initSneakPeekMap();
   }
@@ -1033,6 +1145,10 @@
     const closeSP = () => {
       if (!spOpen) return;
       spOpen = false, clearRoomFilter();
+      spShowArchived = false;
+      const historyBtn = document.getElementById('sp-history-btn');
+      historyBtn && historyBtn.classList.remove('active');
+      refreshSneakPeekCards();
       spEls.ct.style.display = 'block', spEls.ov.style.opacity = 0, spEls.bg.classList.remove('active'), spEls.mp?.classList.remove('active'), closeRoomPopover();
       contentDiv.classList.remove('hide'), escapeStack.pop('sneakpeek');
       spMapReset?.();
@@ -1068,14 +1184,8 @@
       '7/8/9/10LIBSP': 'LIB',
       '8/9LIBSP': 'LIB'
     };
-    if (aliasMap[location]) {
-      return aliasMap[location];
-    }
-    for (const room of spKnownRooms) {
-      if (location.includes(room)) {
-        return room;
-      }
-    }
+    if (aliasMap[location]) return aliasMap[location];
+    if (spKnownRooms.includes(location)) return location;
     return null;
   }
 
@@ -1088,26 +1198,38 @@
     document.querySelectorAll('.sp-location').forEach(l => l.classList.remove('sp-dimmed'));
     document.querySelectorAll('.sneakpeek-map [id^="W_"]').forEach(el => el.classList.remove('sp-dimmed'));
     document.querySelectorAll('.sneakpeek-map [id^="STAFF_"]').forEach(el => el.classList.remove('sp-dimmed'));
-    document.querySelectorAll('.sneakpeek-card[data-room]').forEach(c => c.classList.remove('sp-selected'));
+    document.querySelectorAll('.sneakpeek-card[data-rooms]').forEach(c => c.classList.remove('sp-selected'));
   }
 
   function applyRoomFilter() {
     document.querySelectorAll('.sp-room').forEach(r => {
-      const hi = spHighlightedRooms.has(r.id.replace('CLASS_', ''));
-      r.classList.toggle('sp-highlighted', hi), r.classList.toggle('sp-dimmed', !hi);
+      const roomId = r.id.replace('CLASS_', '');
+      const isHighlighted = spHighlightedRooms.has(roomId);
+      
+      if (isHighlighted) {
+        r.classList.add('sp-highlighted');
+        r.classList.remove('sp-dimmed');
+        const roomClasses = spRoomToClasses[roomId] || [];
+        const statuses = new Set(roomClasses.map(c => c.status));
+        r.dataset.spStatus = pickRoomStatus(statuses);
+      } else {
+        r.classList.add('sp-dimmed');
+        r.classList.remove('sp-highlighted');
+        r.dataset.spStatus = '';
+      }
     });
     document.querySelectorAll('.sp-location, .sneakpeek-map [id^="W_"], .sneakpeek-map [id^="STAFF_"]').forEach(el => el.classList.add('sp-dimmed'));
   }
 
-  function toggleTodayFilter() {
-    const activeCount = Object.values(spRoomToClasses).filter(c => c.length > 0).length;
-    if (spFilterActive && spHighlightedRooms.size === activeCount) return clearRoomFilter();
+  function toggleMapFilter(update) {
+    const activeCount = Object.values(spRoomToClasses).filter(c => c.filter(s => !spShowArchived ? s.status !== SP_STATUS.ARCHIVED : true).length > 0).length;
+    if (!update && spFilterActive && spHighlightedRooms.size === activeCount) return clearRoomFilter();
     spFilterActive = true, spHighlightedRooms.clear();
-    Object.entries(spRoomToClasses).forEach(([id, c]) => c.length > 0 && spHighlightedRooms.add(id));
+    Object.entries(spRoomToClasses).forEach(([id, c]) => c.filter(s => !spShowArchived ? s.status !== SP_STATUS.ARCHIVED : true).length > 0 && spHighlightedRooms.add(id));
     const filterBtn = document.getElementById('sp-filter-btn');
     filterBtn && filterBtn.classList.add('active');
-    document.querySelectorAll('.sneakpeek-card[data-room]').forEach(c => {
-      const cardRooms = c.dataset.rooms ? c.dataset.rooms.split(',') : [c.dataset.room];
+    document.querySelectorAll('.sneakpeek-card[data-rooms]').forEach(c => {
+      const cardRooms = c.dataset.rooms.split(',');
       c.classList.toggle('sp-selected', cardRooms.some(id => spHighlightedRooms.has(id)));
     });
     applyRoomFilter();
@@ -1120,8 +1242,8 @@
     roomIds.forEach(id => spHighlightedRooms.add(id));
     const filterBtn = document.getElementById('sp-filter-btn');
     filterBtn && filterBtn.classList.remove('active');
-    document.querySelectorAll('.sneakpeek-card[data-room]').forEach(c => {
-      const cardRooms = c.dataset.rooms ? c.dataset.rooms.split(',') : [c.dataset.room];
+    document.querySelectorAll('.sneakpeek-card[data-rooms]').forEach(c => {
+      const cardRooms = c.dataset.rooms.split(',');
       c.classList.toggle('sp-selected', cardRooms.some(id => roomIds.includes(id)));
     });
     applyRoomFilter();
@@ -1129,15 +1251,45 @@
 
   function reapplyCardSelection() {
     if (!spFilterActive || spHighlightedRooms.size === 0) return;
-    const upcomingRooms = new Set();
-    document.querySelectorAll('.sneakpeek-card[data-room]').forEach(c => {
-      const cardRooms = c.dataset.rooms ? c.dataset.rooms.split(',') : [c.dataset.room];
-      cardRooms.forEach(id => upcomingRooms.add(id));
-      c.classList.toggle('sp-selected', cardRooms.some(id => spHighlightedRooms.has(id)));
+    let highlightableRooms = new Set();
+    Object.entries(spRoomToClasses).forEach(([id, c]) => c.filter(s => !spShowArchived ? s.status !== SP_STATUS.ARCHIVED : true).length > 0 && highlightableRooms.add(id));
+    let newHighlightedRooms = new Set([...spHighlightedRooms].filter(id => highlightableRooms.has(id)));
+    let oldHighlightedRooms = new Set(spHighlightedRooms);
+    spHighlightedRooms.clear();
+    let cardData = {selected: [], all: []};
+    document.querySelectorAll('.sneakpeek-card[data-rooms]').forEach(c => {
+      const cardRooms = c.dataset.rooms.split(',');
+      c.classList.toggle('sp-selected', cardRooms.some(id => newHighlightedRooms.has(id)));
+      if (cardRooms.some(id => newHighlightedRooms.has(id))) cardData.selected.push(c);
+      cardData.all.push(c);
+      cardRooms.forEach(id => {if (newHighlightedRooms.has(id)) spHighlightedRooms.add(id);});
     });
-    spHighlightedRooms.forEach(id => { if (!upcomingRooms.has(id)) spHighlightedRooms.delete(id); });
+    if (cardData.selected.length < cardData.all.length) cardData.selected.forEach(c => c.dataset.rooms.split(',').forEach(id => oldHighlightedRooms.has(id) && spHighlightedRooms.add(id)));
     if (spHighlightedRooms.size === 0) clearRoomFilter();
     else applyRoomFilter();
+  }
+
+  function reapplyRoomPopoverClasses() {
+    if (!spPopoverOpen || !spActiveRoom) return;
+    const roomId = spActiveRoom.id.replace('CLASS_', '');
+    const classes = spRoomToClasses[roomId] || [];
+    const cards = Array.from(document.querySelectorAll('#sp-room-classes .room-class-card'));
+    if (!classes.length || !cards.length) return;
+
+    cards.forEach((card, index) => {
+      const roomClass = classes[index];
+      if (!roomClass) return;
+      card.dataset.status = roomClass.status;
+
+      const titleEl = card.querySelector('.room-class-title');
+      const iconEl = titleEl?.querySelector('i');
+      if (!iconEl) return;
+
+      const iconProbe = document.createElement('div');
+      iconProbe.innerHTML = classSyncIcon(`card${roomClass.status}`);
+      const nextIconEl = iconProbe.querySelector('i');
+      if (nextIconEl) iconEl.className = nextIconEl.className;
+    });
   }
 
   function updateRoomClasses(events = []) {
@@ -1153,18 +1305,18 @@
           if (!spRoomToClasses[roomA]) spRoomToClasses[roomA] = [];
           spRoomToClasses[roomA].push({
             title: titleA,
-            time: `${e.start}-${splitTimeStr}`,
-            status: e.now ? 'now' : e.next ? 'next' : 'later',
-            splitInfo: roomB ? `then ${titleA != titleB ? `${titleB} in` : ''} ${roomB} ${splitTimeStr}-${e.end}` : null
+            time: `${e.start.slice(-2) == splitTimeStr.slice(-2) ? e.start.slice(0, -3) : e.start}-${splitTimeStr}`,
+            status: e.now && e.splitTime <= new Date().getTime() ? SP_STATUS.ARCHIVED : getEventStatus(e),
+            splitInfo: roomB ? `then ${titleA != titleB ? `${titleB} in` : ''} ${roomB} ${splitTimeStr.slice(-2) == e.end.slice(-2) ? splitTimeStr.slice(0, -3) : splitTimeStr}-${e.end}` : null
           });
         }
         if (roomB) {
           if (!spRoomToClasses[roomB]) spRoomToClasses[roomB] = [];
           spRoomToClasses[roomB].push({
             title: titleB,
-            time: `${splitTimeStr}-${e.end}`,
-            status: e.now ? 'now' : e.next ? 'next' : 'later',
-            splitInfo: roomA ? `from ${titleA != titleB ? `${titleA} in` : ''} ${roomA} ${e.start}-${splitTimeStr}` : null
+            time: `${splitTimeStr.slice(-2) == e.end.slice(-2) ? splitTimeStr.slice(0, -3) : splitTimeStr}-${e.end}`,
+            status: e.now && e.splitTime > new Date().getTime() ? SP_STATUS.NEXT : getEventStatus(e),
+            splitInfo: roomA ? `from ${titleA != titleB ? `${titleA} in` : ''} ${roomA} ${e.start.slice(-2) == splitTimeStr.slice(-2) ? e.start.slice(0, -3) : e.start}-${splitTimeStr}` : null
           });
         }
       } else {
@@ -1173,13 +1325,14 @@
           if (!spRoomToClasses[roomId]) spRoomToClasses[roomId] = [];
           spRoomToClasses[roomId].push({
             title: e.summary,
-            time: `${e.start}-${e.end}`,
-            status: e.now ? 'now' : e.next ? 'next' : 'later'
+            time: `${e.start.slice(-2) == e.end.slice(-2) ? e.start.slice(0, -3) : e.start}-${e.end}`,
+            status: getEventStatus(e)
           });
         }
       }
     });
     updateFilterButton();
+    updateHistoryButton();
   }
 
   function updateFilterButton() {
@@ -1187,6 +1340,14 @@
     const hasClasses = Object.values(spRoomToClasses).some(classes => classes.length > 0);
     if (filterBtn) {
       filterBtn.style.display = hasClasses ? '' : 'none';
+    }
+  }
+
+  function updateHistoryButton() {
+    const historyBtn = document.getElementById('sp-history-btn');
+    const hasArchivedClasses = Object.values(spCurrentEvents).some(c => c.archived);
+    if (historyBtn) {
+      historyBtn.style.display = hasArchivedClasses ? '' : 'none';
     }
   }
 
@@ -1201,14 +1362,16 @@
       const roomId = extractRoomId(eventData.location);
       if (roomId) roomIds.push(roomId);
     }
-    const ico = eventData.now ? 'cardNow' : eventData.next ? 'cardNext' : 'cardLater';
+    const status = getEventStatus(eventData);
+    const ico = `card${status}`;
     const el = document.createElement('div');
     el.className = 'sneakpeek-card';
+    el.dataset.status = status;
     const splitAtHtml = eventData.split && !eventData.locationSplit ? `<div class="sptsplit">${classSyncIcon('cardSplit')} split at ${parseDate(eventData.splitTime)}</div>` : '';
     if (splitAtHtml) el.classList.add('has-split');
     el.innerHTML = `<div class="spt">${classSyncIcon(ico)} ${eventData.summary}</div><div class="sptl" title="${eventData.locationA && eventData.locationB && eventData.splitTime ? `${eventData.locationA} -> ${eventData.locationB}` : eventData.location}">${eventData.location?`${classSyncIcon('cardLocation')} ${eventData.location}`:''}</div><div class="spti">${classSyncIcon('cardTime')} ${eventData.start.slice(-2) == eventData.end.slice(-2) ? eventData.start.slice(0, -3) : eventData.start}-${eventData.end}</div>${splitAtHtml}`;
+    if (eventData.archived) el.classList.add('archived');
     if (roomIds.length > 0) {
-      el.dataset.room = roomIds[0];
       el.dataset.rooms = roomIds.join(',');
       const [accentA, accentB] = getAccentPairForRoomIds(roomIds);
       el.style.setProperty('--sp-accent-rgb', accentA);
@@ -1218,6 +1381,30 @@
     return el;
   }
 
+  function refreshSneakPeekCards() {
+    const spContainer = document.getElementById('sp-c');
+    if (!spContainer) return;
+    
+    Array.prototype.slice.call(spContainer.children).forEach(c => {
+      if (!['sp-nc', 'sp-err'].includes(c.id)) {
+        c.remove();
+      }
+    });
+    
+    spCurrentEvents.forEach(e => {
+      if (!spShowArchived && e.archived) return;
+      const card = createSneakPeekCard(e);
+      const spNcAnchor = document.getElementById('sp-nc');
+      if (spNcAnchor && spNcAnchor.parentElement === spContainer) {
+        spContainer.insertBefore(card, spNcAnchor);
+      } else {
+        spContainer.appendChild(card);
+      }
+    });
+    
+    reapplyCardSelection();
+  }
+
   function setRoomClasses(classes = []) {
     const classesEl = document.getElementById('sp-room-classes');
     if (!classesEl) return;
@@ -1225,8 +1412,9 @@
     classes.forEach(c => {
       const card = document.createElement('div');
       card.className = 'room-class-card';
+      card.dataset.status = c.status;
       const title = document.createElement('div');
-      title.className = 'room-class-title', title.textContent = c.title || 'Class';
+      title.className = 'room-class-title', title.innerHTML = `${classSyncIcon(`card${c.status}`)} ${c.title}`;
       const time = document.createElement('div');
       time.className = 'room-class-time', time.textContent = c.time || '';
       card.appendChild(title), card.appendChild(time);
@@ -1255,7 +1443,8 @@
     const popover = document.getElementById('sp-room-popover');
     if (!popover) return;
     popover.dataset.open = open ? 'true' : 'false';
-    (open && !spPopoverOpen) ? (spPopoverOpen = true, escapeStack.push('sp-popover', closeRoomPopover)) : (!open && spPopoverOpen) ? (spPopoverOpen = false, escapeStack.pop('sp-popover')) : null;
+    let currentStyle = popover.style.cssText;
+    (open && !spPopoverOpen) ? (spPopoverOpen = true, escapeStack.push('sp-popover', closeRoomPopover)) : (!open && spPopoverOpen) ? (spPopoverOpen = false,setTimeout(() => {if (popover.style.cssText === currentStyle) popover.style.left = '', popover.style.top = '', popover.style.setProperty('--arrow-left', '');}, 200), escapeStack.pop('sp-popover')) : null;
   }
 
   function getRoomCenterScreen(group) {
@@ -1289,7 +1478,7 @@
       : Math.max(ph + pad, Math.min(panelRect.height - pad, targetY));
     popover.style.left = `${left}px`;
     popover.style.top = `${top}px`;
-    const arrowOffset = Math.max(12, Math.min(pw - 12, targetX - (left - (popover.offsetWidth/2))));
+    const arrowOffset = Math.max(12, Math.min(popover.offsetWidth - 12, targetX - (left - (popover.offsetWidth/2))));
     popover.style.setProperty('--arrow-left', `${arrowOffset}px`);
     setRoomPopoverOpen(true);
   }
@@ -1304,7 +1493,8 @@
       if (spPopoverDisabled) return;
       if (spActiveRoom === group) return closeRoomPopover();
       spActiveRoom && spActiveRoom.classList.remove('is-active'), spActiveRoom = group;
-      group.classList.add('is-active'), setRoomTitle(roomId), setRoomClasses(spRoomToClasses[roomId] || []);
+      group.classList.add('is-active'), setRoomTitle(roomId);
+      setRoomClasses((spRoomToClasses[roomId] || []));
       const center = getRoomCenterScreen(group);
       positionRoomPopover(center ? center.x : e.clientX, (center ? center.y : e.clientY) - 5);
     });
@@ -1356,7 +1546,7 @@
         state.panX = mx - pmx * state.zoom;
         state.panY = my - pmy * state.zoom;
         constrainPan();
-        updateMap(false);
+        updateMap();
       }
     }
     
@@ -1479,7 +1669,7 @@
             state.panX = mx - pmx * state.zoom;
             state.panY = my - pmy * state.zoom;
             constrainPan();
-            updateMap(false);
+            updateMap();
           }
           
           state.lastTouchDistance = distance;
@@ -1527,13 +1717,13 @@
         mkBtn('arrow-rotate-right', 'Reset View', reset)
       );
       mapContainer.parentElement.appendChild(ctrl);
-      
-      if (last_events.joined) {
-        updateRoomClasses(last_events.joined);
+      let events = await loadClassSyncData();
+      if (events && events.joined) {
+        updateRoomClasses(events.joined);
       }
     } catch (err) {
       mapContainer.innerHTML = '<div class="map-error">Map unavailable</div>';
-      console.warn('Unable to load map', err);
+      consol.warn("Unable to load map", "ClassSync-SneakPeek");
     }
   }
 
@@ -1541,10 +1731,25 @@
   if (filterBtn) {
     filterBtn.addEventListener('click', (event) => {
       event.stopPropagation();
-      toggleTodayFilter();
+      toggleMapFilter();
     });
   }
-  
+
+  const historyBtn = document.getElementById('sp-history-btn');
+  if (historyBtn) {
+    historyBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      spShowArchived = !spShowArchived;
+      historyBtn.classList.toggle('active', spShowArchived);
+      refreshSneakPeekCards();
+      updateHistoryButton();
+      reapplyCardSelection();
+      if (spFilterActive) {
+        toggleMapFilter(true);
+      }
+    });
+  }
+
   const settingsContainer = document.querySelector('.settings-container');
   const settingsOverlay = document.querySelector('.settings-overlay');
   const settingsBackground = document.querySelector('.settings-background');
@@ -1905,11 +2110,9 @@
               }
               if (c) resolve();
             }))).then(()=>{
-              let rm = 0;
-              bl.buttons.filter(b=>b.tagged).forEach((b)=>{
-                rm++;
-                bl.buttons.splice(bl.buttons.indexOf(b), 1);
-              });
+              const nextButtons = bl.buttons.filter(b => b.tagged !== true);
+              let rm = bl.buttons.length - nextButtons.length;
+              bl.buttons = nextButtons;
               let errmsg = "";
               if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed.`};
               if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};

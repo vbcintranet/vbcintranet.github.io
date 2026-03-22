@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.7";
+  const version = "v2.4.8";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -797,11 +797,9 @@
           }
           if (c) resolve();
         }))).then(()=>{
-          let rm = 0;
-          bl.buttons.filter(b=>b.tagged).forEach((b)=>{
-            rm++;
-            bl.buttons.splice(bl.buttons.indexOf(b), 1);
-          })
+          const nextButtons = bl.buttons.filter(b => b.tagged !== true);
+          let rm = bl.buttons.length - nextButtons.length;
+          bl.buttons = nextButtons;
           let errmsg = "";
           if (rm) {errmsg += `${rm == 1 ? 'A' : rm} button${rm > 1 ? 's were' : ' was'} removed.`};
           if (len > 25) {errmsg += `\nYou have reached the button limit, the first 25 were kept, the remaining ${len-25 == 1 ? 'button' : `${len-25} buttons`} ${len-25 == 1 ? 'was' : 'were'} removed.`};

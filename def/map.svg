@@ -272,13 +272,13 @@
     </g>
   </g>
   <g id="AREA_GYM">
-    <g id="CLASS_GYM">
-      <polygon id="GYM" class="cls-5" points="1290.26 792.13 1301.41 725.02 1325.48 730.3 1337.41 655.37 1313.94 652.24 1320.78 607.43 1308.26 605.47 1310.02 586.89 1197.33 568.89 1169.3 734.8 1213.04 741.65 1207.36 777.95 1290.26 792.13"/>
-      <text id="LBL_GYM" class="cls-27" transform="translate(1230.1 686.38)"><tspan x="0" y="0">GYM</tspan></text>
-    </g>
     <g id="LOC_STAFF_GYM">
       <polygon id="STAFF_GYM" class="cls-5" points="1207.36 777.95 1163.28 770.41 1169.3 734.8 1213.15 740.95 1207.36 777.95"/>
       <text id="LBL_STAFF_GYM" class="cls-26" transform="translate(1173.64 760.29)"><tspan x="0" y="0">Sta</tspan><tspan class="cls-37" x="19.38" y="0">f</tspan><tspan class="cls-22" x="23.82" y="0">f</tspan></text>
+    </g>
+    <g id="CLASS_GYM">
+      <polygon id="GYM" class="cls-5" points="1290.26 792.13 1301.41 725.02 1325.48 730.3 1337.41 655.37 1313.94 652.24 1320.78 607.43 1308.26 605.47 1310.02 586.89 1197.33 568.89 1169.3 734.8 1213.04 741.65 1207.36 777.95 1290.26 792.13"/>
+      <text id="LBL_GYM" class="cls-27" transform="translate(1230.1 686.38)"><tspan x="0" y="0">GYM</tspan></text>
     </g>
   </g>
   <g id="AREA_A_BLOCK">
@@ -569,7 +569,7 @@
       <text id="LBL_R15" class="cls-25" transform="translate(1016.76 319.22)"><tspan x="0" y="0">R15</tspan></text>
     </g>
     <g id="CLASS_R14">
-      <polygon id="R14" class="cls-3" points="764.49 876.45 694.89 865.1 700.96 825.78 717.2 827.54 716.41 834.78 724.83 834.78 725.81 828.91 770.22 836.74 769.44 843.39 764.49 876.45"/>
+      <polygon id="R14" class="cls-3" points="764.49 876.45 694.89 865.1 700.96 825.78 717.2 827.54 716.61 832.97 724.9 834.35 725.81 828.91 770.22 836.74 769.44 843.39 764.49 876.45"/>
       <text id="LBL_R14" class="cls-25" transform="translate(719.2 855.69)"><tspan x="0" y="0">R14</tspan></text>
     </g>
     <g id="CLASS_R13">
