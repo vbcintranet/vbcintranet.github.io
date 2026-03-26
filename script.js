@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.8";
+  const version = "v2.4.8a";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -750,6 +750,7 @@
         }
         const res = await response.text();
         const lines = res.split('\n');
+        const uidList = new Set();
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
 
@@ -758,12 +759,9 @@
           } else if (line.startsWith('END:VEVENT')) {
             if (!eventData.startraw || !eventData.endraw || !eventData.uid) {consol.warn(`Invalid event data: ${JSON.stringify(eventData)}`, "ClassSync"); continue};
             const eventUids = Array.isArray(eventData.uid) ? eventData.uid : [eventData.uid];
+            eventUids.forEach(uid => uidList.add(uid));
             const duplicateEvent = events.all.find(e => Array.isArray(e.uid) && e.uid.some(uid => eventUids.includes(uid)));
-            if (duplicateEvent) {
-              if (duplicateEvent.location != eventData.location) duplicateEvent.location = eventData.location;
-              if (duplicateEvent.summary != eventData.summary) duplicateEvent.summary = eventData.summary;
-              continue;
-            };
+            if (duplicateEvent) {Object.assign(duplicateEvent, eventData); continue;};
             events.all.push(eventData);
           } else if (line.startsWith('SUMMARY:')) {
             const summary = line.substring(8);
@@ -790,6 +788,7 @@
             eventData.location = location.trim();
           }
         }
+        events.all = events.all.filter(e => {!(!(Array.isArray(e.uid) ? e.uid : [e.uid]).some(uid => uidList.has(uid)) && e.startraw.getTime() > new Date().getTime())});
         events.timeChecked = new Date();
       } catch (error) {
         errors.new(JSON.stringify(error, Object.getOwnPropertyNames(error)), "ClassSync");
@@ -978,11 +977,6 @@
     try {
       const savedData = await classSyncDB.get();
       if (!savedData || !savedData.timeChecked) return null;
-      const savedDate = new Date(savedData.timeChecked);
-      const today = new Date();
-      if (savedDate.getFullYear() !== today.getFullYear() ||
-          savedDate.getMonth() !== today.getMonth() ||
-          savedDate.getDate() !== today.getDate()) return null;
       return deserializeCSEvents(savedData);
     } catch(e) {
       return null;
