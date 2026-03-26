@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.8a";
+  const version = "v2.4.8b";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -788,7 +788,7 @@
             eventData.location = location.trim();
           }
         }
-        events.all = events.all.filter(e => {!(!(Array.isArray(e.uid) ? e.uid : [e.uid]).some(uid => uidList.has(uid)) && e.startraw.getTime() > new Date().getTime())});
+        events.all = events.all.filter(e => !(!(Array.isArray(e.uid) ? e.uid : [e.uid]).some(uid => uidList.has(uid)) && e.startraw.getTime() > new Date().getTime()));
         events.timeChecked = new Date();
       } catch (error) {
         errors.new(JSON.stringify(error, Object.getOwnPropertyNames(error)), "ClassSync");
