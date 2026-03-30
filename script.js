@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.8b";
+  const version = "v2.4.8c";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -1142,6 +1142,7 @@
       spShowArchived = false;
       const historyBtn = document.getElementById('sp-history-btn');
       historyBtn && historyBtn.classList.remove('active');
+      updateFilterButton();
       refreshSneakPeekCards();
       spEls.ct.style.display = 'block', spEls.ov.style.opacity = 0, spEls.bg.classList.remove('active'), spEls.mp?.classList.remove('active'), closeRoomPopover();
       contentDiv.classList.remove('hide'), escapeStack.pop('sneakpeek');
@@ -1331,9 +1332,9 @@
 
   function updateFilterButton() {
     const filterBtn = document.getElementById('sp-filter-btn');
-    const hasClasses = Object.values(spRoomToClasses).some(classes => classes.length > 0);
+    const hasVisibleClasses = Object.values(spRoomToClasses).some(classes => classes.some(c => spShowArchived || c.status !== SP_STATUS.ARCHIVED));
     if (filterBtn) {
-      filterBtn.style.display = hasClasses ? '' : 'none';
+      filterBtn.style.display = hasVisibleClasses ? '' : 'none';
     }
   }
 
@@ -1735,6 +1736,7 @@
       event.stopPropagation();
       spShowArchived = !spShowArchived;
       historyBtn.classList.toggle('active', spShowArchived);
+      updateFilterButton();
       refreshSneakPeekCards();
       updateHistoryButton();
       reapplyCardSelection();
