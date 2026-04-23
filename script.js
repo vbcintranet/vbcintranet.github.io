@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.8c";
+  const version = "v2.4.8d";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -77,12 +77,12 @@
           const tx = db.transaction(this.storeName, 'readonly');
           const store = tx.objectStore(this.storeName);
           const req = store.get(cid);
-          req.onerror = () => resolve(null);
-          req.onsuccess = () => resolve(req.result?.dataUrl || null);
+          req.onerror = () => resolve('/images/icons/Unknown.webp');
+          req.onsuccess = () => resolve(req.result?.dataUrl || '/images/icons/Unknown.webp');
         });
       } catch (e) { 
         consol.error(`Failed to retrieve icon ${cid}`, 'IndexedDB');
-        return null;
+        return '/images/icons/Unknown.webp';
       }
     },
     delete: async function(cid) {

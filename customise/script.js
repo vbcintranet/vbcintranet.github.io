@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.8c";
+  const version = "v2.4.8d";
 
   const consol = {
     log: (message, title = "Core", colour = "#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -7,9 +7,26 @@
     error: (message, title = "Core") => { console.error(`%c(${title}) %c${message}`, `color:#FFB3B3;font-weight:bold`, "") }
   }
 
+  const appDB = {
+    name: 'vbcIntranet',
+    version: 2,
+    stores: {
+      customButtonIcons: 'customButtonIcons',
+      classSync: 'classSync'
+    },
+    ensureStores(db) {
+      if (!db.objectStoreNames.contains(this.stores.customButtonIcons)) {
+        db.createObjectStore(this.stores.customButtonIcons, { keyPath: 'cid' });
+      }
+      if (!db.objectStoreNames.contains(this.stores.classSync)) {
+        db.createObjectStore(this.stores.classSync, { keyPath: 'id' });
+      }
+    }
+  };
+
   const iconDB = {
-    dbName: 'vbcIntranet',
-    storeName: 'customButtonIcons',
+    dbName: appDB.name,
+    storeName: appDB.stores.customButtonIcons,
     db: null,
     initPromise: null,
     init: async function() {
@@ -17,7 +34,7 @@
       if (this.initPromise) return this.initPromise;
       
       this.initPromise = new Promise((resolve, reject) => {
-        const req = indexedDB.open(this.dbName, 1);
+        const req = indexedDB.open(this.dbName, appDB.version);
         req.onerror = () => reject(req.error);
         req.onsuccess = () => { 
           this.db = req.result; 
@@ -26,9 +43,7 @@
         };
         req.onupgradeneeded = (e) => {
           const db = e.target.result;
-          if (!db.objectStoreNames.contains(this.storeName)) {
-            db.createObjectStore(this.storeName, { keyPath: 'cid' });
-          }
+          appDB.ensureStores(db);
         };
       });
       

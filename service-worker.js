@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vbc-intranet-v2.4.8c';
+const CACHE_NAME = 'vbc-intranet-v2.4.8d';
 
 const PRECACHE_ASSETS = [
   '/',
