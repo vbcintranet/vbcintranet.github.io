@@ -1,5 +1,5 @@
 (() => {
-  const version = "v2.4.8d";
+  const version = "v2.4.8e";
 
   const consol = {
     log: (message, title="Core", colour="#FF6961") => { console.log(`%c(${title}) %c${message}`, `color:${colour};font-weight:bold`, "") },
@@ -624,7 +624,9 @@
         for (let i = working.length - 1; i >= 0; i--) {
           const prev = working[i];
           if (prev.combined) continue;
-          if (prev.endraw.getTime() == e.startraw.getTime() && prev.summary == e.summary) {
+          if (prev.summary !== e.summary) continue;
+          
+          if (prev.endraw.getTime() == e.startraw.getTime()) {
             if (e.location != prev.location) {
               prev.locationA = prev.location;
               prev.locationB = e.location;
@@ -641,7 +643,7 @@
             e.tagged = true;
             matched = true;
             break;
-          } else if (prev.startraw.getTime() == e.endraw.getTime() && prev.summary == e.summary) {
+          } else if (prev.startraw.getTime() == e.endraw.getTime()) {
             if (e.location != prev.location) {
               prev.locationA = e.location;
               prev.locationB = prev.location;
@@ -658,50 +660,60 @@
             e.tagged = true;
             matched = true;
             break;
-          } else if (prev.endraw.getTime() == e.startraw.getTime()) {
-            if (e.location != prev.location) {
-              prev.summaryA = prev.summary;
-              prev.summaryB = e.summary;
-              prev.summary = `${prev.summary} and ${e.summary}`;
-              prev.locationA = prev.location;
-              prev.locationB = e.location;
-              prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
-            } else {
-              prev.summary = `${prev.summary} and ${e.summary}`;
-            }
-            prev.endraw = e.endraw;
-            prev.end = parseDate(e.endraw);
-            prev.endDate = e.endraw.toLocaleString();
-            prev.split = true;
-            prev.splitTime = e.startraw;
-            prev.uid = [...prev.uid, ...e.uid];
-            prev.combined = true;
-            e.tagged = true;
-            matched = true;
-            break;
-          } else if (prev.startraw.getTime() == e.endraw.getTime()) {
-            if (e.location != prev.location) {
-              prev.summaryA = e.summary;
-              prev.summaryB = prev.summary;
-              prev.summary = `${prev.summary} and ${e.summary}`;
-              prev.locationA = e.location;
-              prev.locationB = prev.location;
-              prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
-            } else {
-              prev.summary = `${prev.summary} and ${e.summary}`;
-            }
-            prev.startraw = e.startraw;
-            prev.start = parseDate(e.startraw);
-            prev.startDate = e.startraw.toLocaleString();
-            prev.split = true;
-            prev.splitTime = e.endraw;
-            prev.uid = [...prev.uid, ...e.uid];
-            prev.combined = true;
-            e.tagged = true;
-            matched = true;
-            break;
           }
         }
+        
+        if (!matched) {
+          for (let i = working.length - 1; i >= 0; i--) {
+            const prev = working[i];
+            if (prev.combined) continue;
+            
+            if (prev.endraw.getTime() == e.startraw.getTime()) {
+              if (e.location != prev.location) {
+                prev.summaryA = prev.summary;
+                prev.summaryB = e.summary;
+                prev.summary = `${prev.summary} and ${e.summary}`;
+                prev.locationA = prev.location;
+                prev.locationB = e.location;
+                prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
+              } else {
+                prev.summary = `${prev.summary} and ${e.summary}`;
+              }
+              prev.endraw = e.endraw;
+              prev.end = parseDate(e.endraw);
+              prev.endDate = e.endraw.toLocaleString();
+              prev.split = true;
+              prev.splitTime = e.startraw;
+              prev.uid = [...prev.uid, ...e.uid];
+              prev.combined = true;
+              e.tagged = true;
+              matched = true;
+              break;
+            } else if (prev.startraw.getTime() == e.endraw.getTime()) {
+              if (e.location != prev.location) {
+                prev.summaryA = e.summary;
+                prev.summaryB = prev.summary;
+                prev.summary = `${prev.summary} and ${e.summary}`;
+                prev.locationA = e.location;
+                prev.locationB = prev.location;
+                prev.location = `${prev.location} ${classSyncIcon('roomTransition')} ${e.location}`;
+              } else {
+                prev.summary = `${prev.summary} and ${e.summary}`;
+              }
+              prev.startraw = e.startraw;
+              prev.start = parseDate(e.startraw);
+              prev.startDate = e.startraw.toLocaleString();
+              prev.split = true;
+              prev.splitTime = e.endraw;
+              prev.uid = [...prev.uid, ...e.uid];
+              prev.combined = true;
+              e.tagged = true;
+              matched = true;
+              break;
+            }
+          }
+        }
+        
         if (!matched) working.push(e);
       });
       working.forEach(e => events.joined.push(e));
@@ -1163,6 +1175,7 @@
     if (!location) return null;
     location = String(location).trim().toUpperCase();
     const aliasMap = {
+      STAGE: 'PAC',
       VCEM: 'VCEC',
       GYM1: 'GYM',
       GYM2: 'GYM',
@@ -1516,6 +1529,12 @@
       state.panY = clamp(state.panY, h - sh, 0);
     }
     
+    const setSvgTransition = (enabled) => {
+      if (state.svg) {
+        state.svg.style.transition = enabled ? '' : 'none';
+      }
+    };
+    
     const updateMap = () => {
       if (state.svg) {
         state.svg.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
@@ -1585,6 +1604,7 @@
             closeRoomPopover();
             state.pendingPan = false;
             state.panning = true;
+            setSvgTransition(false);
             spPopoverDisabled = true;
             mapContainer.style.cursor = 'grabbing';
           }
@@ -1600,7 +1620,8 @@
       document.addEventListener('mouseup', () => {
         if (state.pendingPan) state.pendingPan = false;
         if (state.panning) {
-          state.panning = false; 
+          state.panning = false;
+          setSvgTransition(true);
           mapContainer.style.cursor = 'grab';
           if (state.rafId) cancelAnimationFrame(state.rafId);
           updatePan();
@@ -1636,6 +1657,7 @@
               closeRoomPopover();
               state.pendingPan = false;
               state.panning = true;
+              setSvgTransition(false);
               spPopoverDisabled = true;
             }
           }
@@ -1650,6 +1672,7 @@
           }
         } else if (state.touches.length === 2 && state.lastTouchDistance !== null) {
           e.preventDefault();
+          setSvgTransition(false);
           const dx = state.touches[1].x - state.touches[0].x;
           const dy = state.touches[1].y - state.touches[0].y;
           const distance = Math.hypot(dx, dy);
@@ -1676,6 +1699,7 @@
           if (state.pendingPan) state.pendingPan = false;
           if (state.panning) {
             state.panning = false;
+            setSvgTransition(true);
             if (state.rafId) cancelAnimationFrame(state.rafId);
             updatePan();
             setTimeout(() => { if (!state.panning) spPopoverDisabled = false; }, 100);
